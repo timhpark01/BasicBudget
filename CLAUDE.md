@@ -7,3 +7,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## Primary Reference
 
 Please see `AGENTS.md` in this same directory for the main project documentation and guidance.
+
+## Overview of the Project
+
+This is a budgeting/expense tracking app. It should allow users to easily add expenses with a total tally for the month's expenses. These expenses will be displayed in list form and will have the amount, date, category, and optional notes.
