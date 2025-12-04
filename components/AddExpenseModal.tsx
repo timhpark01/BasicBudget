@@ -12,6 +12,8 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import CalendarPicker from './CalendarPicker';
+import CalculatorKeypad from './CalculatorKeypad';
 import { Category, Expense } from '@/types/database';
 import { CATEGORIES } from '@/constants/categories';
 
@@ -38,6 +40,7 @@ export default function AddExpenseModal({
   const [date, setDate] = useState(new Date());
   const [note, setNote] = useState('');
   const [loading, setLoading] = useState(false);
+  const [inputMode, setInputMode] = useState<'calculator' | 'calendar'>('calculator');
 
   // Pre-fill form when editing
   useEffect(() => {
@@ -53,6 +56,8 @@ export default function AddExpenseModal({
       setDate(new Date());
       setNote('');
     }
+    // Reset to calculator mode when modal opens
+    setInputMode('calculator');
   }, [editExpense, visible]);
 
   const handleNumberPress = (num: string) => {
@@ -187,81 +192,51 @@ export default function AddExpenseModal({
           </View>
         </ScrollView>
 
-        {/* Calculator Overlay */}
+        {/* Input Area - Calculator or Calendar */}
         <View style={styles.calculatorContainer}>
-          {/* Amount Display */}
-          <View style={styles.amountDisplay}>
-            <Text style={styles.currencySymbol}>$</Text>
-            <Text style={styles.amountText}>{amount}</Text>
-          </View>
+          {inputMode === 'calculator' ? (
+            <>
+              {/* Date and Note Fields */}
+              <View style={styles.detailsContainer}>
+                <TouchableOpacity
+                  style={styles.dateButton}
+                  onPress={() => setInputMode('calendar')}
+                >
+                  <Ionicons name="calendar-outline" size={20} color="#666" />
+                  <Text style={styles.dateText}>{formatDate(date)}</Text>
+                </TouchableOpacity>
 
-          {/* Date and Note Fields */}
-          <View style={styles.detailsContainer}>
-            <TouchableOpacity style={styles.dateButton}>
-              <Ionicons name="calendar-outline" size={20} color="#666" />
-              <Text style={styles.dateText}>{formatDate(date)}</Text>
-            </TouchableOpacity>
+                <TextInput
+                  style={styles.noteInput}
+                  placeholder="Add a note (optional)"
+                  value={note}
+                  onChangeText={setNote}
+                  placeholderTextColor="#999"
+                />
+              </View>
 
-            <TextInput
-              style={styles.noteInput}
-              placeholder="Add a note (optional)"
-              value={note}
-              onChangeText={setNote}
-              placeholderTextColor="#999"
-            />
-          </View>
-
-          {/* Calculator Keypad */}
-          <View style={styles.keypad}>
-            <View style={styles.keypadRow}>
-              <CalculatorButton label="1" onPress={() => handleNumberPress('1')} />
-              <CalculatorButton label="2" onPress={() => handleNumberPress('2')} />
-              <CalculatorButton label="3" onPress={() => handleNumberPress('3')} />
-            </View>
-            <View style={styles.keypadRow}>
-              <CalculatorButton label="4" onPress={() => handleNumberPress('4')} />
-              <CalculatorButton label="5" onPress={() => handleNumberPress('5')} />
-              <CalculatorButton label="6" onPress={() => handleNumberPress('6')} />
-            </View>
-            <View style={styles.keypadRow}>
-              <CalculatorButton label="7" onPress={() => handleNumberPress('7')} />
-              <CalculatorButton label="8" onPress={() => handleNumberPress('8')} />
-              <CalculatorButton label="9" onPress={() => handleNumberPress('9')} />
-            </View>
-            <View style={styles.keypadRow}>
-              <CalculatorButton label="." onPress={handleDecimalPress} />
-              <CalculatorButton label="0" onPress={() => handleNumberPress('0')} />
-              <CalculatorButton
-                label="⌫"
-                onPress={handleBackspace}
-                onLongPress={handleClear}
+              {/* Calculator Keypad */}
+              <CalculatorKeypad
+                amount={amount}
+                onNumberPress={handleNumberPress}
+                onDecimalPress={handleDecimalPress}
+                onBackspace={handleBackspace}
+                onClear={handleClear}
               />
-            </View>
-          </View>
+            </>
+          ) : (
+            <CalendarPicker
+              currentDate={date}
+              onConfirm={(selectedDate) => {
+                setDate(selectedDate);
+                setInputMode('calculator');
+              }}
+              onCancel={() => setInputMode('calculator')}
+            />
+          )}
         </View>
       </View>
     </Modal>
-  );
-}
-
-interface CalculatorButtonProps {
-  label: string;
-  onPress: () => void;
-  onLongPress?: () => void;
-}
-
-function CalculatorButton({ label, onPress, onLongPress }: CalculatorButtonProps) {
-  return (
-    <Pressable
-      style={({ pressed }) => [
-        styles.calcButton,
-        pressed && styles.calcButtonPressed,
-      ]}
-      onPress={onPress}
-      onLongPress={onLongPress}
-    >
-      <Text style={styles.calcButtonText}>{label}</Text>
-    </Pressable>
   );
 }
 
@@ -334,24 +309,6 @@ const styles = StyleSheet.create({
     shadowRadius: 8,
     elevation: 8,
   },
-  amountDisplay: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: 32,
-    marginBottom: 16,
-  },
-  currencySymbol: {
-    fontSize: 32,
-    fontWeight: '600',
-    color: '#666',
-    marginRight: 8,
-  },
-  amountText: {
-    fontSize: 48,
-    fontWeight: 'bold',
-    color: '#333',
-  },
   detailsContainer: {
     paddingHorizontal: 24,
     marginBottom: 16,
@@ -376,31 +333,6 @@ const styles = StyleSheet.create({
     backgroundColor: '#f5f5f5',
     borderRadius: 12,
     fontSize: 16,
-    color: '#333',
-  },
-  keypad: {
-    paddingHorizontal: 24,
-  },
-  keypadRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: 12,
-  },
-  calcButton: {
-    flex: 1,
-    aspectRatio: 2.5,
-    backgroundColor: '#f5f5f5',
-    borderRadius: 12,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginHorizontal: 6,
-  },
-  calcButtonPressed: {
-    backgroundColor: '#e0e0e0',
-  },
-  calcButtonText: {
-    fontSize: 24,
-    fontWeight: '600',
     color: '#333',
   },
 });
