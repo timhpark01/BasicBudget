@@ -17,6 +17,7 @@ export interface UseExpensesReturn {
   addExpense: (expense: ExpenseInput) => Promise<void>;
   updateExpense: (id: string, expense: Partial<ExpenseInput>) => Promise<void>;
   deleteExpense: (id: string) => Promise<void>;
+  duplicateExpense: (expense: Expense) => Promise<void>;
   refreshExpenses: () => Promise<void>;
 }
 
@@ -112,6 +113,27 @@ export function useExpenses(): UseExpensesReturn {
     }
   }
 
+  // Duplicate an existing expense
+  async function duplicateExpense(expense: Expense): Promise<void> {
+    if (!db) throw new Error('Database not initialized');
+
+    try {
+      // Create new expense with same data but new ID and current timestamp
+      const duplicated: ExpenseInput = {
+        amount: expense.amount,
+        category: expense.category,
+        date: new Date(), // Use current date/time
+        note: expense.note ? `${expense.note} (copy)` : '',
+      };
+
+      await addExpense(duplicated);
+      setError(null);
+    } catch (err) {
+      // Error already handled by addExpense
+      throw err;
+    }
+  }
+
   // Refresh expenses from database
   async function refreshExpenses(): Promise<void> {
     if (!db) throw new Error('Database not initialized');
@@ -133,6 +155,7 @@ export function useExpenses(): UseExpensesReturn {
     addExpense,
     updateExpense,
     deleteExpense,
+    duplicateExpense,
     refreshExpenses,
   };
 }

@@ -46,6 +46,18 @@ These documentation files are specifically formatted for AI agents and should be
 └── package.json           # Dependencies and scripts
 ```
 
+## Detailed Technical Documentation
+
+For in-depth technical documentation, see the `/docs` folder:
+
+- **[Architecture Overview](./docs/01-architecture-overview.mdx)** - System design, data flow, patterns
+- **[Database Guide](./docs/02-database-guide.mdx)** - SQLite schema, CRUD operations, queries
+- **[Hooks Guide](./docs/03-hooks-guide.mdx)** - Custom hooks, state management, optimistic updates
+- **[Component Development](./docs/04-component-development.mdx)** - React components, modals, forms
+- **[Getting Started](./docs/05-getting-started.mdx)** - Developer onboarding and common tasks
+
+These documents provide detailed explanations, code examples, and Mermaid diagrams for understanding the codebase architecture and development patterns.
+
 ## Essential Commands
 
 ### Development

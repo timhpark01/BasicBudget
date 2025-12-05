@@ -9,9 +9,13 @@ import {
   Alert,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import Swipeable from 'react-native-gesture-handler/Swipeable';
+import * as Haptics from 'expo-haptics';
 import AddExpenseModal from '@/components/AddExpenseModal';
 import BudgetProgressBar from '@/components/BudgetProgressBar';
 import BudgetModal from '@/components/BudgetModal';
+import ExpenseDetailModal from '@/components/ExpenseDetailModal';
+import UndoToast from '@/components/UndoToast';
 import { useExpenses } from '@/hooks/useExpenses';
 import { useBudget } from '@/hooks/useBudget';
 import { isFirstLaunch, markFirstLaunchComplete } from '@/lib/first-launch';
@@ -22,6 +26,10 @@ export default function BudgetsScreen() {
   const [collapsedDates, setCollapsedDates] = useState<Set<string>>(new Set());
   const [editingExpense, setEditingExpense] = useState<Expense | null>(null);
   const [budgetModalVisible, setBudgetModalVisible] = useState(false);
+  const [detailExpense, setDetailExpense] = useState<Expense | null>(null);
+  const [detailModalVisible, setDetailModalVisible] = useState(false);
+  const [deletedExpense, setDeletedExpense] = useState<Expense | null>(null);
+  const [undoVisible, setUndoVisible] = useState(false);
 
   // Calculate current month in YYYY-MM format
   const currentMonth = useMemo(() => {
@@ -31,24 +39,56 @@ export default function BudgetsScreen() {
     return `${year}-${month}`;
   }, []);
 
-  // Format month for display (e.g., "December 2025")
+  // Selected month state (defaults to current month)
+  const [selectedMonth, setSelectedMonth] = useState<string>(currentMonth);
+
+  // Format selected month for display (e.g., "December 2025")
   const monthLabel = useMemo(() => {
-    const now = new Date();
-    return now.toLocaleDateString('en-US', {
+    const [year, month] = selectedMonth.split('-');
+    const date = new Date(parseInt(year), parseInt(month) - 1, 1);
+    return date.toLocaleDateString('en-US', {
       month: 'long',
       year: 'numeric',
     });
-  }, []);
+  }, [selectedMonth]);
+
+  // Navigate to previous month
+  const goToPreviousMonth = () => {
+    const [year, month] = selectedMonth.split('-');
+    const date = new Date(parseInt(year), parseInt(month) - 1, 1);
+    date.setMonth(date.getMonth() - 1);
+    const newYear = date.getFullYear();
+    const newMonth = String(date.getMonth() + 1).padStart(2, '0');
+    setSelectedMonth(`${newYear}-${newMonth}`);
+  };
+
+  // Navigate to next month
+  const goToNextMonth = () => {
+    const [year, month] = selectedMonth.split('-');
+    const date = new Date(parseInt(year), parseInt(month) - 1, 1);
+    date.setMonth(date.getMonth() + 1);
+    const newYear = date.getFullYear();
+    const newMonth = String(date.getMonth() + 1).padStart(2, '0');
+    setSelectedMonth(`${newYear}-${newMonth}`);
+  };
 
   // Use database hooks
-  const { expenses, loading, error, addExpense, updateExpense, deleteExpense, refreshExpenses } =
-    useExpenses();
+  const {
+    expenses,
+    loading,
+    error,
+    addExpense,
+    updateExpense,
+    deleteExpense,
+    duplicateExpense,
+    refreshExpenses,
+  } = useExpenses();
   const {
     budget,
     loading: budgetLoading,
     setBudget,
     refreshBudget,
-  } = useBudget(currentMonth);
+  } = useBudget(selectedMonth);
 
   // Check for first launch and prompt budget setup
   useEffect(() => {
@@ -68,11 +108,21 @@ export default function BudgetsScreen() {
     checkFirstLaunch();
   }, [loading, budgetLoading]);
 
+  // Filter expenses to only include those from the selected month
+  const filteredExpenses = useMemo(() => {
+    return expenses.filter((expense) => {
+      const expenseYear = expense.date.getFullYear();
+      const expenseMonth = String(expense.date.getMonth() + 1).padStart(2, '0');
+      const expenseMonthKey = `${expenseYear}-${expenseMonth}`;
+      return expenseMonthKey === selectedMonth;
+    });
+  }, [expenses, selectedMonth]);
+
   // Group expenses by date and sort
   const groupedExpenses = useMemo(() => {
     const groups: { [key: string]: Expense[] } = {};
 
-    expenses.forEach((expense) => {
+    filteredExpenses.forEach((expense) => {
       const dateKey = expense.date.toDateString();
       if (!groups[dateKey]) {
         groups[dateKey] = [];
@@ -84,12 +134,12 @@ export default function BudgetsScreen() {
     return Object.entries(groups).sort((a, b) => {
       return new Date(b[0]).getTime() - new Date(a[0]).getTime();
     });
-  }, [expenses]);
+  }, [filteredExpenses]);
 
-  // Calculate total
+  // Calculate total for selected month
   const totalAmount = useMemo(() => {
-    return expenses.reduce((sum, expense) => sum + parseFloat(expense.amount), 0);
-  }, [expenses]);
+    return filteredExpenses.reduce((sum, expense) => sum + parseFloat(expense.amount), 0);
+  }, [filteredExpenses]);
 
   const toggleDateCollapse = (dateKey: string) => {
     setCollapsedDates((prev) => {
@@ -176,6 +226,88 @@ export default function BudgetsScreen() {
     );
   };
 
+  const handleExpenseTap = (expense: Expense) => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    setDetailExpense(expense);
+    setDetailModalVisible(true);
+  };
+
+  const handleEditFromDetail = (expense: Expense) => {
+    setDetailModalVisible(false);
+    setEditingExpense(expense);
+    setModalVisible(true);
+  };
+
+  const handleDeleteWithUndo = async (expenseId: string, expense: Expense) => {
+    // Store for undo
+    setDeletedExpense(expense);
+
+    // Delete immediately
+    try {
+      await deleteExpense(expenseId);
+    } catch (err) {
+      console.error('Failed to delete expense:', err);
+      Alert.alert('Error', 'Failed to delete expense. Please try again.');
+      return;
+    }
+
+    // Show undo toast
+    setUndoVisible(true);
+
+    // Clear deleted expense after undo timeout
+    setTimeout(() => {
+      setDeletedExpense(null);
+    }, 4000);
+  };
+
+  const handleUndo = async () => {
+    if (!deletedExpense) return;
+
+    setUndoVisible(false);
+
+    try {
+      // Re-add the expense
+      await addExpense({
+        amount: deletedExpense.amount,
+        category: deletedExpense.category,
+        date: deletedExpense.date,
+        note: deletedExpense.note,
+      });
+    } catch (err) {
+      console.error('Failed to undo delete:', err);
+      Alert.alert('Error', 'Failed to restore expense. Please try again.');
+    }
+
+    setDeletedExpense(null);
+  };
+
+  const handleDuplicate = async (expense: Expense) => {
+    setDetailModalVisible(false);
+    try {
+      await duplicateExpense(expense);
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    } catch (err) {
+      console.error('Failed to duplicate expense:', err);
+      Alert.alert('Error', 'Failed to duplicate expense. Please try again.');
+    }
+  };
+
+  const handleSwipeDelete = (expense: Expense) => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    handleDeleteWithUndo(expense.id, expense);
+  };
+
+  const renderRightActions = (expense: Expense) => (
+    <TouchableOpacity
+      style={styles.deleteAction}
+      onPress={() => handleSwipeDelete(expense)}
+      activeOpacity={0.7}
+    >
+      <Ionicons name="trash" size={24} color="#FFFFFF" />
+      <Text style={styles.deleteActionText}>Delete</Text>
+    </TouchableOpacity>
+  );
+
   const handleSaveBudget = async (budgetAmount: string) => {
     try {
       await setBudget(budgetAmount);
@@ -191,7 +323,23 @@ export default function BudgetsScreen() {
       <ScrollView style={styles.scrollView}>
         <View style={styles.header}>
           <View style={styles.headerTop}>
-            <Text style={styles.monthTitle}>{monthLabel}</Text>
+            <View style={styles.monthSelector}>
+              <TouchableOpacity
+                style={styles.monthArrow}
+                onPress={goToPreviousMonth}
+                activeOpacity={0.7}
+              >
+                <Ionicons name="chevron-back" size={24} color="#333" />
+              </TouchableOpacity>
+              <Text style={styles.monthTitle}>{monthLabel}</Text>
+              <TouchableOpacity
+                style={styles.monthArrow}
+                onPress={goToNextMonth}
+                activeOpacity={0.7}
+              >
+                <Ionicons name="chevron-forward" size={24} color="#333" />
+              </TouchableOpacity>
+            </View>
             <TouchableOpacity
               style={styles.editBudgetButton}
               onPress={() => setBudgetModalVisible(true)}
@@ -231,10 +379,10 @@ export default function BudgetsScreen() {
               <Text style={styles.retryButtonText}>Retry</Text>
             </TouchableOpacity>
           </View>
-        ) : expenses.length === 0 ? (
+        ) : filteredExpenses.length === 0 ? (
           <View style={styles.content}>
             <Text style={styles.emptyText}>
-              No expenses yet. Tap + to add your first expense.
+              No expenses for {monthLabel}. Tap + to add your first expense.
             </Text>
           </View>
         ) : (
@@ -266,36 +414,42 @@ export default function BudgetsScreen() {
                   {!isCollapsed && (
                     <View style={styles.expensesContainer}>
                       {dayExpenses.map((expense) => (
-                        <TouchableOpacity
+                        <Swipeable
                           key={expense.id}
-                          style={styles.expenseItem}
-                          onLongPress={() => handleExpenseLongPress(expense)}
-                          activeOpacity={0.7}
+                          renderRightActions={() => renderRightActions(expense)}
+                          overshootRight={false}
                         >
-                          <View
-                            style={[
-                              styles.categoryIcon,
-                              { backgroundColor: expense.category.color + '20' },
-                            ]}
+                          <TouchableOpacity
+                            style={styles.expenseItem}
+                            onPress={() => handleExpenseTap(expense)}
+                            onLongPress={() => handleExpenseLongPress(expense)}
+                            activeOpacity={0.7}
                           >
-                            <Ionicons
-                              name={expense.category.icon}
-                              size={24}
-                              color={expense.category.color}
-                            />
-                          </View>
-                          <View style={styles.expenseDetails}>
-                            <Text style={styles.expenseCategoryText}>
-                              {expense.category.name}
+                            <View
+                              style={[
+                                styles.categoryIcon,
+                                { backgroundColor: expense.category.color + '20' },
+                              ]}
+                            >
+                              <Ionicons
+                                name={expense.category.icon}
+                                size={24}
+                                color={expense.category.color}
+                              />
+                            </View>
+                            <View style={styles.expenseDetails}>
+                              <Text style={styles.expenseCategoryText}>
+                                {expense.category.name}
+                              </Text>
+                              {expense.note ? (
+                                <Text style={styles.expenseNoteText}>{expense.note}</Text>
+                              ) : null}
+                            </View>
+                            <Text style={styles.expenseAmount}>
+                              ${expense.amount}
                             </Text>
-                            {expense.note ? (
-                              <Text style={styles.expenseNoteText}>{expense.note}</Text>
-                            ) : null}
-                          </View>
-                          <Text style={styles.expenseAmount}>
-                            ${expense.amount}
-                          </Text>
-                        </TouchableOpacity>
+                          </TouchableOpacity>
+                        </Swipeable>
                       ))}
                     </View>
                   )}
@@ -346,6 +500,22 @@ export default function BudgetsScreen() {
         monthLabel={monthLabel}
         onSave={handleSaveBudget}
       />
+
+      <ExpenseDetailModal
+        visible={detailModalVisible}
+        expense={detailExpense}
+        onClose={() => setDetailModalVisible(false)}
+        onEdit={handleEditFromDetail}
+        onDelete={(id) => handleDeleteWithUndo(id, detailExpense!)}
+        onDuplicate={handleDuplicate}
+      />
+
+      <UndoToast
+        visible={undoVisible}
+        message="Expense deleted"
+        onUndo={handleUndo}
+        onDismiss={() => setUndoVisible(false)}
+      />
     </View>
   );
 }
@@ -370,9 +540,19 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 16,
   },
+  monthSelector: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  monthArrow: {
+    padding: 4,
+  },
   monthTitle: {
     fontSize: 24,
     fontWeight: 'bold',
+    minWidth: 160,
+    textAlign: 'center',
+    marginHorizontal: 8,
   },
   editBudgetButton: {
     flexDirection: 'row',
@@ -529,5 +709,18 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: '600',
     color: '#333',
+  },
+  deleteAction: {
+    backgroundColor: '#FF6B6B',
+    justifyContent: 'center',
+    alignItems: 'center',
+    width: 80,
+    height: '100%',
+  },
+  deleteActionText: {
+    color: '#FFFFFF',
+    fontSize: 12,
+    fontWeight: '600',
+    marginTop: 4,
   },
 });
