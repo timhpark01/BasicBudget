@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import {
   StyleSheet,
   Text,
@@ -10,17 +10,63 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import AddExpenseModal from '@/components/AddExpenseModal';
+import BudgetProgressBar from '@/components/BudgetProgressBar';
+import BudgetModal from '@/components/BudgetModal';
 import { useExpenses } from '@/hooks/useExpenses';
+import { useBudget } from '@/hooks/useBudget';
+import { isFirstLaunch, markFirstLaunchComplete } from '@/lib/first-launch';
 import { Expense } from '@/types/database';
 
 export default function BudgetsScreen() {
   const [modalVisible, setModalVisible] = useState(false);
   const [collapsedDates, setCollapsedDates] = useState<Set<string>>(new Set());
   const [editingExpense, setEditingExpense] = useState<Expense | null>(null);
+  const [budgetModalVisible, setBudgetModalVisible] = useState(false);
 
-  // Use database hook instead of local state
+  // Calculate current month in YYYY-MM format
+  const currentMonth = useMemo(() => {
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = String(now.getMonth() + 1).padStart(2, '0');
+    return `${year}-${month}`;
+  }, []);
+
+  // Format month for display (e.g., "December 2025")
+  const monthLabel = useMemo(() => {
+    const now = new Date();
+    return now.toLocaleDateString('en-US', {
+      month: 'long',
+      year: 'numeric',
+    });
+  }, []);
+
+  // Use database hooks
   const { expenses, loading, error, addExpense, updateExpense, deleteExpense, refreshExpenses } =
     useExpenses();
+  const {
+    budget,
+    loading: budgetLoading,
+    setBudget,
+    refreshBudget,
+  } = useBudget(currentMonth);
+
+  // Check for first launch and prompt budget setup
+  useEffect(() => {
+    async function checkFirstLaunch() {
+      try {
+        const isFirst = await isFirstLaunch();
+        if (isFirst && !loading && !budgetLoading) {
+          // Show budget modal on first launch
+          setBudgetModalVisible(true);
+          // Mark first launch as complete
+          await markFirstLaunchComplete();
+        }
+      } catch (error) {
+        console.error('Failed to check first launch:', error);
+      }
+    }
+    checkFirstLaunch();
+  }, [loading, budgetLoading]);
 
   // Group expenses by date and sort
   const groupedExpenses = useMemo(() => {
@@ -130,15 +176,46 @@ export default function BudgetsScreen() {
     );
   };
 
+  const handleSaveBudget = async (budgetAmount: string) => {
+    try {
+      await setBudget(budgetAmount);
+      setBudgetModalVisible(false);
+    } catch (err) {
+      console.error('Failed to save budget:', err);
+      Alert.alert('Error', 'Failed to save budget. Please try again.');
+    }
+  };
+
   return (
     <View style={styles.container}>
       <ScrollView style={styles.scrollView}>
         <View style={styles.header}>
-          <Text style={styles.monthTitle}>December 2025</Text>
+          <View style={styles.headerTop}>
+            <Text style={styles.monthTitle}>{monthLabel}</Text>
+            <TouchableOpacity
+              style={styles.editBudgetButton}
+              onPress={() => setBudgetModalVisible(true)}
+              activeOpacity={0.7}
+            >
+              <Ionicons name="create-outline" size={20} color="#2f95dc" />
+              <Text style={styles.editBudgetText}>
+                {budget ? 'Edit Budget' : 'Set Budget'}
+              </Text>
+            </TouchableOpacity>
+          </View>
+
           <View style={styles.totalContainer}>
             <Text style={styles.totalLabel}>Total Expenses</Text>
             <Text style={styles.totalAmount}>${totalAmount.toFixed(2)}</Text>
           </View>
+
+          {/* Budget Progress Bar */}
+          {budget && (
+            <BudgetProgressBar
+              totalExpenses={totalAmount}
+              budgetAmount={parseFloat(budget.budgetAmount)}
+            />
+          )}
         </View>
 
         {loading ? (
@@ -261,6 +338,14 @@ export default function BudgetsScreen() {
           }
         }}
       />
+
+      <BudgetModal
+        visible={budgetModalVisible}
+        onClose={() => setBudgetModalVisible(false)}
+        currentBudget={budget?.budgetAmount}
+        monthLabel={monthLabel}
+        onSave={handleSaveBudget}
+      />
     </View>
   );
 }
@@ -279,10 +364,29 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: '#e0e0e0',
   },
+  headerTop: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
   monthTitle: {
     fontSize: 24,
     fontWeight: 'bold',
-    marginBottom: 16,
+  },
+  editBudgetButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    backgroundColor: '#f0f8ff',
+    borderRadius: 8,
+  },
+  editBudgetText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#2f95dc',
+    marginLeft: 4,
   },
   totalContainer: {
     flexDirection: 'row',

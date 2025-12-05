@@ -38,3 +38,27 @@ export interface ExpenseInput {
   date: Date;
   note: string;
 }
+
+// Budget interface (application-level)
+export interface Budget {
+  id: string;
+  month: string; // "YYYY-MM" format
+  budgetAmount: string;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+// Database row interface (raw data from SQLite)
+export interface BudgetRow {
+  id: string;
+  month: string;
+  budget_amount: string;
+  created_at: number; // Unix timestamp in milliseconds
+  updated_at: number; // Unix timestamp in milliseconds
+}
+
+// Input type for creating/updating budgets
+export interface BudgetInput {
+  month: string; // "YYYY-MM" format
+  budgetAmount: string;
+}

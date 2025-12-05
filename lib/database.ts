@@ -2,7 +2,7 @@ import * as SQLite from 'expo-sqlite';
 
 const DATABASE_NAME = 'budget.db';
 
-// SQL schema for expenses table
+// SQL schema for expenses and budgets tables
 const SCHEMA = `
   CREATE TABLE IF NOT EXISTS expenses (
     id TEXT PRIMARY KEY NOT NULL,
@@ -19,6 +19,16 @@ const SCHEMA = `
 
   CREATE INDEX IF NOT EXISTS idx_expenses_date ON expenses(date);
   CREATE INDEX IF NOT EXISTS idx_expenses_category ON expenses(category_id);
+
+  CREATE TABLE IF NOT EXISTS budgets (
+    id TEXT PRIMARY KEY NOT NULL,
+    month TEXT NOT NULL UNIQUE,
+    budget_amount TEXT NOT NULL,
+    created_at INTEGER NOT NULL,
+    updated_at INTEGER NOT NULL
+  );
+
+  CREATE INDEX IF NOT EXISTS idx_budgets_month ON budgets(month);
 `;
 
 let databaseInstance: SQLite.SQLiteDatabase | null = null;
