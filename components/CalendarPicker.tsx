@@ -299,11 +299,11 @@ const styles = StyleSheet.create({
     backgroundColor: 'transparent',
   },
   dateCellInnerSelected: {
-    backgroundColor: '#2f95dc',
+    backgroundColor: '#355e3b',
   },
   dateCellInnerToday: {
     borderWidth: 2,
-    borderColor: '#2f95dc',
+    borderColor: '#355e3b',
   },
   dateCellText: {
     fontSize: 16,
@@ -345,7 +345,7 @@ const styles = StyleSheet.create({
     color: '#666',
   },
   confirmButton: {
-    backgroundColor: '#2f95dc',
+    backgroundColor: '#355e3b',
     marginLeft: 8,
   },
   confirmButtonText: {

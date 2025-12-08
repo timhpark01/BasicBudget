@@ -60,8 +60,8 @@ graph TB
     HookExp -.Manages.-> StateExp[expenses: Expense[]<br/>loading: boolean<br/>error: Error | null]
     HookBud -.Manages.-> StateBud[budget: Budget | null<br/>loading: boolean<br/>error: Error | null]
 
-    style Screen fill:#2f95dc,color:#fff
-    style Modal fill:#2f95dc,color:#fff
+    style Screen fill:#355e3b,color:#fff
+    style Modal fill:#355e3b,color:#fff
     style HookExp fill:#4CAF50,color:#fff
     style HookBud fill:#4CAF50,color:#fff
     style DBExp fill:#FFA726,color:#fff
@@ -506,7 +506,7 @@ flowchart TD
     Confirm --> End([Operation Complete])
     ShowError --> End
 
-    style Start fill:#2f95dc,color:#fff
+    style Start fill:#355e3b,color:#fff
     style UpdateUI fill:#4CAF50,color:#fff
     style Render fill:#4CAF50,color:#fff
     style Confirm fill:#4CAF50,color:#fff
@@ -601,7 +601,7 @@ flowchart TD
     Return --> End([Complete])
     Alert --> End
 
-    style Start fill:#2f95dc,color:#fff
+    style Start fill:#355e3b,color:#fff
     style UpdateState fill:#4CAF50,color:#fff
     style Return fill:#4CAF50,color:#fff
     style CatchError fill:#FF6B6B,color:#fff
@@ -730,7 +730,7 @@ From `/app/(tabs)/index.tsx` (lines 144-156):
 ```typescript
 {loading ? (
   <View style={styles.loadingContainer}>
-    <ActivityIndicator size="large" color="#2f95dc" />
+    <ActivityIndicator size="large" color="#355e3b" />
     <Text style={styles.loadingText}>Loading expenses...</Text>
   </View>
 ) : error ? (

@@ -178,11 +178,11 @@ const styles = StyleSheet.create({
   dateCellWithExpenses: {
     backgroundColor: '#e3f2fd',
     borderWidth: 1,
-    borderColor: '#2f95dc',
+    borderColor: '#355e3b',
   },
   dateCellToday: {
     borderWidth: 2,
-    borderColor: '#2f95dc',
+    borderColor: '#355e3b',
   },
   dateCellText: {
     fontSize: 14,
@@ -194,12 +194,12 @@ const styles = StyleSheet.create({
   },
   dateCellTextWithExpenses: {
     fontWeight: '600',
-    color: '#2f95dc',
+    color: '#355e3b',
   },
   amountText: {
     fontSize: 9,
     fontWeight: '600',
-    color: '#2f95dc',
+    color: '#355e3b',
     marginTop: 2,
   },
 });

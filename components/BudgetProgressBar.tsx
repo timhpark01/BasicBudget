@@ -17,7 +17,7 @@ export default function BudgetProgressBar({
     : 0;
 
   // Determine bar color
-  const barColor = isOverBudget ? '#FF6B6B' : '#2f95dc';
+  const barColor = isOverBudget ? '#FF6B6B' : '#355e3b';
 
   return (
     <View style={styles.container}>

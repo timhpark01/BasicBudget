@@ -45,7 +45,7 @@ graph TD
     Form1 --> Valid1[Validation Logic]
     Form2 --> Valid2[Validation Logic]
 
-    style Screen fill:#2f95dc,color:#fff
+    style Screen fill:#355e3b,color:#fff
     style Modal1 fill:#4CAF50,color:#fff
     style Modal2 fill:#4CAF50,color:#fff
     style Calc fill:#FFA726,color:#fff
@@ -199,9 +199,9 @@ export default function AddExpenseModal({
         </Text>
         <TouchableOpacity onPress={handleSave} disabled={loading}>
           {loading ? (
-            <ActivityIndicator size="small" color="#2f95dc" />
+            <ActivityIndicator size="small" color="#355e3b" />
           ) : (
-            <Ionicons name="checkmark" size={28} color="#2f95dc" />
+            <Ionicons name="checkmark" size={28} color="#355e3b" />
           )}
         </TouchableOpacity>
       </View>
@@ -426,7 +426,7 @@ export default function BudgetProgressBar({
     ? Math.min(((totalExpenses - budgetAmount) / budgetAmount) * 100, 100)
     : 0;
 
-  const barColor = isOverBudget ? '#FF6B6B' : '#2f95dc';
+  const barColor = isOverBudget ? '#FF6B6B' : '#355e3b';
 
   return (
     <View style={styles.container}>
@@ -503,7 +503,7 @@ const styles = StyleSheet.create({
 
 ```typescript
 // Primary theme color
-const PRIMARY_COLOR = '#2f95dc';
+const PRIMARY_COLOR = '#355e3b';
 
 // Status colors
 const SUCCESS_COLOR = '#4CAF50';
@@ -575,7 +575,7 @@ flowchart TB
     Child -.Callbacks.-> Events[Events:<br/>- onSave<br/>- onClose<br/>- onNumberPress<br/>- onChange]
     Events --> Parent
 
-    style Parent fill:#2f95dc,color:#fff
+    style Parent fill:#355e3b,color:#fff
     style Child fill:#4CAF50,color:#fff
     style Props fill:#FFA726,color:#fff
     style Events fill:#9C27B0,color:#fff

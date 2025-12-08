@@ -1,26 +1,50 @@
+import { useState } from 'react';
 import { StyleSheet, Text, View, ScrollView, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import ProfileModal from '@/components/ProfileModal';
+import NotificationsModal from '@/components/NotificationsModal';
+import CategoriesModal from '@/components/CategoriesModal';
+import HelpModal from '@/components/HelpModal';
+import AboutModal from '@/components/AboutModal';
 
 export default function MoreScreen() {
+  const [profileModalVisible, setProfileModalVisible] = useState(false);
+  const [notificationsModalVisible, setNotificationsModalVisible] = useState(false);
+  const [categoriesModalVisible, setCategoriesModalVisible] = useState(false);
+  const [helpModalVisible, setHelpModalVisible] = useState(false);
+  const [aboutModalVisible, setAboutModalVisible] = useState(false);
+
   return (
     <View style={styles.container}>
       <ScrollView style={styles.scrollView}>
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Settings</Text>
 
-          <TouchableOpacity style={styles.menuItem}>
+          <TouchableOpacity
+            style={styles.menuItem}
+            onPress={() => setProfileModalVisible(true)}
+            activeOpacity={0.7}
+          >
             <Ionicons name="person-outline" size={24} color="#333" />
             <Text style={styles.menuText}>Profile</Text>
             <Ionicons name="chevron-forward" size={24} color="#999" />
           </TouchableOpacity>
 
-          <TouchableOpacity style={styles.menuItem}>
+          <TouchableOpacity
+            style={styles.menuItem}
+            onPress={() => setNotificationsModalVisible(true)}
+            activeOpacity={0.7}
+          >
             <Ionicons name="notifications-outline" size={24} color="#333" />
             <Text style={styles.menuText}>Notifications</Text>
             <Ionicons name="chevron-forward" size={24} color="#999" />
           </TouchableOpacity>
 
-          <TouchableOpacity style={styles.menuItem}>
+          <TouchableOpacity
+            style={styles.menuItem}
+            onPress={() => setCategoriesModalVisible(true)}
+            activeOpacity={0.7}
+          >
             <Ionicons name="pricetag-outline" size={24} color="#333" />
             <Text style={styles.menuText}>Categories</Text>
             <Ionicons name="chevron-forward" size={24} color="#999" />
@@ -30,19 +54,52 @@ export default function MoreScreen() {
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>About</Text>
 
-          <TouchableOpacity style={styles.menuItem}>
+          <TouchableOpacity
+            style={styles.menuItem}
+            onPress={() => setHelpModalVisible(true)}
+            activeOpacity={0.7}
+          >
             <Ionicons name="help-circle-outline" size={24} color="#333" />
             <Text style={styles.menuText}>Help & Support</Text>
             <Ionicons name="chevron-forward" size={24} color="#999" />
           </TouchableOpacity>
 
-          <TouchableOpacity style={styles.menuItem}>
+          <TouchableOpacity
+            style={styles.menuItem}
+            onPress={() => setAboutModalVisible(true)}
+            activeOpacity={0.7}
+          >
             <Ionicons name="information-circle-outline" size={24} color="#333" />
             <Text style={styles.menuText}>About</Text>
             <Ionicons name="chevron-forward" size={24} color="#999" />
           </TouchableOpacity>
         </View>
       </ScrollView>
+
+      <ProfileModal
+        visible={profileModalVisible}
+        onClose={() => setProfileModalVisible(false)}
+      />
+
+      <NotificationsModal
+        visible={notificationsModalVisible}
+        onClose={() => setNotificationsModalVisible(false)}
+      />
+
+      <CategoriesModal
+        visible={categoriesModalVisible}
+        onClose={() => setCategoriesModalVisible(false)}
+      />
+
+      <HelpModal
+        visible={helpModalVisible}
+        onClose={() => setHelpModalVisible(false)}
+      />
+
+      <AboutModal
+        visible={aboutModalVisible}
+        onClose={() => setAboutModalVisible(false)}
+      />
     </View>
   );
 }

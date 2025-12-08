@@ -251,7 +251,7 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   editButton: {
-    backgroundColor: '#2f95dc',
+    backgroundColor: '#355e3b',
   },
   duplicateButton: {
     backgroundColor: '#f0f0f0',

@@ -9,8 +9,12 @@
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "ios": {
+      "ascAppId": "6756184260",
       "supportsTablet": true,
-      "bundleIdentifier": "com.tman9000p.appBasicBudget"
+      "bundleIdentifier": "com.tman9000p.appBasicBudget",
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false
+      }
     },
     "android": {
       "adaptiveIcon": {

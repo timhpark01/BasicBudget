@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import * as SQLite from 'expo-sqlite';
 import { Budget, BudgetInput } from '@/types/database';
 import { getDatabase } from '@/lib/database';
@@ -51,7 +51,7 @@ export function useBudget(month: string): UseBudgetReturn {
   }
 
   // Set (create or update) budget for the current month
-  async function setBudget(budgetAmount: string): Promise<void> {
+  const setBudget = useCallback(async (budgetAmount: string): Promise<void> => {
     if (!db) throw new Error('Database not initialized');
 
     try {
@@ -69,11 +69,11 @@ export function useBudget(month: string): UseBudgetReturn {
       await loadBudget(db, month);
       throw err;
     }
-  }
+  }, [db, month]);
 
   // Refresh budget from database
-  async function refreshBudget(): Promise<void> {
-    if (!db) throw new Error('Database not initialized');
+  const refreshBudget = useCallback(async (): Promise<void> => {
+    if (!db) return; // Skip if database not yet initialized
 
     setLoading(true);
     try {
@@ -83,7 +83,7 @@ export function useBudget(month: string): UseBudgetReturn {
     } finally {
       setLoading(false);
     }
-  }
+  }, [db, month]);
 
   return {
     budget,

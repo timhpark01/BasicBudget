@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import * as SQLite from 'expo-sqlite';
 import { Expense, ExpenseInput } from '@/types/database';
 import { getDatabase } from '@/lib/database';
@@ -61,7 +61,7 @@ export function useExpenses(): UseExpensesReturn {
   }
 
   // Add a new expense
-  async function addExpense(expense: ExpenseInput): Promise<void> {
+  const addExpense = useCallback(async (expense: ExpenseInput): Promise<void> => {
     if (!db) throw new Error('Database not initialized');
 
     try {
@@ -74,13 +74,13 @@ export function useExpenses(): UseExpensesReturn {
       await loadExpenses(db);
       throw err;
     }
-  }
+  }, [db]);
 
   // Update an existing expense
-  async function updateExpense(
+  const updateExpense = useCallback(async (
     id: string,
     expense: Partial<ExpenseInput>
-  ): Promise<void> {
+  ): Promise<void> => {
     if (!db) throw new Error('Database not initialized');
 
     try {
@@ -95,10 +95,10 @@ export function useExpenses(): UseExpensesReturn {
       await loadExpenses(db);
       throw err;
     }
-  }
+  }, [db]);
 
   // Delete an expense
-  async function deleteExpense(id: string): Promise<void> {
+  const deleteExpense = useCallback(async (id: string): Promise<void> => {
     if (!db) throw new Error('Database not initialized');
 
     try {
@@ -111,10 +111,10 @@ export function useExpenses(): UseExpensesReturn {
       await loadExpenses(db);
       throw err;
     }
-  }
+  }, [db]);
 
   // Duplicate an existing expense
-  async function duplicateExpense(expense: Expense): Promise<void> {
+  const duplicateExpense = useCallback(async (expense: Expense): Promise<void> => {
     if (!db) throw new Error('Database not initialized');
 
     try {
@@ -132,11 +132,11 @@ export function useExpenses(): UseExpensesReturn {
       // Error already handled by addExpense
       throw err;
     }
-  }
+  }, [db, addExpense]);
 
   // Refresh expenses from database
-  async function refreshExpenses(): Promise<void> {
-    if (!db) throw new Error('Database not initialized');
+  const refreshExpenses = useCallback(async (): Promise<void> => {
+    if (!db) return; // Skip if database not yet initialized
 
     setLoading(true);
     try {
@@ -146,7 +146,7 @@ export function useExpenses(): UseExpensesReturn {
     } finally {
       setLoading(false);
     }
-  }
+  }, [db]);
 
   return {
     expenses,

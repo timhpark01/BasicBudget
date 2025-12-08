@@ -76,7 +76,7 @@ graph TB
     Advanced -->|Components| Comp
     Advanced -->|Complete| Done[Ready to Contribute!]
 
-    style Start fill:#2f95dc,color:#fff
+    style Start fill:#355e3b,color:#fff
     style Done fill:#4CAF50,color:#fff
     style GS fill:#FFA726
     style DB fill:#FFA726
@@ -206,7 +206,7 @@ All documentation follows these conventions:
 - **Mermaid Diagrams** - Visual representations of architecture and flows
 - **Real Code Examples** - Actual code from the codebase with file paths
 - **Cross-References** - Links between related documentation
-- **Consistent Colors** - Blue (#2f95dc) for primary, Red (#FF6B6B) for errors, Green (#4CAF50) for success
+- **Consistent Colors** - Green (#355e3b) for primary, Red (#FF6B6B) for errors, Green (#4CAF50) for success
 
 ## Related Documentation
 

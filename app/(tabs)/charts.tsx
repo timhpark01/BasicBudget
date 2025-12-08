@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useCallback } from 'react';
 import {
   StyleSheet,
   Text,
@@ -8,6 +8,7 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useFocusEffect } from '@react-navigation/native';
 import { useExpenses } from '@/hooks/useExpenses';
 import { useBudget } from '@/hooks/useBudget';
 import { Expense } from '@/types/database';
@@ -58,8 +59,16 @@ export default function ChartsScreen() {
   };
 
   // Use database hooks
-  const { expenses, loading: expensesLoading } = useExpenses();
-  const { budget, loading: budgetLoading } = useBudget(selectedMonth);
+  const { expenses, loading: expensesLoading, refreshExpenses } = useExpenses();
+  const { budget, loading: budgetLoading, refreshBudget } = useBudget(selectedMonth);
+
+  // Refresh data when screen comes into focus
+  useFocusEffect(
+    useCallback(() => {
+      refreshExpenses();
+      refreshBudget();
+    }, [refreshExpenses, refreshBudget])
+  );
 
   // Filter expenses to selected month
   const filteredExpenses = useMemo(() => {
@@ -140,7 +149,7 @@ export default function ChartsScreen() {
 
         {isLoading ? (
           <View style={styles.loadingContainer}>
-            <ActivityIndicator size="large" color="#2f95dc" />
+            <ActivityIndicator size="large" color="#355e3b" />
             <Text style={styles.loadingText}>Loading data...</Text>
           </View>
         ) : !hasExpenses ? (

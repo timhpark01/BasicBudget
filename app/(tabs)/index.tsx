@@ -16,6 +16,7 @@ import BudgetProgressBar from '@/components/BudgetProgressBar';
 import BudgetModal from '@/components/BudgetModal';
 import ExpenseDetailModal from '@/components/ExpenseDetailModal';
 import UndoToast from '@/components/UndoToast';
+import WelcomeModal from '@/components/WelcomeModal';
 import { useExpenses } from '@/hooks/useExpenses';
 import { useBudget } from '@/hooks/useBudget';
 import { isFirstLaunch, markFirstLaunchComplete } from '@/lib/first-launch';
@@ -30,6 +31,7 @@ export default function BudgetsScreen() {
   const [detailModalVisible, setDetailModalVisible] = useState(false);
   const [deletedExpense, setDeletedExpense] = useState<Expense | null>(null);
   const [undoVisible, setUndoVisible] = useState(false);
+  const [welcomeModalVisible, setWelcomeModalVisible] = useState(false);
 
   // Calculate current month in YYYY-MM format
   const currentMonth = useMemo(() => {
@@ -90,14 +92,14 @@ export default function BudgetsScreen() {
     refreshBudget,
   } = useBudget(selectedMonth);
 
-  // Check for first launch and prompt budget setup
+  // Check for first launch and show welcome screen
   useEffect(() => {
     async function checkFirstLaunch() {
       try {
         const isFirst = await isFirstLaunch();
         if (isFirst && !loading && !budgetLoading) {
-          // Show budget modal on first launch
-          setBudgetModalVisible(true);
+          // Show welcome modal on first launch
+          setWelcomeModalVisible(true);
           // Mark first launch as complete
           await markFirstLaunchComplete();
         }
@@ -107,6 +109,12 @@ export default function BudgetsScreen() {
     }
     checkFirstLaunch();
   }, [loading, budgetLoading]);
+
+  // Handle welcome modal completion
+  const handleWelcomeNext = () => {
+    setWelcomeModalVisible(false);
+    setBudgetModalVisible(true);
+  };
 
   // Filter expenses to only include those from the selected month
   const filteredExpenses = useMemo(() => {
@@ -345,7 +353,7 @@ export default function BudgetsScreen() {
               onPress={() => setBudgetModalVisible(true)}
               activeOpacity={0.7}
             >
-              <Ionicons name="create-outline" size={20} color="#2f95dc" />
+              <Ionicons name="create-outline" size={20} color="#355e3b" />
               <Text style={styles.editBudgetText}>
                 {budget ? 'Edit Budget' : 'Set Budget'}
               </Text>
@@ -368,7 +376,7 @@ export default function BudgetsScreen() {
 
         {loading ? (
           <View style={styles.loadingContainer}>
-            <ActivityIndicator size="large" color="#2f95dc" />
+            <ActivityIndicator size="large" color="#355e3b" />
             <Text style={styles.loadingText}>Loading expenses...</Text>
           </View>
         ) : error ? (
@@ -468,6 +476,11 @@ export default function BudgetsScreen() {
         <Ionicons name="add" size={32} color="#fff" />
       </TouchableOpacity>
 
+      <WelcomeModal
+        visible={welcomeModalVisible}
+        onNext={handleWelcomeNext}
+      />
+
       <AddExpenseModal
         visible={modalVisible}
         onClose={() => {
@@ -565,7 +578,7 @@ const styles = StyleSheet.create({
   editBudgetText: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#2f95dc',
+    color: '#355e3b',
     marginLeft: 4,
   },
   totalContainer: {
@@ -580,7 +593,7 @@ const styles = StyleSheet.create({
   totalAmount: {
     fontSize: 32,
     fontWeight: 'bold',
-    color: '#2f95dc',
+    color: '#355e3b',
   },
   content: {
     flex: 1,
@@ -620,7 +633,7 @@ const styles = StyleSheet.create({
     marginTop: 16,
     paddingHorizontal: 24,
     paddingVertical: 12,
-    backgroundColor: '#2f95dc',
+    backgroundColor: '#355e3b',
     borderRadius: 8,
   },
   retryButtonText: {
@@ -635,7 +648,7 @@ const styles = StyleSheet.create({
     width: 60,
     height: 60,
     borderRadius: 30,
-    backgroundColor: '#2f95dc',
+    backgroundColor: '#355e3b',
     justifyContent: 'center',
     alignItems: 'center',
     elevation: 8,

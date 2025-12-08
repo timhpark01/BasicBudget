@@ -62,3 +62,28 @@ export interface BudgetInput {
   month: string; // "YYYY-MM" format
   budgetAmount: string;
 }
+
+// Custom Category interface (application-level)
+export interface CustomCategory extends Category {
+  isActive: boolean;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+// Database row interface for custom categories (raw data from SQLite)
+export interface CustomCategoryRow {
+  id: string;
+  name: string;
+  icon: string;
+  color: string;
+  is_active: number; // SQLite boolean (0 or 1)
+  created_at: number; // Unix timestamp in milliseconds
+  updated_at: number; // Unix timestamp in milliseconds
+}
+
+// Input type for creating/updating custom categories
+export interface CustomCategoryInput {
+  name: string;
+  icon: string;
+  color: string;
+}

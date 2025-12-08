@@ -15,7 +15,7 @@ import { Ionicons } from '@expo/vector-icons';
 import CalendarPicker from './CalendarPicker';
 import CalculatorKeypad from './CalculatorKeypad';
 import { Category, Expense } from '@/types/database';
-import { CATEGORIES } from '@/constants/categories';
+import { useCategories } from '@/hooks/useCategories';
 
 interface AddExpenseModalProps {
   visible: boolean;
@@ -35,6 +35,7 @@ export default function AddExpenseModal({
   editExpense,
   onSave,
 }: AddExpenseModalProps) {
+  const { allCategories } = useCategories();
   const [amount, setAmount] = useState('0');
   const [selectedCategory, setSelectedCategory] = useState<Category | null>(null);
   const [date, setDate] = useState(new Date());
@@ -150,9 +151,9 @@ export default function AddExpenseModal({
           </Text>
           <TouchableOpacity onPress={handleSave} disabled={loading}>
             {loading ? (
-              <ActivityIndicator size="small" color="#2f95dc" />
+              <ActivityIndicator size="small" color="#355e3b" />
             ) : (
-              <Ionicons name="checkmark" size={28} color="#2f95dc" />
+              <Ionicons name="checkmark" size={28} color="#355e3b" />
             )}
           </TouchableOpacity>
         </View>
@@ -160,7 +161,7 @@ export default function AddExpenseModal({
         {/* Category Selection Background */}
         <ScrollView style={styles.categoryBackground} showsVerticalScrollIndicator={false}>
           <View style={styles.categoriesGrid}>
-            {CATEGORIES.map((category) => (
+            {allCategories.map((category) => (
               <TouchableOpacity
                 key={category.id}
                 style={[

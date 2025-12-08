@@ -104,9 +104,9 @@ export default function BudgetModal({
           <Text style={styles.headerTitle}>Set Budget</Text>
           <TouchableOpacity onPress={handleSave} disabled={loading}>
             {loading ? (
-              <ActivityIndicator size="small" color="#2f95dc" />
+              <ActivityIndicator size="small" color="#355e3b" />
             ) : (
-              <Ionicons name="checkmark" size={28} color="#2f95dc" />
+              <Ionicons name="checkmark" size={28} color="#355e3b" />
             )}
           </TouchableOpacity>
         </View>

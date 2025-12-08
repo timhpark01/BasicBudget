@@ -177,7 +177,7 @@ export default function SpendingLineChart({
             <Polyline
               points={spendingPath}
               fill="none"
-              stroke="#2f95dc"
+              stroke="#355e3b"
               strokeWidth="2"
             />
           )}
@@ -191,7 +191,7 @@ export default function SpendingLineChart({
                 cx={x}
                 cy={y}
                 r="3"
-                fill="#2f95dc"
+                fill="#355e3b"
                 stroke="#fff"
                 strokeWidth="2"
               />
@@ -219,7 +219,7 @@ export default function SpendingLineChart({
       {/* Legend */}
       <View style={styles.legend}>
         <View style={styles.legendItem}>
-          <View style={[styles.legendColor, { backgroundColor: '#2f95dc' }]} />
+          <View style={[styles.legendColor, { backgroundColor: '#355e3b' }]} />
           <Text style={styles.legendText}>Spending</Text>
         </View>
         {budgetAmount !== null && (

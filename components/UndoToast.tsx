@@ -109,7 +109,7 @@ const styles = StyleSheet.create({
     fontWeight: '500',
   },
   undoButton: {
-    color: '#2f95dc',
+    color: '#355e3b',
     fontSize: 16,
     fontWeight: '700',
   },
