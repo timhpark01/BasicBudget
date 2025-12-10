@@ -89,7 +89,7 @@ export default function ExpenseDetailModal({
           <Text style={styles.categoryName}>{expense.category.name}</Text>
 
           {/* Amount */}
-          <Text style={styles.amount}>${expense.amount}</Text>
+          <Text style={styles.amount}>${parseFloat(expense.amount).toFixed(2)}</Text>
 
           {/* Date */}
           <View style={styles.infoRow}>

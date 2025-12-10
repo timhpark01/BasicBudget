@@ -126,7 +126,7 @@ export default function SpendingCalendar({ month, expenses }: SpendingCalendarPr
                   {day.date.getDate()}
                 </Text>
                 {day.isCurrentMonth && day.total > 0 && (
-                  <Text style={styles.amountText}>${day.total.toFixed(0)}</Text>
+                  <Text style={styles.amountText}>${day.total.toFixed(2)}</Text>
                 )}
               </View>
             </View>

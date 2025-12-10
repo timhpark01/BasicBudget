@@ -1,26 +1,27 @@
-import { useState, useMemo, useEffect } from 'react';
-import {
-  StyleSheet,
-  Text,
-  View,
-  ScrollView,
-  TouchableOpacity,
-  ActivityIndicator,
-  Alert,
-} from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
-import Swipeable from 'react-native-gesture-handler/Swipeable';
-import * as Haptics from 'expo-haptics';
 import AddExpenseModal from '@/components/AddExpenseModal';
-import BudgetProgressBar from '@/components/BudgetProgressBar';
 import BudgetModal from '@/components/BudgetModal';
+import BudgetProgressBar from '@/components/BudgetProgressBar';
 import ExpenseDetailModal from '@/components/ExpenseDetailModal';
 import UndoToast from '@/components/UndoToast';
 import WelcomeModal from '@/components/WelcomeModal';
-import { useExpenses } from '@/hooks/useExpenses';
 import { useBudget } from '@/hooks/useBudget';
+import { useExpenses } from '@/hooks/useExpenses';
 import { isFirstLaunch, markFirstLaunchComplete } from '@/lib/first-launch';
 import { Expense } from '@/types/database';
+import { Ionicons } from '@expo/vector-icons';
+import * as Haptics from 'expo-haptics';
+import { useEffect, useMemo, useState } from 'react';
+import {
+  ActivityIndicator,
+  Alert,
+  Animated,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from 'react-native';
+import Swipeable from 'react-native-gesture-handler/Swipeable';
 
 export default function BudgetsScreen() {
   const [modalVisible, setModalVisible] = useState(false);
@@ -187,7 +188,7 @@ export default function BudgetsScreen() {
   const handleExpenseLongPress = (expense: Expense) => {
     Alert.alert(
       'Expense Options',
-      `${expense.category.name} - $${expense.amount}`,
+      `${expense.category.name} - $${parseFloat(expense.amount).toFixed(2)}`,
       [
         {
           text: 'Edit',
@@ -305,16 +306,45 @@ export default function BudgetsScreen() {
     handleDeleteWithUndo(expense.id, expense);
   };
 
-  const renderRightActions = (expense: Expense) => (
-    <TouchableOpacity
-      style={styles.deleteAction}
-      onPress={() => handleSwipeDelete(expense)}
-      activeOpacity={0.7}
-    >
-      <Ionicons name="trash" size={24} color="#FFFFFF" />
-      <Text style={styles.deleteActionText}>Delete</Text>
-    </TouchableOpacity>
-  );
+  const renderRightActions = (
+    progress: Animated.AnimatedInterpolation<number>,
+    dragX: Animated.AnimatedInterpolation<number>,
+    expense: Expense
+  ) => {
+    // Create smooth animations that follow the swipe gesture
+    const scale = progress.interpolate({
+      inputRange: [0, 1],
+      outputRange: [0.7, 1],
+      extrapolate: 'clamp',
+    });
+
+    const opacity = progress.interpolate({
+      inputRange: [0, 0.5, 1],
+      outputRange: [0, 0.8, 1],
+      extrapolate: 'clamp',
+    });
+
+    return (
+      <Animated.View
+        style={[
+          styles.deleteAction,
+          {
+            opacity,
+            transform: [{ scale }],
+          },
+        ]}
+      >
+        <TouchableOpacity
+          style={styles.deleteActionButton}
+          onPress={() => handleSwipeDelete(expense)}
+          activeOpacity={0.7}
+        >
+          <Ionicons name="trash" size={24} color="#FFFFFF" />
+          <Text style={styles.deleteActionText}>Delete</Text>
+        </TouchableOpacity>
+      </Animated.View>
+    );
+  };
 
   const handleSaveBudget = async (budgetAmount: string) => {
     try {
@@ -424,7 +454,9 @@ export default function BudgetsScreen() {
                       {dayExpenses.map((expense) => (
                         <Swipeable
                           key={expense.id}
-                          renderRightActions={() => renderRightActions(expense)}
+                          renderRightActions={(progress, dragX) =>
+                            renderRightActions(progress, dragX, expense)
+                          }
                           overshootRight={false}
                         >
                           <TouchableOpacity
@@ -454,7 +486,7 @@ export default function BudgetsScreen() {
                               ) : null}
                             </View>
                             <Text style={styles.expenseAmount}>
-                              ${expense.amount}
+                              ${parseFloat(expense.amount).toFixed(2)}
                             </Text>
                           </TouchableOpacity>
                         </Swipeable>
@@ -469,7 +501,10 @@ export default function BudgetsScreen() {
       </ScrollView>
 
       <TouchableOpacity
-        style={styles.fab}
+        style={[
+          styles.fab,
+          { bottom: undoVisible ? 60 : 20 } // Move up when toast is visible (toast height ~48 + 12 spacing)
+        ]}
         onPress={() => setModalVisible(true)}
         activeOpacity={0.8}
       >
@@ -725,10 +760,13 @@ const styles = StyleSheet.create({
   },
   deleteAction: {
     backgroundColor: '#FF6B6B',
-    justifyContent: 'center',
-    alignItems: 'center',
     width: 80,
     height: '100%',
+  },
+  deleteActionButton: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   deleteActionText: {
     color: '#FFFFFF',

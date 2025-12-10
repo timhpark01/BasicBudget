@@ -12,7 +12,7 @@ interface UndoToastProps {
 export default function UndoToast({ visible, message, onUndo, onDismiss }: UndoToastProps) {
   const insets = useSafeAreaInsets();
   const slideAnim = useRef(new Animated.Value(0)).current;
-  const timeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [shouldRender, setShouldRender] = useState(false);
 
   useEffect(() => {
@@ -72,7 +72,7 @@ export default function UndoToast({ visible, message, onUndo, onDismiss }: UndoT
       style={[
         styles.container,
         {
-          bottom: insets.bottom + 90,
+          bottom: insets.bottom, // Directly above nav bar
           transform: [{ translateY }],
         },
       ]}
