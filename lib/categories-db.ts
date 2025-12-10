@@ -14,6 +14,7 @@ function rowToCustomCategory(row: CustomCategoryRow): CustomCategory {
     name: row.name,
     icon: row.icon as any,
     color: row.color,
+    position: row.position,
     isActive: row.is_active === 1,
     createdAt: new Date(row.created_at),
     updatedAt: new Date(row.updated_at),
@@ -28,7 +29,7 @@ export async function getCustomCategories(
 ): Promise<CustomCategory[]> {
   try {
     const result = await db.getAllAsync<CustomCategoryRow>(
-      'SELECT * FROM custom_categories WHERE is_active = 1 ORDER BY created_at DESC'
+      'SELECT * FROM custom_categories WHERE is_active = 1 ORDER BY position ASC'
     );
     return result.map(rowToCustomCategory);
   } catch (error) {
@@ -48,10 +49,16 @@ export async function createCustomCategory(
     const id = `custom_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
     const now = Date.now();
 
+    // Get the max position and assign position + 1
+    const maxPositionResult = await db.getFirstAsync<{ maxPos: number | null }>(
+      'SELECT MAX(position) as maxPos FROM custom_categories'
+    );
+    const position = (maxPositionResult?.maxPos ?? -1) + 1;
+
     await db.runAsync(
-      `INSERT INTO custom_categories (id, name, icon, color, is_active, created_at, updated_at)
-       VALUES (?, ?, ?, ?, 1, ?, ?)`,
-      [id, category.name, category.icon, category.color, now, now]
+      `INSERT INTO custom_categories (id, name, icon, color, position, is_active, created_at, updated_at)
+       VALUES (?, ?, ?, ?, ?, 1, ?, ?)`,
+      [id, category.name, category.icon, category.color, position, now, now]
     );
 
     return {
@@ -59,6 +66,7 @@ export async function createCustomCategory(
       name: category.name,
       icon: category.icon as any,
       color: category.color,
+      position,
       isActive: true,
       createdAt: new Date(now),
       updatedAt: new Date(now),
@@ -188,6 +196,33 @@ export async function reassignExpensesToCategory(
     );
   } catch (error) {
     console.error('Failed to reassign expenses:', error);
+    throw error;
+  }
+}
+
+/**
+ * Reorder categories by updating their positions
+ * @param db - Database instance
+ * @param categoryIds - Array of category IDs in the desired order
+ */
+export async function reorderCategories(
+  db: SQLite.SQLiteDatabase,
+  categoryIds: string[]
+): Promise<void> {
+  try {
+    const now = Date.now();
+
+    // Use transaction for atomic updates
+    await db.withTransactionAsync(async () => {
+      for (let i = 0; i < categoryIds.length; i++) {
+        await db.runAsync(
+          'UPDATE custom_categories SET position = ?, updated_at = ? WHERE id = ?',
+          [i, now, categoryIds[i]]
+        );
+      }
+    });
+  } catch (error) {
+    console.error('Failed to reorder categories:', error);
     throw error;
   }
 }

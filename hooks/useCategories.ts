@@ -2,7 +2,6 @@ import { useState, useEffect, useCallback, useMemo } from 'react';
 import * as SQLite from 'expo-sqlite';
 import { Category, CustomCategory, CustomCategoryInput } from '@/types/database';
 import { getDatabase } from '@/lib/database';
-import { CATEGORIES } from '@/constants/categories';
 import {
   getCustomCategories,
   createCustomCategory,
@@ -10,6 +9,7 @@ import {
   deleteCustomCategory,
   getExpenseCountByCategory,
   reassignExpensesToCategory,
+  reorderCategories as reorderCategoriesDb,
 } from '@/lib/categories-db';
 
 export interface UseCategoriesReturn {
@@ -20,6 +20,7 @@ export interface UseCategoriesReturn {
   addCategory: (category: CustomCategoryInput) => Promise<void>;
   updateCategory: (id: string, category: Partial<CustomCategoryInput>) => Promise<void>;
   deleteCategory: (id: string) => Promise<boolean>;
+  reorderCategories: (categoryIds: string[]) => Promise<void>;
   refreshCategories: () => Promise<void>;
 }
 
@@ -58,9 +59,9 @@ export function useCategories(): UseCategoriesReturn {
     }
   }
 
-  // Merge default + custom categories
+  // All categories are now in the database (including former defaults)
   const allCategories = useMemo(() => {
-    return [...CATEGORIES, ...customCategories];
+    return customCategories;
   }, [customCategories]);
 
   // Add a new custom category
@@ -95,15 +96,15 @@ export function useCategories(): UseCategoriesReturn {
     [db, customCategories, allCategories]
   );
 
-  // Update an existing custom category
+  // Update an existing category
   const updateCategory = useCallback(
     async (id: string, category: Partial<CustomCategoryInput>): Promise<void> => {
       if (!db) throw new Error('Database not initialized');
 
-      // Check if trying to update a default category
-      const isDefaultCategory = CATEGORIES.some((c) => c.id === id);
-      if (isDefaultCategory) {
-        throw new Error('Cannot edit default categories.');
+      // Protect "Other" category from being renamed
+      const categoryToUpdate = allCategories.find((c) => c.id === id);
+      if (categoryToUpdate?.name === 'Other' && category.name && category.name !== 'Other') {
+        throw new Error('Cannot rename the "Other" category.');
       }
 
       // Check for duplicate name if name is being updated
@@ -130,16 +131,16 @@ export function useCategories(): UseCategoriesReturn {
     [db, allCategories]
   );
 
-  // Delete a custom category
+  // Delete a category
   // Returns true if deleted, false if user needs to reassign expenses first
   const deleteCategory = useCallback(
     async (id: string): Promise<boolean> => {
       if (!db) throw new Error('Database not initialized');
 
-      // Check if trying to delete a default category
-      const isDefaultCategory = CATEGORIES.some((c) => c.id === id);
-      if (isDefaultCategory) {
-        throw new Error('Cannot delete default categories.');
+      // Protect "Other" category from deletion (used for reassignment)
+      const categoryToDelete = allCategories.find((c) => c.id === id);
+      if (categoryToDelete?.name === 'Other') {
+        throw new Error('Cannot delete the "Other" category.');
       }
 
       try {
@@ -161,7 +162,7 @@ export function useCategories(): UseCategoriesReturn {
         throw err;
       }
     },
-    [db]
+    [db, allCategories]
   );
 
   // Reassign expenses and delete category
@@ -171,7 +172,7 @@ export function useCategories(): UseCategoriesReturn {
 
       try {
         // Find "Other" category as the default reassignment target
-        const otherCategory = CATEGORIES.find((c) => c.name === 'Other');
+        const otherCategory = allCategories.find((c) => c.name === 'Other');
         if (!otherCategory) {
           throw new Error('Other category not found');
         }
@@ -188,7 +189,7 @@ export function useCategories(): UseCategoriesReturn {
         throw err;
       }
     },
-    [db]
+    [db, allCategories]
   );
 
   // Refresh categories from database
@@ -205,6 +206,31 @@ export function useCategories(): UseCategoriesReturn {
     }
   }, [db]);
 
+  // Reorder categories
+  const reorderCategories = useCallback(
+    async (categoryIds: string[]): Promise<void> => {
+      if (!db) throw new Error('Database not initialized');
+
+      try {
+        // Optimistically update UI
+        const reordered = categoryIds
+          .map((id) => customCategories.find((c) => c.id === id))
+          .filter((c): c is CustomCategory => c !== undefined);
+
+        setCustomCategories(reordered);
+
+        // Persist to database
+        await reorderCategoriesDb(db, categoryIds);
+        setError(null);
+      } catch (err) {
+        // Rollback on error
+        await loadCustomCategories(db);
+        throw err;
+      }
+    },
+    [db, customCategories]
+  );
+
   return {
     allCategories,
     customCategories,
@@ -213,6 +239,7 @@ export function useCategories(): UseCategoriesReturn {
     addCategory,
     updateCategory,
     deleteCategory,
+    reorderCategories,
     refreshCategories,
   };
 }

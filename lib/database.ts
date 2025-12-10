@@ -1,4 +1,5 @@
 import * as SQLite from 'expo-sqlite';
+import { runMigrations } from './migrations';
 
 const DATABASE_NAME = 'budget.db';
 
@@ -52,6 +53,7 @@ export async function initDatabase(): Promise<SQLite.SQLiteDatabase> {
   try {
     const db = await SQLite.openDatabaseAsync(DATABASE_NAME);
     await setupDatabase(db);
+    await runMigrations(db);
     return db;
   } catch (error) {
     console.error('Failed to initialize database:', error);
@@ -61,6 +63,7 @@ export async function initDatabase(): Promise<SQLite.SQLiteDatabase> {
       await SQLite.deleteDatabaseAsync(DATABASE_NAME);
       const db = await SQLite.openDatabaseAsync(DATABASE_NAME);
       await setupDatabase(db);
+      await runMigrations(db);
       return db;
     } catch (recoveryError) {
       console.error('Failed to recover database:', recoveryError);

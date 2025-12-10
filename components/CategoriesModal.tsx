@@ -14,9 +14,14 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useCategories } from '@/hooks/useCategories';
-import { CATEGORIES } from '@/constants/categories';
 import ColorPicker from './ColorPicker';
 import CategoryIconPicker from './CategoryIconPicker';
+import DraggableFlatList, {
+  RenderItemParams,
+  ScaleDecorator,
+} from 'react-native-draggable-flatlist';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
+import { Category } from '@/types/database';
 
 interface CategoriesModalProps {
   visible: boolean;
@@ -33,6 +38,7 @@ export default function CategoriesModal({ visible, onClose }: CategoriesModalPro
     addCategory,
     updateCategory,
     deleteCategory,
+    reorderCategories,
   } = useCategories();
 
   const [mode, setMode] = useState<Mode>('list');
@@ -51,7 +57,7 @@ export default function CategoriesModal({ visible, onClose }: CategoriesModalPro
   };
 
   const handleEdit = (categoryId: string) => {
-    const category = customCategories.find((c) => c.id === categoryId);
+    const category = allCategories.find((c) => c.id === categoryId);
     if (!category) return;
 
     setMode('edit');
@@ -98,7 +104,7 @@ export default function CategoriesModal({ visible, onClose }: CategoriesModalPro
   };
 
   const handleDelete = async (categoryId: string) => {
-    const category = customCategories.find((c) => c.id === categoryId);
+    const category = allCategories.find((c) => c.id === categoryId);
     if (!category) return;
 
     Alert.alert(
@@ -146,6 +152,66 @@ export default function CategoriesModal({ visible, onClose }: CategoriesModalPro
     setEditingId(null);
   };
 
+  const handleReorder = async (data: Category[]) => {
+    try {
+      const categoryIds = data.map((c) => c.id);
+      await reorderCategories(categoryIds);
+    } catch (err: any) {
+      Alert.alert('Error', err.message || 'Failed to reorder categories.');
+    }
+  };
+
+  const renderCategoryItem = ({ item, drag, isActive }: RenderItemParams<Category>) => {
+    const isOtherCategory = item.name === 'Other';
+
+    return (
+      <ScaleDecorator>
+        <View style={[styles.categoryCard, isActive && styles.categoryCardActive]}>
+          <TouchableOpacity
+            onLongPress={drag}
+            disabled={isActive}
+            style={styles.dragHandle}
+          >
+            <Ionicons name="reorder-two" size={24} color="#999" />
+          </TouchableOpacity>
+          <View
+            style={[
+              styles.categoryIcon,
+              { backgroundColor: item.color + '20' },
+            ]}
+          >
+            <Ionicons
+              name={item.icon}
+              size={24}
+              color={item.color}
+            />
+          </View>
+          <Text style={styles.categoryName}>{item.name}</Text>
+          {isOtherCategory ? (
+            <View style={styles.protectedBadge}>
+              <Text style={styles.protectedBadgeText}>Protected</Text>
+            </View>
+          ) : (
+            <View style={styles.actions}>
+              <TouchableOpacity
+                onPress={() => handleEdit(item.id)}
+                style={styles.actionButton}
+              >
+                <Ionicons name="create-outline" size={20} color="#355e3b" />
+              </TouchableOpacity>
+              <TouchableOpacity
+                onPress={() => handleDelete(item.id)}
+                style={styles.actionButton}
+              >
+                <Ionicons name="trash-outline" size={20} color="#FF6B6B" />
+              </TouchableOpacity>
+            </View>
+          )}
+        </View>
+      </ScaleDecorator>
+    );
+  };
+
   return (
     <Modal
       visible={visible}
@@ -181,80 +247,25 @@ export default function CategoriesModal({ visible, onClose }: CategoriesModalPro
         </View>
 
         {mode === 'list' ? (
-          <ScrollView style={styles.content}>
-            <Text style={styles.sectionTitle}>Default Categories</Text>
-            <View style={styles.categoriesList}>
-              {CATEGORIES.map((category) => (
-                <View key={category.id} style={styles.categoryCard}>
-                  <View
-                    style={[
-                      styles.categoryIcon,
-                      { backgroundColor: category.color + '20' },
-                    ]}
-                  >
-                    <Ionicons
-                      name={category.icon}
-                      size={24}
-                      color={category.color}
-                    />
-                  </View>
-                  <Text style={styles.categoryName}>{category.name}</Text>
-                  <View style={styles.defaultBadge}>
-                    <Text style={styles.defaultBadgeText}>Default</Text>
-                  </View>
-                </View>
-              ))}
-            </View>
-
-            {customCategories.length > 0 && (
-              <>
-                <Text style={styles.sectionTitle}>Custom Categories</Text>
-                <View style={styles.categoriesList}>
-                  {customCategories.map((category) => (
-                    <View key={category.id} style={styles.categoryCard}>
-                      <View
-                        style={[
-                          styles.categoryIcon,
-                          { backgroundColor: category.color + '20' },
-                        ]}
-                      >
-                        <Ionicons
-                          name={category.icon}
-                          size={24}
-                          color={category.color}
-                        />
-                      </View>
-                      <Text style={styles.categoryName}>{category.name}</Text>
-                      <View style={styles.actions}>
-                        <TouchableOpacity
-                          onPress={() => handleEdit(category.id)}
-                          style={styles.actionButton}
-                        >
-                          <Ionicons name="create-outline" size={20} color="#355e3b" />
-                        </TouchableOpacity>
-                        <TouchableOpacity
-                          onPress={() => handleDelete(category.id)}
-                          style={styles.actionButton}
-                        >
-                          <Ionicons name="trash-outline" size={20} color="#FF6B6B" />
-                        </TouchableOpacity>
-                      </View>
-                    </View>
-                  ))}
-                </View>
-              </>
-            )}
-
-            {customCategories.length === 0 && (
+          <GestureHandlerRootView style={styles.flex}>
+            {allCategories.length > 0 ? (
+              <DraggableFlatList
+                data={allCategories}
+                onDragEnd={({ data }) => handleReorder(data)}
+                keyExtractor={(item) => item.id}
+                renderItem={renderCategoryItem}
+                contentContainerStyle={styles.content}
+              />
+            ) : (
               <View style={styles.emptyState}>
                 <Ionicons name="pricetag-outline" size={64} color="#ccc" />
-                <Text style={styles.emptyText}>No custom categories yet</Text>
+                <Text style={styles.emptyText}>No categories yet</Text>
                 <Text style={styles.emptySubtext}>
-                  Tap the + button to create your first custom category
+                  Tap the + button to create your first category
                 </Text>
               </View>
             )}
-          </ScrollView>
+          </GestureHandlerRootView>
         ) : (
           <ScrollView style={styles.content}>
             <View style={styles.formSection}>
@@ -347,19 +358,11 @@ const styles = StyleSheet.create({
   saveButtonDisabled: {
     opacity: 0.5,
   },
-  content: {
+  flex: {
     flex: 1,
+  },
+  content: {
     padding: 20,
-  },
-  sectionTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#666',
-    marginTop: 8,
-    marginBottom: 12,
-  },
-  categoriesList: {
-    marginBottom: 24,
   },
   categoryCard: {
     flexDirection: 'row',
@@ -368,6 +371,18 @@ const styles = StyleSheet.create({
     padding: 16,
     borderRadius: 12,
     marginBottom: 8,
+  },
+  categoryCardActive: {
+    backgroundColor: '#f0f8f0',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 8,
+  },
+  dragHandle: {
+    marginRight: 12,
+    padding: 4,
   },
   categoryIcon: {
     width: 48,
@@ -383,16 +398,18 @@ const styles = StyleSheet.create({
     fontWeight: '500',
     color: '#333',
   },
-  defaultBadge: {
-    backgroundColor: '#f0f0f0',
+  protectedBadge: {
+    backgroundColor: '#fff3e0',
     paddingHorizontal: 12,
     paddingVertical: 4,
     borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#ffb74d',
   },
-  defaultBadgeText: {
+  protectedBadgeText: {
     fontSize: 12,
-    color: '#999',
-    fontWeight: '500',
+    color: '#f57c00',
+    fontWeight: '600',
   },
   actions: {
     flexDirection: 'row',

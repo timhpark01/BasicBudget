@@ -65,6 +65,7 @@ export interface BudgetInput {
 
 // Custom Category interface (application-level)
 export interface CustomCategory extends Category {
+  position: number;
   isActive: boolean;
   createdAt: Date;
   updatedAt: Date;
@@ -76,6 +77,7 @@ export interface CustomCategoryRow {
   name: string;
   icon: string;
   color: string;
+  position: number;
   is_active: number; // SQLite boolean (0 or 1)
   created_at: number; // Unix timestamp in milliseconds
   updated_at: number; // Unix timestamp in milliseconds
@@ -86,4 +88,5 @@ export interface CustomCategoryInput {
   name: string;
   icon: string;
   color: string;
+  position?: number;
 }
