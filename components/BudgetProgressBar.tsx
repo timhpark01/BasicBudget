@@ -1,4 +1,4 @@
-import { View, Text, StyleSheet } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
 
 interface BudgetProgressBarProps {
   totalExpenses: number;
@@ -23,9 +23,9 @@ export default function BudgetProgressBar({
     <View style={styles.container}>
       {/* Budget header */}
       <View style={styles.header}>
-        <Text style={styles.label}>Budget</Text>
+        <Text style={styles.label}>Remaining Spending</Text>
         <Text style={[styles.amount, isOverBudget && styles.amountOver]}>
-          ${totalExpenses.toFixed(2)} of ${budgetAmount.toFixed(2)}
+          ${(Math.max(0,budgetAmount - totalExpenses)).toFixed(2)} of ${budgetAmount.toFixed(2)}
         </Text>
       </View>
 

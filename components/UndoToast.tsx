@@ -22,7 +22,7 @@ export default function UndoToast({ visible, message, onUndo, onDismiss }: UndoT
 
       // Slide up
       Animated.timing(slideAnim, {
-        toValue: 1,
+        toValue: .70,
         duration: 300,
         useNativeDriver: true,
       }).start();

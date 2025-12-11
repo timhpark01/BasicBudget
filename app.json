@@ -7,9 +7,8 @@
     "icon": "./assets/images/icon.png",
     "scheme": "basicbudget",
     "userInterfaceStyle": "automatic",
-    "newArchEnabled": true,
+    "newArchEnabled": false,
     "ios": {
-      "ascAppId": "6756184260",
       "supportsTablet": true,
       "bundleIdentifier": "com.tman9000p.appBasicBudget",
       "infoPlist": {
@@ -49,7 +48,7 @@
     ],
     "experiments": {
       "typedRoutes": true,
-      "reactCompiler": true
+      "reactCompiler": false
     },
     "extra": {
       "router": {},

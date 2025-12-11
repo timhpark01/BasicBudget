@@ -1,0 +1,428 @@
+---
+title: "Dependency Management & Version Strategy"
+description: "Guidelines for managing dependencies, version compatibility, and maintaining a stable development environment"
+author: "BasicBudget Team"
+lastUpdated: "2025-12-10"
+---
+
+# Dependency Management & Version Strategy
+
+This document outlines the dependency management strategy, version compatibility requirements, and best practices for maintaining a stable and maintainable BasicBudget codebase.
+
+## Table of Contents
+
+- [Current Architecture Configuration](#current-architecture-configuration)
+- [Version Compatibility Matrix](#version-compatibility-matrix)
+- [Dependency Management Strategy](#dependency-management-strategy)
+- [Updating Dependencies](#updating-dependencies)
+- [Architecture Decisions](#architecture-decisions)
+- [Troubleshooting](#troubleshooting)
+
+---
+
+## Current Architecture Configuration
+
+### React Native Architecture
+
+**Status**: New Architecture **DISABLED** (as of 2025-12-10)
+
+**Configuration** (`app.json`):
+```json
+{
+  "expo": {
+    "newArchEnabled": false,
+    "experiments": {
+      "reactCompiler": false
+    }
+  }
+}
+```
+
+### Why New Architecture is Disabled
+
+**Decision Made**: December 10, 2025
+
+**Rationale**:
+1. **Managed Workflow Compatibility**: Running with new architecture requires a custom development build via EAS or expo prebuild
+2. **Development Speed**: Disabling allows immediate development with Expo Go
+3. **Stability**: Old architecture is battle-tested and stable
+4. **Team Familiarity**: Easier onboarding without new architecture concepts
+
+**Trade-offs**:
+- **Performance**: Missing some new architecture performance benefits
+- **Future-proofing**: Will need migration eventually as React Native moves forward
+- **Features**: Some newer React Native features require new architecture
+
+**When to Reconsider**:
+- When creating production builds via EAS
+- When performance profiling shows bottlenecks
+- When React Native deprecates old architecture
+- When needed features require new architecture
+
+---
+
+## Version Compatibility Matrix
+
+### Current Stable Versions (Dec 2025)
+
+| Package | Version | Notes |
+|---------|---------|-------|
+| **Expo** | ~54.0.10 | SDK 54 LTS |
+| **React** | 19.1.0 | Required by Expo 54 |
+| **React DOM** | 19.1.0 | Must match React version |
+| **React Native** | 0.81.5 | Required by Expo 54 |
+| **TypeScript** | ~5.9.2 | Latest stable |
+| **@types/react** | ~19.1.10 | Must match React version |
+| **jest-expo** | ~54.0.14 | Must match Expo SDK |
+
+### Version Constraints
+
+**Expo SDK determines most versions**. When using Expo SDK 54:
+- React must be 19.1.x
+- React Native must be 0.81.x
+- Many expo-* packages must match SDK version
+
+**Critical Rule**: Always match versions to Expo SDK requirements.
+
+### Checking Version Compatibility
+
+```bash
+# Run Expo Doctor to verify all dependencies
+npx expo-doctor
+```
+
+This checks:
+- Version mismatches
+- Missing peer dependencies
+- Incompatible packages
+- Configuration issues
+
+**Expected output**: `17/17 checks passed. No issues detected!`
+
+---
+
+## Dependency Management Strategy
+
+### 1. Use Expo's Version Management
+
+**Recommended**: Let Expo manage React Native and core dependencies.
+
+```bash
+# Install dependencies matching your Expo SDK
+npx expo install <package-name>
+
+# Instead of
+npm install <package-name>
+```
+
+**Why**: `expo install` automatically selects compatible versions.
+
+### 2. Lock File Management
+
+**Strategy**: Commit `package-lock.json` to git
+
+**Rationale**:
+- Ensures team uses identical dependency versions
+- Prevents "works on my machine" issues
+- Reproducible builds
+
+**Never**:
+- Delete `package-lock.json` unless absolutely necessary
+- Manually edit `package-lock.json`
+
+### 3. Dependency Updates
+
+**Philosophy**: Conservative updates, test thoroughly
+
+**Schedule**:
+- **Security updates**: Immediately
+- **Patch versions** (1.2.3 → 1.2.4): Weekly review
+- **Minor versions** (1.2.0 → 1.3.0): Monthly review
+- **Major versions** (1.0.0 → 2.0.0): Quarterly review
+- **Expo SDK**: When LTS version is stable (usually 1-2 months after release)
+
+### 4. Testing After Updates
+
+**Required checks before committing dependency updates**:
+
+```bash
+# 1. Clean install
+rm -rf node_modules package-lock.json
+npm install
+
+# 2. Run Expo Doctor
+npx expo-doctor
+
+# 3. Type check
+npx tsc --noEmit
+
+# 4. Run tests
+npm test
+
+# 5. Start development server
+npm start
+```
+
+---
+
+## Updating Dependencies
+
+### Expo SDK Upgrades
+
+**Process**:
+
+1. **Check Release Notes**
+   - Visit https://expo.dev/changelog
+   - Review breaking changes
+   - Check migration guide
+
+2. **Upgrade Expo SDK**
+   ```bash
+   npx expo install expo@latest
+   ```
+
+3. **Update Dependencies**
+   ```bash
+   npx expo install --fix
+   ```
+   This updates all packages to versions compatible with new SDK.
+
+4. **Update Configuration**
+   - Check `app.json` for new required fields
+   - Update `babel.config.js` if needed
+   - Review `tsconfig.json`
+
+5. **Test Thoroughly**
+   - Run all automated tests
+   - Manual testing of all features
+   - Test on both iOS and Android
+
+### Individual Package Updates
+
+**Strategy**: One package at a time, test between updates.
+
+```bash
+# Check outdated packages
+npm outdated
+
+# Update a specific package using Expo
+npx expo install <package>@latest
+
+# Or specify version
+npx expo install react-native-reanimated@3.8.0
+```
+
+**After update**:
+1. Run `npx expo-doctor`
+2. Test affected features
+3. Commit if stable
+
+### Security Updates
+
+**Priority**: Immediate action required.
+
+```bash
+# Check for security vulnerabilities
+npm audit
+
+# Fix automatically if possible
+npm audit fix
+
+# Manual review for breaking changes
+npm audit fix --force
+```
+
+**After security updates**: Always test thoroughly before deploying.
+
+---
+
+## Architecture Decisions
+
+### 1. New Architecture Status
+
+**Current**: Disabled (`"newArchEnabled": false`)
+
+**Documented Reason**: Enables development with Expo Go without custom builds
+
+**Review Date**: Quarterly or when creating production builds
+
+**To Enable**:
+1. Set `"newArchEnabled": true` in `app.json`
+2. Run `npx expo prebuild` to generate native projects
+3. Build custom development client via EAS
+4. Test all features with new architecture
+
+### 2. React Compiler
+
+**Current**: Disabled (`"reactCompiler": false`)
+
+**Reason**: Experimental feature, potential breaking changes
+
+**Review Date**: When React 19 compiler reaches stable
+
+### 3. TypeScript Strict Mode
+
+**Current**: Enabled (see `tsconfig.json`)
+
+**Reason**: Catch errors early, better code quality
+
+**Non-negotiable**: Do not disable strict mode
+
+---
+
+## Troubleshooting
+
+### "Module not found" Errors
+
+**Solution**:
+```bash
+# Clear all caches
+rm -rf node_modules package-lock.json
+npm install
+npx expo start --clear
+```
+
+### Version Mismatch Warnings
+
+**Symptoms**: Expo start shows version warnings
+
+**Solution**:
+```bash
+# Fix all dependencies to match Expo SDK
+npx expo install --fix
+
+# Verify with doctor
+npx expo-doctor
+```
+
+### Native Module Errors
+
+**Symptoms**: `TurboModuleRegistry` errors, native module not found
+
+**Common Causes**:
+1. New architecture enabled but using Expo Go
+2. Version mismatch between React Native and Expo
+3. Native modules not rebuilt after dependency changes
+
+**Solution**:
+```bash
+# Option 1: Disable new architecture (quick fix)
+# Set "newArchEnabled": false in app.json
+
+# Option 2: Create development build (proper fix)
+npx expo prebuild
+npx expo run:ios  # or run:android
+```
+
+### Metro Bundler Not Starting
+
+**Symptoms**: Stuck at "Waiting on http://localhost:8081"
+
+**Solution**:
+```bash
+# Kill all node processes
+killall -9 node
+
+# Clear Metro cache
+rm -rf .expo
+npx expo start --clear
+```
+
+### Database Migration Failures
+
+**Symptoms**: App crashes on start, database errors
+
+**Solution**: See [Database Guide](./02-database-guide.mdx) for migration procedures
+
+---
+
+## Best Practices
+
+### 1. Before Starting Development
+
+```bash
+# Always ensure dependencies are installed
+npm install
+
+# Verify everything is compatible
+npx expo-doctor
+
+# Start fresh
+npx expo start --clear
+```
+
+### 2. Before Committing
+
+```bash
+# Type check
+npx tsc --noEmit
+
+# Run tests
+npm test
+
+# Verify app runs
+npm start
+```
+
+### 3. Monthly Maintenance
+
+- Review `npm outdated`
+- Check for security advisories
+- Update documentation if dependencies change
+- Test app thoroughly after updates
+
+### 4. Documentation
+
+**Always document**:
+- Why a specific version is pinned
+- Any workarounds for version conflicts
+- Breaking changes from updates
+- Configuration changes related to dependencies
+
+---
+
+## Version Lock Rationale
+
+### Why These Specific Versions?
+
+**React 19.1.0 & React Native 0.81.5**:
+- Required by Expo SDK 54
+- Tested and verified compatible
+- Stable release with bug fixes
+
+**TypeScript ~5.9.2**:
+- Latest stable TypeScript
+- Full React 19 support
+- Better type inference
+
+**jest-expo ~54.0.14**:
+- Matches Expo SDK version
+- Pre-configured for Expo projects
+- Includes necessary preset
+
+### When We Locked These Versions
+
+**Date**: December 10, 2025
+
+**Reason**: Fixed TurboModule errors caused by version mismatch
+
+**Previous Attempt**: Tried React 18.2 with React Native 0.74, but incompatible with Expo 54
+
+---
+
+## Related Documentation
+
+- **[Architecture Overview](./01-architecture-overview.mdx)** - System architecture
+- **[Getting Started](./05-getting-started.mdx)** - Development setup
+- [Expo SDK Changelog](https://expo.dev/changelog)
+- [React Native Releases](https://github.com/facebook/react-native/releases)
+
+---
+
+## Maintenance Log
+
+| Date | Change | Reason |
+|------|--------|--------|
+| 2025-12-10 | Set newArchEnabled: false | Enable Expo Go development |
+| 2025-12-10 | Updated to React 19.1.0, RN 0.81.5 | Match Expo 54 requirements |
+| 2025-12-10 | Updated jest-expo to ~54.0.14 | Match Expo SDK version |
