@@ -1,21 +1,20 @@
-import { useState, useEffect } from 'react';
-import {
-  Modal,
-  View,
-  Text,
-  StyleSheet,
-  TouchableOpacity,
-  TextInput,
-  ScrollView,
-  Pressable,
-  Alert,
-  ActivityIndicator,
-} from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
-import CalendarPicker from './CalendarPicker';
-import CalculatorKeypad from './CalculatorKeypad';
-import { Category, Expense } from '@/types/database';
 import { useCategories } from '@/hooks/useCategories';
+import { Category, Expense } from '@/types/database';
+import { Ionicons } from '@expo/vector-icons';
+import { useEffect, useState } from 'react';
+import {
+  ActivityIndicator,
+  Alert,
+  Modal,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View
+} from 'react-native';
+import CalculatorKeypad from './CalculatorKeypad';
+import CalendarPicker from './CalendarPicker';
 
 interface AddExpenseModalProps {
   visible: boolean;
@@ -254,6 +253,7 @@ export default function AddExpenseModal({
               </TouchableOpacity>
             ))}
           </View>
+          <View style={styles.bottomSpacer} />
         </ScrollView>
 
         {/* Input Area - Calculator or Calendar */}
@@ -324,6 +324,10 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: '600',
     color: '#333',
+  },
+  bottomSpacer: {
+    height: 100,
+    width: '100%',
   },
   categoryBackground: {
     flex: 1,
