@@ -36,12 +36,14 @@ const SCHEMA = `
     name TEXT NOT NULL,
     icon TEXT NOT NULL,
     color TEXT NOT NULL,
+    position INTEGER NOT NULL,
     is_active INTEGER DEFAULT 1,
     created_at INTEGER NOT NULL,
     updated_at INTEGER NOT NULL
   );
 
   CREATE INDEX IF NOT EXISTS idx_custom_categories_active ON custom_categories(is_active);
+  CREATE INDEX IF NOT EXISTS idx_custom_categories_position ON custom_categories(position);
 `;
 
 let databaseInstance: SQLite.SQLiteDatabase | null = null;
