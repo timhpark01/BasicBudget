@@ -5,9 +5,12 @@ import ExpenseDetailModal from '@/components/ExpenseDetailModal';
 import UndoToast from '@/components/UndoToast';
 import WelcomeModal from '@/components/WelcomeModal';
 import { useBudget } from '@/hooks/useBudget';
+import { useCategoryBudgets } from '@/hooks/useCategoryBudgets';
 import { useExpenses } from '@/hooks/useExpenses';
 import { isFirstLaunch, markFirstLaunchComplete } from '@/lib/first-launch';
 import { Expense } from '@/types/database';
+import { getDatabase } from '@/lib/database';
+import { setCategoryBudget as setCategoryBudgetDb, deleteCategoryBudget as deleteCategoryBudgetDb, getCategoryBudgetsForMonth } from '@/lib/category-budgets-db';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { useEffect, useMemo, useState } from 'react';
@@ -92,6 +95,75 @@ export default function BudgetsScreen() {
     setBudget,
     refreshBudget,
   } = useBudget(selectedMonth);
+  const {
+    categoryBudgets,
+    setCategoryBudget,
+    deleteCategoryBudget,
+  } = useCategoryBudgets(selectedMonth);
+
+  // State for all category budgets (for analytics)
+  const [allCategoryBudgets, setAllCategoryBudgets] = useState<any[]>([]);
+
+  // Load all category budgets for analytics
+  useEffect(() => {
+    async function loadAllCategoryBudgets() {
+      try {
+        const db = await getDatabase();
+        // Get unique months from expenses
+        const months = new Set<string>();
+        expenses.forEach(expense => {
+          const year = expense.date.getFullYear();
+          const month = String(expense.date.getMonth() + 1).padStart(2, '0');
+          months.add(`${year}-${month}`);
+        });
+
+        // Load budgets for all months
+        const budgets: any[] = [];
+        for (const month of months) {
+          const monthBudgets = await getCategoryBudgetsForMonth(db, month);
+          budgets.push(...monthBudgets);
+        }
+        setAllCategoryBudgets(budgets);
+      } catch (error) {
+        console.error('Failed to load all category budgets:', error);
+      }
+    }
+    loadAllCategoryBudgets();
+  }, [expenses, categoryBudgets]);
+
+  // Handler to set category budget for any month
+  const handleSetCategoryBudgetForMonth = async (month: string, categoryId: string, budgetAmount: string) => {
+    try {
+      const db = await getDatabase();
+      await setCategoryBudgetDb(db, { month, categoryId, budgetAmount });
+
+      // Refresh category budgets
+      const monthBudgets = await getCategoryBudgetsForMonth(db, month);
+      setAllCategoryBudgets(prev => {
+        const filtered = prev.filter(b => b.month !== month);
+        return [...filtered, ...monthBudgets];
+      });
+    } catch (error) {
+      console.error('Failed to set category budget:', error);
+      Alert.alert('Error', 'Failed to save category budget. Please try again.');
+    }
+  };
+
+  // Handler to delete category budget for any month
+  const handleDeleteCategoryBudgetForMonth = async (month: string, categoryId: string) => {
+    try {
+      const db = await getDatabase();
+      await deleteCategoryBudgetDb(db, month, categoryId);
+
+      // Update state
+      setAllCategoryBudgets(prev =>
+        prev.filter(b => !(b.month === month && b.categoryId === categoryId))
+      );
+    } catch (error) {
+      console.error('Failed to delete category budget:', error);
+      Alert.alert('Error', 'Failed to delete category budget. Please try again.');
+    }
+  };
 
   // Check for first launch and show welcome screen
   useEffect(() => {
@@ -396,10 +468,19 @@ export default function BudgetsScreen() {
           </View>
 
           {/* Budget Progress Bar */}
-          {budget && (
+          {budget && !budgetLoading && budget.month === selectedMonth && (
             <BudgetProgressBar
+              key={selectedMonth}
               totalExpenses={totalAmount}
               budgetAmount={parseFloat(budget.budgetAmount)}
+              expenses={filteredExpenses}
+              month={selectedMonth}
+              categoryBudgets={categoryBudgets}
+              onSetCategoryBudget={setCategoryBudget}
+              onDeleteCategoryBudget={deleteCategoryBudget}
+              allCategoryBudgets={allCategoryBudgets}
+              onSetCategoryBudgetForMonth={handleSetCategoryBudgetForMonth}
+              onDeleteCategoryBudgetForMonth={handleDeleteCategoryBudgetForMonth}
             />
           )}
         </View>

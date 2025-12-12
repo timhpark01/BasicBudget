@@ -25,6 +25,7 @@ export function useBudget(month: string): UseBudgetReturn {
 
   // Initialize database and load budget on mount or when month changes
   useEffect(() => {
+    setLoading(true); // Set loading true at the start of month change
     async function init() {
       try {
         const database = await getDatabase();

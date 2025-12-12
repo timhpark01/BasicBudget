@@ -222,3 +222,23 @@ export async function deleteAllExpenses(
     throw new Error('Failed to delete expenses. Please try again.');
   }
 }
+
+/**
+ * READ: Get all expenses for a specific category
+ */
+export async function getExpensesByCategory(
+  db: SQLite.SQLiteDatabase,
+  categoryId: string
+): Promise<Expense[]> {
+  try {
+    const rows = await db.getAllAsync<ExpenseRow>(
+      'SELECT * FROM expenses WHERE category_id = ? ORDER BY date DESC',
+      [categoryId]
+    );
+
+    return rows.map(rowToExpense);
+  } catch (error) {
+    console.error('Failed to get expenses by category:', error);
+    throw new Error('Failed to load category expenses. Please try again.');
+  }
+}

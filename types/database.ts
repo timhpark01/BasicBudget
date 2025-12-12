@@ -90,3 +90,30 @@ export interface CustomCategoryInput {
   color: string;
   position?: number;
 }
+
+// Category Budget interface (application-level)
+export interface CategoryBudget {
+  id: string;
+  month: string; // "YYYY-MM" format
+  categoryId: string;
+  budgetAmount: string;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+// Database row interface for category budgets (raw data from SQLite)
+export interface CategoryBudgetRow {
+  id: string;
+  month: string;
+  category_id: string;
+  budget_amount: string;
+  created_at: number; // Unix timestamp in milliseconds
+  updated_at: number; // Unix timestamp in milliseconds
+}
+
+// Input type for creating/updating category budgets
+export interface CategoryBudgetInput {
+  month: string; // "YYYY-MM" format
+  categoryId: string;
+  budgetAmount: string;
+}
