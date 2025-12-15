@@ -126,6 +126,7 @@ export default function SpendingCalendar({ month, expenses, budgetAmount }: Spen
             hasExpenses &&
             idealDailySpending !== null &&
             day.total > idealDailySpending;
+          const isSelectedAndOverBudget = isSelected && isOverBudget;
 
           const handleDayPress = () => {
             if (hasExpenses && day.isCurrentMonth) {
@@ -148,6 +149,7 @@ export default function SpendingCalendar({ month, expenses, budgetAmount }: Spen
                   isOverBudget && styles.dateCellOverBudget,
                   isToday && styles.dateCellToday,
                   isSelected && styles.dateCellSelected,
+                  isSelectedAndOverBudget && styles.dateCellSelectedOverBudget,
                 ]}
                 onPress={handleDayPress}
                 disabled={!hasExpenses || !day.isCurrentMonth}
@@ -288,6 +290,9 @@ const styles = StyleSheet.create({
   },
   dateCellSelected: {
     backgroundColor: '#355e3b',
+  },
+  dateCellSelectedOverBudget: {
+    backgroundColor: '#DC3545',
   },
   dateCellText: {
     fontSize: 14,

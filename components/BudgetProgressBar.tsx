@@ -53,8 +53,9 @@ export default function BudgetProgressBar({
     : 0;
 
   // Determine bar colors
-  const budgetBarColor = '#355e3b'; // Green for budget portion
-  const overageBarColor = '#DC3545'; // Red for overage portion
+  const budgetBarColor = '#355e3b'; // Green for budget portion when under budget
+  const overBudgetBarColor = '#DC3545'; // Red for budget portion when over budget
+  const overageBarColor = '#8B0000'; // Dark maroon for overage portion
 
   // Calculate days in month and days elapsed
   const daysInMonth = useMemo(() => {
@@ -176,19 +177,21 @@ export default function BudgetProgressBar({
       {/* Progress bar background */}
       <View style={styles.progressBarBackground}>
         {isOverBudget ? (
-          // Over budget: Two segments side-by-side
+          // Over budget: Two segments side-by-side (red + darker red)
           <>
-            {/* Budget portion (scaled down, green) */}
+            {/* Budget portion (scaled down, red) */}
             <View
               style={[
                 styles.progressBarSegment,
                 {
                   width: `${budgetSegmentPercentage}%`,
-                  backgroundColor: budgetBarColor,
+                  backgroundColor: overBudgetBarColor,
+                  borderRightWidth: 2,
+                  borderRightColor: '#fff',
                 },
               ]}
             />
-            {/* Overage portion (scaled down, red) */}
+            {/* Overage portion (scaled down, darker red) */}
             <View
               style={[
                 styles.progressBarSegment,
@@ -267,16 +270,18 @@ export default function BudgetProgressBar({
               </View>
               {categoryTotals.map((category, index) => {
                 const categoryBudget = getCategoryBudget(category.id);
-                const categoryBudgetAmount = categoryBudget || budgetAmount;
-                const isOverCategoryBudget = category.amount > categoryBudgetAmount;
+                // Only check over-budget status if category has its own budget
+                const isOverCategoryBudget = categoryBudget !== null && category.amount > categoryBudget;
 
                 // Proportional scaling for category progress bar
+                // If no category budget, use monthly budget for percentage calculation only
+                const categoryBudgetAmount = categoryBudget || budgetAmount;
                 const categorySegmentPercentage = isOverCategoryBudget
-                  ? (categoryBudgetAmount / category.amount) * 100
+                  ? (categoryBudget / category.amount) * 100
                   : Math.min((category.amount / categoryBudgetAmount) * 100, 100);
 
                 const categoryOveragePercentage = isOverCategoryBudget
-                  ? ((category.amount - categoryBudgetAmount) / category.amount) * 100
+                  ? ((category.amount - categoryBudget) / category.amount) * 100
                   : 0;
 
                 return (
@@ -325,13 +330,16 @@ export default function BudgetProgressBar({
                     </View>
                     <View style={styles.categoryProgressBarBackground}>
                       {isOverCategoryBudget ? (
+                        // Over budget: Two red segments
                         <>
                           <View
                             style={[
                               styles.categoryProgressBarSegment,
                               {
                                 width: `${categorySegmentPercentage}%`,
-                                backgroundColor: category.color,
+                                backgroundColor: overBudgetBarColor,
+                                borderRightWidth: 2,
+                                borderRightColor: '#fff',
                               },
                             ]}
                           />
@@ -340,12 +348,13 @@ export default function BudgetProgressBar({
                               styles.categoryProgressBarSegment,
                               {
                                 width: `${categoryOveragePercentage}%`,
-                                backgroundColor: '#DC3545',
+                                backgroundColor: overageBarColor,
                               },
                             ]}
                           />
                         </>
                       ) : (
+                        // Under budget: Category color
                         <View
                           style={[
                             styles.categoryProgressBarSegment,
