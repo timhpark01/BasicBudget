@@ -161,7 +161,11 @@ export default function ChartsScreen() {
         ) : (
           <>
             {/* Calendar View */}
-            <SpendingCalendar month={selectedMonth} expenses={filteredExpenses} />
+            <SpendingCalendar
+              month={selectedMonth}
+              expenses={filteredExpenses}
+              budgetAmount={budget ? parseFloat(budget.budgetAmount) : undefined}
+            />
 
             {/* Line Graph */}
             {budget && (

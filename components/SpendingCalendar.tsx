@@ -1,33 +1,50 @@
-import { useMemo } from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { useMemo, useState } from 'react';
+import { StyleSheet, Text, View, TouchableOpacity } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { Expense } from '@/types/database';
 
 interface SpendingCalendarProps {
   month: string; // YYYY-MM format
   expenses: Expense[];
+  budgetAmount?: number;
 }
 
 interface CalendarDay {
   date: Date;
   isCurrentMonth: boolean;
   total: number;
+  expenses: Expense[];
 }
 
-export default function SpendingCalendar({ month, expenses }: SpendingCalendarProps) {
+export default function SpendingCalendar({ month, expenses, budgetAmount }: SpendingCalendarProps) {
+  const [selectedDay, setSelectedDay] = useState<string | null>(null);
+
   // Parse month string to Date
   const monthDate = useMemo(() => {
     const [year, monthNum] = month.split('-');
     return new Date(parseInt(year), parseInt(monthNum) - 1, 1);
   }, [month]);
 
-  // Create a map of daily totals
-  const dailyTotals = useMemo(() => {
-    const totals: { [key: string]: number } = {};
+  // Calculate ideal spending per day
+  const idealDailySpending = useMemo(() => {
+    if (!budgetAmount) return null;
+    const [year, monthNum] = month.split('-');
+    const daysInMonth = new Date(parseInt(year), parseInt(monthNum), 0).getDate();
+    return budgetAmount / daysInMonth;
+  }, [budgetAmount, month]);
+
+  // Create a map of daily totals and expenses
+  const dailyData = useMemo(() => {
+    const data: { [key: string]: { total: number; expenses: Expense[] } } = {};
     expenses.forEach((expense) => {
       const dateKey = expense.date.toDateString();
-      totals[dateKey] = (totals[dateKey] || 0) + parseFloat(expense.amount);
+      if (!data[dateKey]) {
+        data[dateKey] = { total: 0, expenses: [] };
+      }
+      data[dateKey].total += parseFloat(expense.amount);
+      data[dateKey].expenses.push(expense);
     });
-    return totals;
+    return data;
   }, [expenses]);
 
   // Generate calendar days
@@ -54,6 +71,7 @@ export default function SpendingCalendar({ month, expenses }: SpendingCalendarPr
         date,
         isCurrentMonth: false,
         total: 0,
+        expenses: [],
       });
     }
 
@@ -61,10 +79,12 @@ export default function SpendingCalendar({ month, expenses }: SpendingCalendarPr
     for (let day = 1; day <= lastDate; day++) {
       const date = new Date(year, monthNum, day);
       const dateKey = date.toDateString();
+      const dayData = dailyData[dateKey];
       days.push({
         date,
         isCurrentMonth: true,
-        total: dailyTotals[dateKey] || 0,
+        total: dayData?.total || 0,
+        expenses: dayData?.expenses || [],
       });
     }
 
@@ -76,11 +96,12 @@ export default function SpendingCalendar({ month, expenses }: SpendingCalendarPr
         date,
         isCurrentMonth: false,
         total: 0,
+        expenses: [],
       });
     }
 
     return days;
-  }, [monthDate, dailyTotals]);
+  }, [monthDate, dailyData]);
 
   return (
     <View style={styles.container}>
@@ -100,6 +121,17 @@ export default function SpendingCalendar({ month, expenses }: SpendingCalendarPr
           const isToday =
             day.isCurrentMonth &&
             day.date.toDateString() === new Date().toDateString();
+          const isSelected = selectedDay === day.date.toDateString();
+          const isOverBudget =
+            hasExpenses &&
+            idealDailySpending !== null &&
+            day.total > idealDailySpending;
+
+          const handleDayPress = () => {
+            if (hasExpenses && day.isCurrentMonth) {
+              setSelectedDay(isSelected ? null : day.date.toDateString());
+            }
+          };
 
           return (
             <View
@@ -109,30 +141,95 @@ export default function SpendingCalendar({ month, expenses }: SpendingCalendarPr
                 !day.isCurrentMonth && styles.dateCellOtherMonth,
               ]}
             >
-              <View
+              <TouchableOpacity
                 style={[
                   styles.dateCellInner,
                   hasExpenses && styles.dateCellWithExpenses,
+                  isOverBudget && styles.dateCellOverBudget,
                   isToday && styles.dateCellToday,
+                  isSelected && styles.dateCellSelected,
                 ]}
+                onPress={handleDayPress}
+                disabled={!hasExpenses || !day.isCurrentMonth}
+                activeOpacity={0.7}
               >
                 <Text
                   style={[
                     styles.dateCellText,
                     !day.isCurrentMonth && styles.dateCellTextOtherMonth,
                     hasExpenses && styles.dateCellTextWithExpenses,
+                    isOverBudget && styles.dateCellTextOverBudget,
+                    isSelected && styles.dateCellTextSelected,
                   ]}
                 >
                   {day.date.getDate()}
                 </Text>
                 {day.isCurrentMonth && day.total > 0 && (
-                  <Text style={styles.amountText}>${day.total.toFixed(2)}</Text>
+                  <Text
+                    style={[
+                      styles.amountText,
+                      isOverBudget && styles.amountTextOverBudget,
+                      isSelected && styles.amountTextSelected,
+                    ]}
+                  >
+                    ${day.total.toFixed(2)}
+                  </Text>
                 )}
-              </View>
+              </TouchableOpacity>
             </View>
           );
         })}
       </View>
+
+      {/* Transaction List Dropdown */}
+      {selectedDay && (
+        <View style={styles.transactionsContainer}>
+          <View style={styles.transactionsHeader}>
+            <Text style={styles.transactionsTitle}>
+              Transactions on {new Date(selectedDay).toLocaleDateString('en-US', {
+                month: 'short',
+                day: 'numeric',
+                year: 'numeric',
+              })}
+            </Text>
+            <TouchableOpacity
+              onPress={() => setSelectedDay(null)}
+              style={styles.closeButton}
+            >
+              <Ionicons name="close-circle" size={24} color="#666" />
+            </TouchableOpacity>
+          </View>
+          {calendarDays
+            .find((day) => day.date.toDateString() === selectedDay)
+            ?.expenses.map((expense, idx) => (
+              <View key={idx} style={styles.transactionItem}>
+                <View
+                  style={[
+                    styles.transactionIcon,
+                    { backgroundColor: expense.category.color + '20' },
+                  ]}
+                >
+                  <Ionicons
+                    name={expense.category.icon}
+                    size={20}
+                    color={expense.category.color}
+                  />
+                </View>
+                <View style={styles.transactionDetails}>
+                  <Text style={styles.transactionCategory}>
+                    {expense.category.name}
+                  </Text>
+                  {expense.note && (
+                    <Text style={styles.transactionNote}>{expense.note}</Text>
+                  )}
+                </View>
+                <Text style={styles.transactionAmount}>
+                  ${parseFloat(expense.amount).toFixed(2)}
+                </Text>
+              </View>
+            ))}
+        </View>
+      )}
     </View>
   );
 }
@@ -180,9 +277,17 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#355e3b',
   },
+  dateCellOverBudget: {
+    backgroundColor: '#ffebee',
+    borderWidth: 1,
+    borderColor: '#DC3545',
+  },
   dateCellToday: {
     borderWidth: 2,
     borderColor: '#355e3b',
+  },
+  dateCellSelected: {
+    backgroundColor: '#355e3b',
   },
   dateCellText: {
     fontSize: 14,
@@ -196,11 +301,80 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#355e3b',
   },
+  dateCellTextOverBudget: {
+    fontWeight: '600',
+    color: '#DC3545',
+  },
+  dateCellTextSelected: {
+    color: '#fff',
+  },
   amountText: {
     fontSize: 9,
     fontWeight: '600',
     color: '#355e3b',
     marginTop: 2,
+  },
+  amountTextOverBudget: {
+    color: '#DC3545',
+  },
+  amountTextSelected: {
+    color: '#fff',
+  },
+  transactionsContainer: {
+    marginTop: 16,
+    paddingTop: 16,
+    borderTopWidth: 1,
+    borderTopColor: '#e0e0e0',
+  },
+  transactionsHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  transactionsTitle: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#333',
+    flex: 1,
+  },
+  closeButton: {
+    padding: 4,
+  },
+  transactionItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 12,
+    paddingHorizontal: 12,
+    backgroundColor: '#f9f9f9',
+    borderRadius: 8,
+    marginBottom: 8,
+  },
+  transactionIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
+  },
+  transactionDetails: {
+    flex: 1,
+  },
+  transactionCategory: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#333',
+    marginBottom: 2,
+  },
+  transactionNote: {
+    fontSize: 12,
+    color: '#666',
+  },
+  transactionAmount: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#333',
   },
 });
 

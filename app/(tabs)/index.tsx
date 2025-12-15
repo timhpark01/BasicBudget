@@ -134,10 +134,17 @@ export default function BudgetsScreen() {
   // Handler to set category budget for any month
   const handleSetCategoryBudgetForMonth = async (month: string, categoryId: string, budgetAmount: string) => {
     try {
-      const db = await getDatabase();
-      await setCategoryBudgetDb(db, { month, categoryId, budgetAmount });
+      // If updating the current month's budget, use the hook's method for proper state management
+      if (month === selectedMonth) {
+        await setCategoryBudget(categoryId, budgetAmount);
+      } else {
+        // For other months, update directly
+        const db = await getDatabase();
+        await setCategoryBudgetDb(db, { month, categoryId, budgetAmount });
+      }
 
-      // Refresh category budgets
+      // Refresh category budgets for all months (for analytics)
+      const db = await getDatabase();
       const monthBudgets = await getCategoryBudgetsForMonth(db, month);
       setAllCategoryBudgets(prev => {
         const filtered = prev.filter(b => b.month !== month);
@@ -152,10 +159,16 @@ export default function BudgetsScreen() {
   // Handler to delete category budget for any month
   const handleDeleteCategoryBudgetForMonth = async (month: string, categoryId: string) => {
     try {
-      const db = await getDatabase();
-      await deleteCategoryBudgetDb(db, month, categoryId);
+      // If deleting the current month's budget, use the hook's method for proper state management
+      if (month === selectedMonth) {
+        await deleteCategoryBudget(categoryId);
+      } else {
+        // For other months, delete directly
+        const db = await getDatabase();
+        await deleteCategoryBudgetDb(db, month, categoryId);
+      }
 
-      // Update state
+      // Update state for all months (for analytics)
       setAllCategoryBudgets(prev =>
         prev.filter(b => !(b.month === month && b.categoryId === categoryId))
       );

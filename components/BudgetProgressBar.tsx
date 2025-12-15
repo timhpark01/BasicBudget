@@ -40,15 +40,21 @@ export default function BudgetProgressBar({
   const [budgetModalVisible, setBudgetModalVisible] = useState(false);
   const [analyticsModalVisible, setAnalyticsModalVisible] = useState(false);
 
-  // Calculate percentage (capped at 200% for display purposes)
-  const percentage = Math.min((totalExpenses / budgetAmount) * 100, 200);
+  // Calculate percentage with proportional scaling when over budget
   const isOverBudget = totalExpenses > budgetAmount;
-  const overagePercentage = isOverBudget
-    ? Math.min(((totalExpenses - budgetAmount) / budgetAmount) * 100, 100)
+
+  // When over budget, scale proportionally to fit in 100%
+  const budgetSegmentPercentage = isOverBudget
+    ? (budgetAmount / totalExpenses) * 100
+    : Math.min((totalExpenses / budgetAmount) * 100, 100);
+
+  const overageSegmentPercentage = isOverBudget
+    ? ((totalExpenses - budgetAmount) / totalExpenses) * 100
     : 0;
 
-  // Determine bar color
-  const barColor = isOverBudget ? '#DC3545' : '#355e3b';
+  // Determine bar colors
+  const budgetBarColor = '#355e3b'; // Green for budget portion
+  const overageBarColor = '#DC3545'; // Red for overage portion
 
   // Calculate days in month and days elapsed
   const daysInMonth = useMemo(() => {
@@ -169,25 +175,38 @@ export default function BudgetProgressBar({
 
       {/* Progress bar background */}
       <View style={styles.progressBarBackground}>
-        {/* Main progress bar (capped at 100%) */}
-        <View
-          style={[
-            styles.progressBarFill,
-            {
-              width: `${Math.min(percentage, 100)}%`,
-              backgroundColor: barColor,
-            },
-          ]}
-        />
-
-        {/* Extended bar for overage (beyond 100%) */}
-        {isOverBudget && (
+        {isOverBudget ? (
+          // Over budget: Two segments side-by-side
+          <>
+            {/* Budget portion (scaled down, green) */}
+            <View
+              style={[
+                styles.progressBarSegment,
+                {
+                  width: `${budgetSegmentPercentage}%`,
+                  backgroundColor: budgetBarColor,
+                },
+              ]}
+            />
+            {/* Overage portion (scaled down, red) */}
+            <View
+              style={[
+                styles.progressBarSegment,
+                {
+                  width: `${overageSegmentPercentage}%`,
+                  backgroundColor: overageBarColor,
+                },
+              ]}
+            />
+          </>
+        ) : (
+          // Under budget: Single segment (green)
           <View
             style={[
-              styles.progressBarOverage,
+              styles.progressBarSegment,
               {
-                width: `${overagePercentage}%`,
-                backgroundColor: barColor,
+                width: `${budgetSegmentPercentage}%`,
+                backgroundColor: budgetBarColor,
               },
             ]}
           />
@@ -248,10 +267,17 @@ export default function BudgetProgressBar({
               </View>
               {categoryTotals.map((category, index) => {
                 const categoryBudget = getCategoryBudget(category.id);
-                const categoryPercentage = categoryBudget
-                  ? (category.amount / categoryBudget) * 100
-                  : (category.amount / budgetAmount) * 100;
-                const isOverCategoryBudget = categoryBudget && category.amount > categoryBudget;
+                const categoryBudgetAmount = categoryBudget || budgetAmount;
+                const isOverCategoryBudget = category.amount > categoryBudgetAmount;
+
+                // Proportional scaling for category progress bar
+                const categorySegmentPercentage = isOverCategoryBudget
+                  ? (categoryBudgetAmount / category.amount) * 100
+                  : Math.min((category.amount / categoryBudgetAmount) * 100, 100);
+
+                const categoryOveragePercentage = isOverCategoryBudget
+                  ? ((category.amount - categoryBudgetAmount) / category.amount) * 100
+                  : 0;
 
                 return (
                   <TouchableOpacity
@@ -298,15 +324,38 @@ export default function BudgetProgressBar({
                       </View>
                     </View>
                     <View style={styles.categoryProgressBarBackground}>
-                      <View
-                        style={[
-                          styles.categoryProgressBarFill,
-                          {
-                            width: `${Math.min(categoryPercentage, 100)}%`,
-                            backgroundColor: isOverCategoryBudget ? '#DC3545' : category.color,
-                          },
-                        ]}
-                      />
+                      {isOverCategoryBudget ? (
+                        <>
+                          <View
+                            style={[
+                              styles.categoryProgressBarSegment,
+                              {
+                                width: `${categorySegmentPercentage}%`,
+                                backgroundColor: category.color,
+                              },
+                            ]}
+                          />
+                          <View
+                            style={[
+                              styles.categoryProgressBarSegment,
+                              {
+                                width: `${categoryOveragePercentage}%`,
+                                backgroundColor: '#DC3545',
+                              },
+                            ]}
+                          />
+                        </>
+                      ) : (
+                        <View
+                          style={[
+                            styles.categoryProgressBarSegment,
+                            {
+                              width: `${categorySegmentPercentage}%`,
+                              backgroundColor: category.color,
+                            },
+                          ]}
+                        />
+                      )}
                     </View>
                   </TouchableOpacity>
                 );
@@ -384,23 +433,11 @@ const styles = StyleSheet.create({
     height: 8,
     backgroundColor: '#e0e0e0',
     borderRadius: 4,
-    overflow: 'visible',
-    position: 'relative',
+    overflow: 'hidden',
+    flexDirection: 'row',
   },
-  progressBarFill: {
+  progressBarSegment: {
     height: '100%',
-    borderRadius: 4,
-    position: 'absolute',
-    left: 0,
-    top: 0,
-  },
-  progressBarOverage: {
-    height: '100%',
-    borderRadius: 4,
-    position: 'absolute',
-    left: '100%',
-    top: 0,
-    opacity: 0.6,
   },
   overBudgetText: {
     fontSize: 12,
@@ -522,9 +559,9 @@ const styles = StyleSheet.create({
     backgroundColor: '#e0e0e0',
     borderRadius: 3,
     overflow: 'hidden',
+    flexDirection: 'row',
   },
-  categoryProgressBarFill: {
+  categoryProgressBarSegment: {
     height: '100%',
-    borderRadius: 3,
   },
 });
