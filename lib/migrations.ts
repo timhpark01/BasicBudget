@@ -10,6 +10,8 @@ import { CATEGORIES } from '@/constants/categories';
 const MIGRATION_KEY = 'migration_v1_categories_to_db';
 const MIGRATION_V2_KEY = 'migration_v2_category_budgets';
 const MIGRATION_V3_KEY = 'migration_v3_additional_categories';
+const MIGRATION_V4_KEY = 'migration_v4_networth_dynamic_items';
+const MIGRATION_V5_KEY = 'migration_v5_networth_full_dates';
 
 /**
  * Check if migration has already been completed
@@ -82,6 +84,56 @@ async function markMigrationV3Completed(): Promise<void> {
     await AsyncStorage.setItem(MIGRATION_V3_KEY, 'true');
   } catch (error) {
     console.error('Error marking migration v3 as completed:', error);
+    throw error;
+  }
+}
+
+/**
+ * Check if v4 migration (net worth dynamic items) has already been completed
+ */
+async function checkMigrationV4Completed(): Promise<boolean> {
+  try {
+    const completed = await AsyncStorage.getItem(MIGRATION_V4_KEY);
+    return completed === 'true';
+  } catch (error) {
+    console.error('Error checking migration v4 status:', error);
+    return false;
+  }
+}
+
+/**
+ * Mark v4 migration as completed
+ */
+async function markMigrationV4Completed(): Promise<void> {
+  try {
+    await AsyncStorage.setItem(MIGRATION_V4_KEY, 'true');
+  } catch (error) {
+    console.error('Error marking migration v4 as completed:', error);
+    throw error;
+  }
+}
+
+/**
+ * Check if v5 migration (net worth full dates) has already been completed
+ */
+async function checkMigrationV5Completed(): Promise<boolean> {
+  try {
+    const completed = await AsyncStorage.getItem(MIGRATION_V5_KEY);
+    return completed === 'true';
+  } catch (error) {
+    console.error('Error checking migration v5 status:', error);
+    return false;
+  }
+}
+
+/**
+ * Mark v5 migration as completed
+ */
+async function markMigrationV5Completed(): Promise<void> {
+  try {
+    await AsyncStorage.setItem(MIGRATION_V5_KEY, 'true');
+  } catch (error) {
+    console.error('Error marking migration v5 as completed:', error);
     throw error;
   }
 }
@@ -265,6 +317,185 @@ async function createCategoryBudgetsTable(db: SQLite.SQLiteDatabase): Promise<vo
 }
 
 /**
+ * Convert net_worth_entries table to use dynamic JSON items
+ */
+async function convertNetWorthToDynamicItems(db: SQLite.SQLiteDatabase): Promise<void> {
+  try {
+    // Check if table exists
+    const tableInfo = await db.getAllAsync<{ name: string }>(
+      'PRAGMA table_info(net_worth_entries)'
+    );
+
+    if (tableInfo.length === 0) {
+      console.log('✅ net_worth_entries table does not exist yet');
+      return;
+    }
+
+    // Check if already migrated (has 'assets' column)
+    const hasAssetsColumn = tableInfo.some(col => col.name === 'assets');
+    if (hasAssetsColumn) {
+      console.log('✅ net_worth_entries already using dynamic items');
+      return;
+    }
+
+    console.log('Converting net_worth_entries to dynamic items...');
+
+    // Get existing data
+    const existingEntries = await db.getAllAsync<any>(
+      'SELECT * FROM net_worth_entries'
+    );
+
+    // Create new table with JSON fields
+    await db.runAsync('DROP TABLE IF EXISTS net_worth_entries_temp');
+    await db.runAsync(`
+      CREATE TABLE net_worth_entries_temp (
+        id TEXT PRIMARY KEY NOT NULL,
+        month TEXT NOT NULL UNIQUE,
+        assets TEXT NOT NULL DEFAULT '[]',
+        liabilities TEXT NOT NULL DEFAULT '[]',
+        notes TEXT,
+        created_at INTEGER NOT NULL,
+        updated_at INTEGER NOT NULL
+      )
+    `);
+    await db.runAsync('CREATE INDEX IF NOT EXISTS idx_net_worth_month_temp ON net_worth_entries_temp(month)');
+
+    // Migrate existing data
+    for (const entry of existingEntries) {
+      // Convert fixed fields to dynamic arrays
+      const assets = [
+        { id: '1', name: 'Savings', amount: entry.savings || '0' },
+        { id: '2', name: 'Checking', amount: entry.checking || '0' },
+        { id: '3', name: 'Investments', amount: entry.investments || '0' },
+        { id: '4', name: 'Retirement', amount: entry.retirement || '0' },
+        { id: '5', name: 'Real Estate', amount: entry.real_estate || '0' },
+        { id: '6', name: 'Vehicles', amount: entry.vehicles || '0' },
+        { id: '7', name: 'Other Assets', amount: entry.other_assets || '0' },
+      ].filter(item => parseFloat(item.amount) > 0); // Only include non-zero items
+
+      const liabilities = [
+        { id: '1', name: 'Credit Card Debt', amount: entry.credit_card_debt || '0' },
+        { id: '2', name: 'Student Loans', amount: entry.student_loans || '0' },
+        { id: '3', name: 'Car Loans', amount: entry.car_loans || '0' },
+        { id: '4', name: 'Mortgage', amount: entry.mortgage || '0' },
+        { id: '5', name: 'Other Debt', amount: entry.other_debt || '0' },
+      ].filter(item => parseFloat(item.amount) > 0); // Only include non-zero items
+
+      // If no items, add default ones
+      if (assets.length === 0) {
+        assets.push({ id: '1', name: 'Savings', amount: '0' });
+      }
+      if (liabilities.length === 0) {
+        liabilities.push({ id: '1', name: 'Credit Card Debt', amount: '0' });
+      }
+
+      await db.runAsync(
+        `INSERT INTO net_worth_entries_temp
+         (id, month, assets, liabilities, notes, created_at, updated_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?)`,
+        [
+          entry.id,
+          entry.month,
+          JSON.stringify(assets),
+          JSON.stringify(liabilities),
+          entry.notes,
+          entry.created_at,
+          entry.updated_at
+        ]
+      );
+    }
+
+    // Replace old table with new one
+    await db.runAsync('DROP TABLE net_worth_entries');
+    await db.runAsync('ALTER TABLE net_worth_entries_temp RENAME TO net_worth_entries');
+    await db.runAsync('CREATE INDEX IF NOT EXISTS idx_net_worth_month ON net_worth_entries(month)');
+
+    console.log(`✅ Converted ${existingEntries.length} net worth entries to dynamic items`);
+  } catch (error) {
+    console.error('❌ Failed to convert net_worth_entries:', error);
+    throw error;
+  }
+}
+
+/**
+ * Convert net_worth_entries from month (YYYY-MM) to full date (YYYY-MM-DD)
+ */
+async function migrateNetWorthToFullDates(db: SQLite.SQLiteDatabase): Promise<void> {
+  try {
+    // Check if table exists
+    const tableInfo = await db.getAllAsync<{ name: string }>(
+      'PRAGMA table_info(net_worth_entries)'
+    );
+
+    if (tableInfo.length === 0) {
+      console.log('✅ net_worth_entries table does not exist yet');
+      return;
+    }
+
+    // Check if already migrated (has 'date' column instead of 'month')
+    const hasDateColumn = tableInfo.some(col => col.name === 'date');
+    const hasMonthColumn = tableInfo.some(col => col.name === 'month');
+
+    if (hasDateColumn && !hasMonthColumn) {
+      console.log('✅ net_worth_entries already using full dates');
+      return;
+    }
+
+    console.log('Converting net_worth_entries to full dates (YYYY-MM-DD)...');
+
+    // Get existing entries
+    const existingEntries = await db.getAllAsync<any>(
+      'SELECT * FROM net_worth_entries'
+    );
+
+    // Create new table with date column
+    await db.runAsync('DROP TABLE IF EXISTS net_worth_entries_temp');
+    await db.runAsync(`
+      CREATE TABLE net_worth_entries_temp (
+        id TEXT PRIMARY KEY NOT NULL,
+        date TEXT NOT NULL UNIQUE,
+        assets TEXT NOT NULL DEFAULT '[]',
+        liabilities TEXT NOT NULL DEFAULT '[]',
+        notes TEXT,
+        created_at INTEGER NOT NULL,
+        updated_at INTEGER NOT NULL
+      )
+    `);
+    await db.runAsync('CREATE INDEX IF NOT EXISTS idx_net_worth_date_temp ON net_worth_entries_temp(date)');
+
+    // Migrate existing data (convert YYYY-MM to YYYY-MM-01)
+    for (const entry of existingEntries) {
+      const date = `${entry.month}-01`; // Convert to first day of month
+
+      await db.runAsync(
+        `INSERT INTO net_worth_entries_temp
+         (id, date, assets, liabilities, notes, created_at, updated_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?)`,
+        [
+          entry.id,
+          date,
+          entry.assets,
+          entry.liabilities,
+          entry.notes,
+          entry.created_at,
+          entry.updated_at
+        ]
+      );
+    }
+
+    // Replace old table with new one
+    await db.runAsync('DROP TABLE net_worth_entries');
+    await db.runAsync('ALTER TABLE net_worth_entries_temp RENAME TO net_worth_entries');
+    await db.runAsync('CREATE INDEX IF NOT EXISTS idx_net_worth_date ON net_worth_entries(date)');
+
+    console.log(`✅ Converted ${existingEntries.length} net worth entries to full dates`);
+  } catch (error) {
+    console.error('❌ Failed to convert net_worth_entries to full dates:', error);
+    throw error;
+  }
+}
+
+/**
  * Add new categories (13-32) for existing users
  */
 async function addAdditionalCategories(db: SQLite.SQLiteDatabase): Promise<void> {
@@ -365,6 +596,52 @@ export async function runMigrations(db: SQLite.SQLiteDatabase): Promise<void> {
       console.log('✅ v3 migrations completed successfully');
     } else {
       console.log('✅ v3 migrations already completed');
+    }
+
+    // Check if v4 migration already completed
+    const v4Completed = await checkMigrationV4Completed();
+    if (!v4Completed) {
+      console.log('🔄 Running v4 database migrations...');
+
+      try {
+        // Step 1: Convert net_worth_entries to dynamic items
+        // Note: Not using transaction wrapper due to DDL statement conflicts
+        await convertNetWorthToDynamicItems(db);
+
+        // Mark v4 migration as completed
+        await markMigrationV4Completed();
+
+        console.log('✅ v4 migrations completed successfully');
+      } catch (error) {
+        console.error('❌ v4 migration failed, but continuing:', error);
+        // Don't throw - allow app to continue even if net worth migration fails
+        // This prevents breaking the entire app if only net worth has issues
+      }
+    } else {
+      console.log('✅ v4 migrations already completed');
+    }
+
+    // Check if v5 migration already completed
+    const v5Completed = await checkMigrationV5Completed();
+    if (!v5Completed) {
+      console.log('🔄 Running v5 database migrations...');
+
+      try {
+        // Step 1: Convert net_worth_entries from month to full date
+        // Note: Not using transaction wrapper due to DDL statement conflicts
+        await migrateNetWorthToFullDates(db);
+
+        // Mark v5 migration as completed
+        await markMigrationV5Completed();
+
+        console.log('✅ v5 migrations completed successfully');
+      } catch (error) {
+        console.error('❌ v5 migration failed, but continuing:', error);
+        // Don't throw - allow app to continue even if net worth migration fails
+        // This prevents breaking the entire app if only net worth has issues
+      }
+    } else {
+      console.log('✅ v5 migrations already completed');
     }
 
     console.log('✅ All migrations completed successfully');

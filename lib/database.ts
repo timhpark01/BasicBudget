@@ -44,6 +44,16 @@ const SCHEMA = `
 
   CREATE INDEX IF NOT EXISTS idx_custom_categories_active ON custom_categories(is_active);
   CREATE INDEX IF NOT EXISTS idx_custom_categories_position ON custom_categories(position);
+
+  CREATE TABLE IF NOT EXISTS net_worth_entries (
+    id TEXT PRIMARY KEY NOT NULL,
+    date TEXT NOT NULL UNIQUE,
+    assets TEXT NOT NULL DEFAULT '[]',
+    liabilities TEXT NOT NULL DEFAULT '[]',
+    notes TEXT,
+    created_at INTEGER NOT NULL,
+    updated_at INTEGER NOT NULL
+  );
 `;
 
 let databaseInstance: SQLite.SQLiteDatabase | null = null;
@@ -59,18 +69,7 @@ export async function initDatabase(): Promise<SQLite.SQLiteDatabase> {
     return db;
   } catch (error) {
     console.error('Failed to initialize database:', error);
-
-    // Attempt recovery: delete corrupted database and recreate
-    try {
-      await SQLite.deleteDatabaseAsync(DATABASE_NAME);
-      const db = await SQLite.openDatabaseAsync(DATABASE_NAME);
-      await setupDatabase(db);
-      await runMigrations(db);
-      return db;
-    } catch (recoveryError) {
-      console.error('Failed to recover database:', recoveryError);
-      throw new Error('Unable to initialize database. Please reinstall the app.');
-    }
+    throw error;
   }
 }
 

@@ -34,7 +34,7 @@ export default function AddExpenseModal({
   editExpense,
   onSave,
 }: AddExpenseModalProps) {
-  const { allCategories, deleteCategory, updateCategory, refreshCategories } = useCategories();
+  const { allCategories, refreshCategories } = useCategories();
   const [amount, setAmount] = useState('0');
   const [selectedCategory, setSelectedCategory] = useState<Category | null>(null);
   const [date, setDate] = useState(new Date());
@@ -137,62 +137,6 @@ export default function AddExpenseModal({
     });
   };
 
-  const handleCategoryLongPress = (category: Category) => {
-    // Show quick action menu for category management
-    const isOtherCategory = category.name === 'Other';
-
-    if (isOtherCategory) {
-      Alert.alert(
-        'Protected Category',
-        'The "Other" category cannot be edited or deleted.',
-        [{ text: 'OK' }]
-      );
-      return;
-    }
-
-    Alert.alert(
-      category.name,
-      'Choose an action for this category',
-      [
-        {
-          text: 'Delete',
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              const deleted = await deleteCategory(category.id);
-              if (!deleted) {
-                // Expenses exist, ask to reassign
-                Alert.alert(
-                  'Category In Use',
-                  'Some expenses use this category. They will be reassigned to "Other" if you delete it.',
-                  [
-                    { text: 'Cancel', style: 'cancel' },
-                    {
-                      text: 'Reassign & Delete',
-                      style: 'destructive',
-                      onPress: async () => {
-                        await deleteCategory(category.id);
-                        Alert.alert('Success', 'Category deleted successfully!');
-                      },
-                    },
-                  ]
-                );
-              } else {
-                Alert.alert('Success', 'Category deleted successfully!');
-              }
-            } catch (err: any) {
-              Alert.alert('Error', err.message || 'Failed to delete category.');
-            }
-          },
-        },
-        {
-          text: 'Cancel',
-          style: 'cancel',
-        },
-      ]
-    );
-  };
-
   return (
     <Modal
       visible={visible}
@@ -229,8 +173,6 @@ export default function AddExpenseModal({
                   selectedCategory?.id === category.id && styles.categoryTileSelected,
                 ]}
                 onPress={() => setSelectedCategory(category)}
-                onLongPress={() => handleCategoryLongPress(category)}
-                delayLongPress={500}
               >
                 <View
                   style={[
@@ -262,13 +204,27 @@ export default function AddExpenseModal({
             <>
               {/* Date and Note Fields */}
               <View style={styles.detailsContainer}>
-                <TouchableOpacity
-                  style={styles.dateButton}
-                  onPress={() => setInputMode('calendar')}
-                >
-                  <Ionicons name="calendar-outline" size={20} color="#666" />
-                  <Text style={styles.dateText}>{formatDate(date)}</Text>
-                </TouchableOpacity>
+                <View style={styles.dateRow}>
+                  <TouchableOpacity
+                    style={styles.dateButton}
+                    onPress={() => setInputMode('calendar')}
+                  >
+                    <Ionicons name="calendar-outline" size={20} color="#666" />
+                    <Text style={styles.dateText}>{formatDate(date)}</Text>
+                  </TouchableOpacity>
+
+                  <TouchableOpacity
+                    style={styles.submitButton}
+                    onPress={handleSave}
+                    disabled={loading}
+                  >
+                    {loading ? (
+                      <ActivityIndicator size="small" color="#fff" />
+                    ) : (
+                      <Ionicons name="checkmark" size={24} color="#fff" />
+                    )}
+                  </TouchableOpacity>
+                </View>
 
                 <TextInput
                   style={styles.noteInput}
@@ -381,14 +337,28 @@ const styles = StyleSheet.create({
     paddingHorizontal: 24,
     marginBottom: 16,
   },
+  dateRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 12,
+    gap: 8,
+  },
   dateButton: {
+    flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     paddingVertical: 12,
     paddingHorizontal: 16,
     backgroundColor: '#f5f5f5',
     borderRadius: 12,
-    marginBottom: 12,
+  },
+  submitButton: {
+    width: 48,
+    height: 48,
+    backgroundColor: '#355e3b',
+    borderRadius: 12,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   dateText: {
     fontSize: 16,

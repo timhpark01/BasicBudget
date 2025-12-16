@@ -114,6 +114,20 @@ export default function SpendingCalendar({ month, expenses, budgetAmount }: Spen
         ))}
       </View>
 
+      {/* Legend */}
+      {budgetAmount && (
+        <View style={styles.legendContainer}>
+          <View style={styles.legendItem}>
+            <View style={[styles.legendSquare, { backgroundColor: '#355e3b' }]} />
+            <Text style={styles.legendText}>Within ideal daily budget</Text>
+          </View>
+          <View style={styles.legendItem}>
+            <View style={[styles.legendSquare, { backgroundColor: '#DC3545' }]} />
+            <Text style={styles.legendText}>Over ideal daily budget</Text>
+          </View>
+        </View>
+      )}
+
       {/* Date grid */}
       <View style={styles.dateGrid}>
         {calendarDays.map((day, index) => {
@@ -253,6 +267,29 @@ const styles = StyleSheet.create({
   dayLabelText: {
     fontSize: 12,
     fontWeight: '600',
+    color: '#666',
+  },
+  legendContainer: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    marginBottom: 8,
+    gap: 16,
+  },
+  legendItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  legendSquare: {
+    width: 12,
+    height: 12,
+    borderRadius: 2,
+  },
+  legendText: {
+    fontSize: 11,
     color: '#666',
   },
   dateGrid: {

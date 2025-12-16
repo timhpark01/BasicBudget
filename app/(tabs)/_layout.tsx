@@ -1,8 +1,22 @@
-import { Tabs } from 'expo-router';
-import React from 'react';
+import { Tabs, usePathname } from 'expo-router';
+import React, { useState, useEffect } from 'react';
 import { Ionicons } from '@expo/vector-icons';
+import { getSettings } from '@/lib/settings';
 
 export default function TabLayout() {
+  const [netWorthEnabled, setNetWorthEnabled] = useState(false);
+  const pathname = usePathname();
+
+  // Reload settings whenever the route changes (including when navigating back from More)
+  useEffect(() => {
+    loadSettings();
+  }, [pathname]);
+
+  const loadSettings = async () => {
+    const settings = await getSettings();
+    setNetWorthEnabled(settings.netWorthEnabled);
+  };
+
   return (
     <Tabs
       screenOptions={{
@@ -27,6 +41,16 @@ export default function TabLayout() {
           title: 'Charts',
           tabBarIcon: ({ color, size }) => (
             <Ionicons name="bar-chart-outline" size={size} color={color} />
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="networth"
+        options={{
+          href: netWorthEnabled ? '/(tabs)/networth' : null,
+          title: 'Net Worth',
+          tabBarIcon: ({ color, size }) => (
+            <Ionicons name="trending-up-outline" size={size} color={color} />
           ),
         }}
       />

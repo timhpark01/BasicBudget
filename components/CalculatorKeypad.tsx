@@ -1,4 +1,5 @@
 import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 
 interface CalculatorKeypadProps {
   amount: string;
@@ -6,6 +7,7 @@ interface CalculatorKeypadProps {
   onDecimalPress: () => void;
   onBackspace: () => void;
   onClear: () => void;
+  onSubmit?: () => void;
 }
 
 export default function CalculatorKeypad({
@@ -14,6 +16,7 @@ export default function CalculatorKeypad({
   onDecimalPress,
   onBackspace,
   onClear,
+  onSubmit,
 }: CalculatorKeypadProps) {
   return (
     <>
@@ -49,6 +52,20 @@ export default function CalculatorKeypad({
             onLongPress={onClear}
           />
         </View>
+        {onSubmit && (
+          <View style={styles.keypadRow}>
+            <Pressable
+              style={({ pressed }) => [
+                styles.submitButton,
+                pressed && styles.submitButtonPressed,
+              ]}
+              onPress={onSubmit}
+            >
+              <Ionicons name="checkmark" size={28} color="#fff" />
+              <Text style={styles.submitButtonText}>Save Expense</Text>
+            </Pressable>
+          </View>
+        )}
       </View>
     </>
   );
@@ -118,5 +135,24 @@ const styles = StyleSheet.create({
     fontSize: 24,
     fontWeight: '600',
     color: '#333',
+  },
+  submitButton: {
+    flex: 1,
+    backgroundColor: '#355e3b',
+    borderRadius: 12,
+    paddingVertical: 16,
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginHorizontal: 6,
+    gap: 8,
+  },
+  submitButtonPressed: {
+    backgroundColor: '#2a4a2f',
+  },
+  submitButtonText: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#fff',
   },
 });

@@ -4,6 +4,9 @@ import { Ionicons } from '@expo/vector-icons';
 import ProfileModal from '@/components/ProfileModal';
 import NotificationsModal from '@/components/NotificationsModal';
 import CategoriesModal from '@/components/CategoriesModal';
+import AdvancedSettingsModal from '@/components/AdvancedSettingsModal';
+import BudgetCalculatorModal from '@/components/BudgetCalculatorModal';
+import InsightsModal from '@/components/InsightsModal';
 import HelpModal from '@/components/HelpModal';
 import AboutModal from '@/components/AboutModal';
 
@@ -11,6 +14,9 @@ export default function MoreScreen() {
   const [profileModalVisible, setProfileModalVisible] = useState(false);
   const [notificationsModalVisible, setNotificationsModalVisible] = useState(false);
   const [categoriesModalVisible, setCategoriesModalVisible] = useState(false);
+  const [advancedSettingsModalVisible, setAdvancedSettingsModalVisible] = useState(false);
+  const [budgetCalculatorModalVisible, setBudgetCalculatorModalVisible] = useState(false);
+  const [insightsModalVisible, setInsightsModalVisible] = useState(false);
   const [helpModalVisible, setHelpModalVisible] = useState(false);
   const [aboutModalVisible, setAboutModalVisible] = useState(false);
 
@@ -47,6 +53,40 @@ export default function MoreScreen() {
           >
             <Ionicons name="pricetag-outline" size={24} color="#333" />
             <Text style={styles.menuText}>Categories</Text>
+            <Ionicons name="chevron-forward" size={24} color="#999" />
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={styles.menuItem}
+            onPress={() => setAdvancedSettingsModalVisible(true)}
+            activeOpacity={0.7}
+          >
+            <Ionicons name="settings-outline" size={24} color="#333" />
+            <Text style={styles.menuText}>Advanced</Text>
+            <Ionicons name="chevron-forward" size={24} color="#999" />
+          </TouchableOpacity>
+        </View>
+
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Tools</Text>
+
+          <TouchableOpacity
+            style={styles.menuItem}
+            onPress={() => setBudgetCalculatorModalVisible(true)}
+            activeOpacity={0.7}
+          >
+            <Ionicons name="calculator-outline" size={24} color="#333" />
+            <Text style={styles.menuText}>Budget Calculator</Text>
+            <Ionicons name="chevron-forward" size={24} color="#999" />
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={styles.menuItem}
+            onPress={() => setInsightsModalVisible(true)}
+            activeOpacity={0.7}
+          >
+            <Ionicons name="bulb-outline" size={24} color="#333" />
+            <Text style={styles.menuText}>Insights</Text>
             <Ionicons name="chevron-forward" size={24} color="#999" />
           </TouchableOpacity>
         </View>
@@ -89,6 +129,21 @@ export default function MoreScreen() {
       <CategoriesModal
         visible={categoriesModalVisible}
         onClose={() => setCategoriesModalVisible(false)}
+      />
+
+      <AdvancedSettingsModal
+        visible={advancedSettingsModalVisible}
+        onClose={() => setAdvancedSettingsModalVisible(false)}
+      />
+
+      <BudgetCalculatorModal
+        visible={budgetCalculatorModalVisible}
+        onClose={() => setBudgetCalculatorModalVisible(false)}
+      />
+
+      <InsightsModal
+        visible={insightsModalVisible}
+        onClose={() => setInsightsModalVisible(false)}
       />
 
       <HelpModal
