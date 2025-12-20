@@ -37,6 +37,14 @@ import { LineChart } from 'react-native-chart-kit';
 import Svg, { Path, Line as SvgLine, Text as SvgText } from 'react-native-svg';
 import UndoToast from '@/components/UndoToast';
 import CalendarPicker from '@/components/CalendarPicker';
+import CalculatorKeypad from '@/components/CalculatorKeypad';
+
+type ActiveFieldType = 'liquid' | 'illiquid' | 'retirement' | 'liability';
+
+interface ActiveField {
+  id: string;
+  type: ActiveFieldType;
+}
 
 export default function NetWorthScreen() {
   const { entries, loading, saveEntry, deleteEntry } = useNetWorth();
@@ -45,6 +53,8 @@ export default function NetWorthScreen() {
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [deletedEntry, setDeletedEntry] = useState<NetWorthEntryCompat | null>(null);
   const [undoVisible, setUndoVisible] = useState(false);
+  const [activeField, setActiveField] = useState<ActiveField | null>(null);
+  const [calculatorAmount, setCalculatorAmount] = useState('0');
 
   // Current date in YYYY-MM-DD format
   const currentDate = useMemo(() => new Date(), []);
@@ -286,6 +296,60 @@ export default function NetWorthScreen() {
 
   const removeLiability = (id: string) => {
     setLiabilities(liabilities.filter(item => item.id !== id));
+  };
+
+  // Calculator keypad handlers
+  const handleAmountFieldPress = (id: string, type: ActiveFieldType, currentAmount: string) => {
+    setActiveField({ id, type });
+    setCalculatorAmount(currentAmount === '0' ? '0' : currentAmount);
+  };
+
+  const handleCalculatorNumberPress = (num: string) => {
+    if (calculatorAmount === '0') {
+      setCalculatorAmount(num);
+    } else {
+      setCalculatorAmount(calculatorAmount + num);
+    }
+  };
+
+  const handleCalculatorDecimalPress = () => {
+    if (!calculatorAmount.includes('.')) {
+      setCalculatorAmount(calculatorAmount + '.');
+    }
+  };
+
+  const handleCalculatorBackspace = () => {
+    if (calculatorAmount.length === 1) {
+      setCalculatorAmount('0');
+    } else {
+      setCalculatorAmount(calculatorAmount.slice(0, -1));
+    }
+  };
+
+  const handleCalculatorClear = () => {
+    setCalculatorAmount('0');
+  };
+
+  const handleCalculatorDone = () => {
+    if (activeField) {
+      // Update the appropriate field based on type
+      switch (activeField.type) {
+        case 'liquid':
+          updateLiquidAsset(activeField.id, 'amount', calculatorAmount);
+          break;
+        case 'illiquid':
+          updateIlliquidAsset(activeField.id, 'amount', calculatorAmount);
+          break;
+        case 'retirement':
+          updateRetirementAsset(activeField.id, 'amount', calculatorAmount);
+          break;
+        case 'liability':
+          updateLiability(activeField.id, 'amount', calculatorAmount);
+          break;
+      }
+      setActiveField(null);
+      setCalculatorAmount('0');
+    }
   };
 
   // Handle tapping an entry to edit it
@@ -712,8 +776,9 @@ export default function NetWorthScreen() {
           <View style={styles.bottomSpacer} />
         </ScrollView>
       ) : (
-        <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
-          <View style={styles.entryContainer}>
+        <>
+          <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
+            <View style={styles.entryContainer}>
             {/* Date Selector */}
             <View style={styles.dateSelector}>
               <TouchableOpacity
@@ -769,17 +834,15 @@ export default function NetWorthScreen() {
                       placeholder="Asset name"
                       placeholderTextColor="#999"
                     />
-                    <View style={styles.amountInputContainer}>
+                    <TouchableOpacity
+                      style={styles.amountInputContainer}
+                      onPress={() => handleAmountFieldPress(asset.id, 'liquid', asset.amount)}
+                    >
                       <Text style={styles.dollarSign}>$</Text>
-                      <TextInput
-                        style={styles.amountInput}
-                        value={asset.amount}
-                        onChangeText={(value) => updateLiquidAsset(asset.id, 'amount', value)}
-                        placeholder="0.00"
-                        placeholderTextColor="#999"
-                        keyboardType="decimal-pad"
-                      />
-                    </View>
+                      <Text style={styles.amountInputText}>
+                        {asset.amount || '0.00'}
+                      </Text>
+                    </TouchableOpacity>
                     <TouchableOpacity onPress={() => removeLiquidAsset(asset.id)} style={styles.deleteButton}>
                       <Ionicons name="remove-circle" size={24} color="#DC3545" />
                     </TouchableOpacity>
@@ -815,17 +878,15 @@ export default function NetWorthScreen() {
                       placeholder="Asset name"
                       placeholderTextColor="#999"
                     />
-                    <View style={styles.amountInputContainer}>
+                    <TouchableOpacity
+                      style={styles.amountInputContainer}
+                      onPress={() => handleAmountFieldPress(asset.id, 'illiquid', asset.amount)}
+                    >
                       <Text style={styles.dollarSign}>$</Text>
-                      <TextInput
-                        style={styles.amountInput}
-                        value={asset.amount}
-                        onChangeText={(value) => updateIlliquidAsset(asset.id, 'amount', value)}
-                        placeholder="0.00"
-                        placeholderTextColor="#999"
-                        keyboardType="decimal-pad"
-                      />
-                    </View>
+                      <Text style={styles.amountInputText}>
+                        {asset.amount || '0.00'}
+                      </Text>
+                    </TouchableOpacity>
                     <TouchableOpacity onPress={() => removeIlliquidAsset(asset.id)} style={styles.deleteButton}>
                       <Ionicons name="remove-circle" size={24} color="#DC3545" />
                     </TouchableOpacity>
@@ -861,17 +922,15 @@ export default function NetWorthScreen() {
                       placeholder="Asset name"
                       placeholderTextColor="#999"
                     />
-                    <View style={styles.amountInputContainer}>
+                    <TouchableOpacity
+                      style={styles.amountInputContainer}
+                      onPress={() => handleAmountFieldPress(asset.id, 'retirement', asset.amount)}
+                    >
                       <Text style={styles.dollarSign}>$</Text>
-                      <TextInput
-                        style={styles.amountInput}
-                        value={asset.amount}
-                        onChangeText={(value) => updateRetirementAsset(asset.id, 'amount', value)}
-                        placeholder="0.00"
-                        placeholderTextColor="#999"
-                        keyboardType="decimal-pad"
-                      />
-                    </View>
+                      <Text style={styles.amountInputText}>
+                        {asset.amount || '0.00'}
+                      </Text>
+                    </TouchableOpacity>
                     <TouchableOpacity onPress={() => removeRetirementAsset(asset.id)} style={styles.deleteButton}>
                       <Ionicons name="remove-circle" size={24} color="#DC3545" />
                     </TouchableOpacity>
@@ -915,17 +974,15 @@ export default function NetWorthScreen() {
                     placeholder="Liability name"
                     placeholderTextColor="#999"
                   />
-                  <View style={styles.amountInputContainer}>
+                  <TouchableOpacity
+                    style={styles.amountInputContainer}
+                    onPress={() => handleAmountFieldPress(liability.id, 'liability', liability.amount)}
+                  >
                     <Text style={styles.dollarSign}>$</Text>
-                    <TextInput
-                      style={styles.amountInput}
-                      value={liability.amount}
-                      onChangeText={(value) => updateLiability(liability.id, 'amount', value)}
-                      placeholder="0.00"
-                      placeholderTextColor="#999"
-                      keyboardType="decimal-pad"
-                    />
-                  </View>
+                    <Text style={styles.amountInputText}>
+                      {liability.amount || '0.00'}
+                    </Text>
+                  </TouchableOpacity>
                   <TouchableOpacity onPress={() => removeLiability(liability.id)} style={styles.deleteButton}>
                     <Ionicons name="remove-circle" size={24} color="#DC3545" />
                   </TouchableOpacity>
@@ -963,15 +1020,16 @@ export default function NetWorthScreen() {
                 numberOfLines={4}
               />
             </View>
-
-            {/* Save Button */}
-            <TouchableOpacity style={styles.saveButton} onPress={handleSave}>
-              <Text style={styles.saveButtonText}>Save Entry</Text>
-            </TouchableOpacity>
-
-            <View style={styles.bottomSpacer} />
           </View>
         </ScrollView>
+
+        {/* Sticky Save Button */}
+        <View style={styles.stickyButtonContainer}>
+          <TouchableOpacity style={styles.saveButton} onPress={handleSave}>
+            <Text style={styles.saveButtonText}>Save Entry</Text>
+          </TouchableOpacity>
+        </View>
+        </>
       )}
 
       {/* Calendar Picker Modal */}
@@ -997,6 +1055,33 @@ export default function NetWorthScreen() {
         onUndo={handleUndo}
         onDismiss={() => setUndoVisible(false)}
       />
+
+      {/* Calculator Keypad Modal */}
+      {activeField && (
+        <View style={styles.calculatorOverlay}>
+          <TouchableOpacity
+            style={styles.calculatorBackdrop}
+            onPress={handleCalculatorDone}
+            activeOpacity={1}
+          />
+          <View style={styles.calculatorContainer}>
+            <View style={styles.calculatorHeader}>
+              <Text style={styles.calculatorTitle}>Enter Amount</Text>
+              <TouchableOpacity onPress={handleCalculatorDone}>
+                <Ionicons name="checkmark-circle" size={32} color="#355e3b" />
+              </TouchableOpacity>
+            </View>
+            <CalculatorKeypad
+              amount={calculatorAmount}
+              onNumberPress={handleCalculatorNumberPress}
+              onDecimalPress={handleCalculatorDecimalPress}
+              onBackspace={handleCalculatorBackspace}
+              onClear={handleCalculatorClear}
+            />
+            <View style={styles.calculatorBottomSpacer} />
+          </View>
+        </View>
+      )}
     </View>
   );
 }
@@ -1039,6 +1124,7 @@ const styles = StyleSheet.create({
   },
   scrollView: {
     flex: 1,
+    paddingBottom: 80,
   },
   summaryCard: {
     backgroundColor: '#355e3b',
@@ -1445,5 +1531,71 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '600',
     marginTop: 4,
+  },
+  amountInputText: {
+    flex: 1,
+    paddingVertical: 12,
+    fontSize: 16,
+    color: '#333',
+  },
+  calculatorOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    zIndex: 1000,
+  },
+  calculatorBackdrop: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+  },
+  calculatorContainer: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    backgroundColor: '#fff',
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    paddingTop: 20,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: -4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 8,
+  },
+  calculatorHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 24,
+    paddingBottom: 16,
+  },
+  calculatorTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#333',
+  },
+  calculatorBottomSpacer: {
+    height: 40,
+  },
+  stickyButtonContainer: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    backgroundColor: '#fff',
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    paddingBottom: 20,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: -4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 8,
+    zIndex: 10,
   },
 });
