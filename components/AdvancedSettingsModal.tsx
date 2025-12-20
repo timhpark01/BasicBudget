@@ -11,18 +11,18 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { getSettings, setSetting, AppSettings } from '@/lib/settings';
+import { useSettings } from '@/contexts/SettingsContext';
 
 interface AdvancedSettingsModalProps {
   visible: boolean;
   onClose: () => void;
-  onSettingsChange?: () => void;
 }
 
 export default function AdvancedSettingsModal({
   visible,
   onClose,
-  onSettingsChange,
 }: AdvancedSettingsModalProps) {
+  const { reloadSettings } = useSettings();
   const [settings, setSettings] = useState<AppSettings>({
     netWorthEnabled: false,
   });
@@ -54,6 +54,9 @@ export default function AdvancedSettingsModal({
       // Save to storage
       await setSetting('netWorthEnabled', value);
 
+      // Reload settings in context to update tabs immediately
+      await reloadSettings();
+
       // Show confirmation
       if (value) {
         Alert.alert(
@@ -62,9 +65,6 @@ export default function AdvancedSettingsModal({
           [{ text: 'OK' }]
         );
       }
-
-      // Notify parent of settings change
-      onSettingsChange?.();
     } catch (error) {
       console.error('Failed to save setting:', error);
       // Revert on error

@@ -512,18 +512,14 @@ export default function NetWorthScreen() {
                 const illiquidData = sortedEntries.map(e => calculateIlliquidAssets(e));
                 const liquidData = sortedEntries.map(e => calculateLiquidAssets(e));
                 const retirementData = sortedEntries.map(e => calculateRetirementAssets(e));
-                const liabilitiesData = sortedEntries.map(e => calculateTotalLiabilities(e));
 
                 // Cumulative stacking for gross assets
                 const cumIlliquid = illiquidData;
                 const cumLiquid = illiquidData.map((v, i) => v + liquidData[i]);
                 const cumRetirement = cumLiquid.map((v, i) => v + retirementData[i]);
 
-                // Liabilities stack on top of gross assets
-                const cumLiabilities = cumRetirement.map((v, i) => v + liabilitiesData[i]);
-
                 // Find max value for scaling
-                const maxValue = Math.max(...cumLiabilities);
+                const maxValue = Math.max(...cumRetirement);
                 const minValue = 0;
 
                 // Scale functions
@@ -553,7 +549,6 @@ export default function NetWorthScreen() {
                 const illiquidPath = createAreaPath(cumIlliquid);
                 const liquidPath = createAreaPath(cumLiquid, cumIlliquid);
                 const retirementPath = createAreaPath(cumRetirement, cumLiquid);
-                const liabilitiesPath = createAreaPath(cumLiabilities, cumRetirement);
 
                 return (
                   <>
@@ -599,14 +594,6 @@ export default function NetWorthScreen() {
                         d={retirementPath}
                         fill="#3B82F6"
                         fillOpacity={0.6}
-                        translateX={padding.left}
-                        translateY={padding.top}
-                      />
-                      {/* Liabilities overlay - semi-transparent to show assets underneath */}
-                      <Path
-                        d={liabilitiesPath}
-                        fill="#DC2626"
-                        fillOpacity={0.4}
                         translateX={padding.left}
                         translateY={padding.top}
                       />
@@ -662,10 +649,6 @@ export default function NetWorthScreen() {
                       <View style={styles.legendItem}>
                         <View style={[styles.legendColor, { backgroundColor: '#EAB308' }]} />
                         <Text style={styles.legendText}>Illiquid</Text>
-                      </View>
-                      <View style={styles.legendItem}>
-                        <View style={[styles.legendColor, { backgroundColor: '#DC2626', opacity: 0.4 }]} />
-                        <Text style={styles.legendText}>Liabilities</Text>
                       </View>
                     </View>
                   </>
