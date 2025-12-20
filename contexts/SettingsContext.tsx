@@ -1,5 +1,5 @@
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { getSettings, AppSettings } from '@/lib/settings';
+import { AppSettings, getSettings } from '@/lib/settings';
+import React, { createContext, ReactNode, useContext, useEffect, useState } from 'react';
 
 interface SettingsContextType {
   settings: AppSettings;
