@@ -10,7 +10,7 @@ import {
   Alert,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import CalculatorKeypad from './CalculatorKeypad';
+import CalculatorKeypad from '@/components/shared/CalculatorKeypad';
 
 interface BudgetCalculatorModalProps {
   visible: boolean;

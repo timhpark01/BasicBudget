@@ -1,12 +1,12 @@
 import { useState, useEffect, useCallback } from 'react';
 import * as SQLite from 'expo-sqlite';
 import { CategoryBudget, CategoryBudgetInput } from '@/types/database';
-import { getDatabase } from '@/lib/database';
+import { getDatabase } from '@/lib/db/core/database';
 import {
   getCategoryBudgetsForMonth,
   setCategoryBudget as setCategoryBudgetDb,
   deleteCategoryBudget as deleteCategoryBudgetDb,
-} from '@/lib/category-budgets-db';
+} from '@/lib/db/models/category-budgets';
 
 export interface UseCategoryBudgetsReturn {
   categoryBudgets: CategoryBudget[];

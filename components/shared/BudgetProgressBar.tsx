@@ -2,8 +2,8 @@ import { useState, useMemo } from 'react';
 import { StyleSheet, Text, View, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Expense, CategoryBudget } from '@/types/database';
-import CategoryBudgetModal from './CategoryBudgetModal';
-import CategoryAnalyticsModal from './CategoryAnalyticsModal';
+import CategoryBudgetModal from '@/components/modals/budget/CategoryBudgetModal';
+import CategoryAnalyticsModal from '@/components/modals/analytics/CategoryAnalyticsModal';
 
 interface BudgetProgressBarProps {
   totalExpenses: number;

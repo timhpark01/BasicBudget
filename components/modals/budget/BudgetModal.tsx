@@ -9,7 +9,7 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
-import CalculatorKeypad from './CalculatorKeypad';
+import CalculatorKeypad from '@/components/shared/CalculatorKeypad';
 
 interface BudgetModalProps {
   visible: boolean;

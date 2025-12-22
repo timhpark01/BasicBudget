@@ -15,7 +15,7 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Category } from '@/types/database';
-import ColorPicker from './ColorPicker';
+import ColorPicker from '@/components/shared/ColorPicker';
 
 interface CategoryEditModalProps {
   visible: boolean;

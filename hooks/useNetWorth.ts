@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import * as SQLite from 'expo-sqlite';
-import { getDatabase } from '@/lib/database';
+import { getDatabase } from '@/lib/db/core/database';
 import {
   NetWorthEntry,
   NetWorthEntryInput,
@@ -9,7 +9,7 @@ import {
   getNetWorthEntryByDate,
   saveNetWorthEntry as saveNetWorthEntryDb,
   deleteNetWorthEntry as deleteNetWorthEntryDb,
-} from '@/lib/net-worth-db';
+} from '@/lib/db/models/net-worth';
 
 // Extended entry type with backward compatibility properties
 export interface NetWorthEntryCompat extends NetWorthEntry {

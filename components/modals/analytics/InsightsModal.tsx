@@ -10,9 +10,9 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Expense } from '@/types/database';
-import { getAllExpenses } from '@/lib/expenses-db';
-import { getDatabase } from '@/lib/database';
-import CalendarPicker from './CalendarPicker';
+import { getAllExpenses } from '@/lib/db/models/expenses';
+import { getDatabase } from '@/lib/db/core/database';
+import CalendarPicker from '@/components/shared/CalendarPicker';
 
 interface InsightsModalProps {
   visible: boolean;

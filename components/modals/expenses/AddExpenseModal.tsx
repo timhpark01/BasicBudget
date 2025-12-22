@@ -13,8 +13,8 @@ import {
   TouchableOpacity,
   View
 } from 'react-native';
-import CalculatorKeypad from './CalculatorKeypad';
-import CalendarPicker from './CalendarPicker';
+import CalculatorKeypad from '@/components/shared/CalculatorKeypad';
+import CalendarPicker from '@/components/shared/CalendarPicker';
 
 interface AddExpenseModalProps {
   visible: boolean;

@@ -10,9 +10,9 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Expense } from '@/types/database';
-import { getDatabase } from '@/lib/database';
-import { getExpensesByCategory } from '@/lib/expenses-db';
-import CategoryBudgetModal from './CategoryBudgetModal';
+import { getDatabase } from '@/lib/db/core/database';
+import { getExpensesByCategory } from '@/lib/db/models/expenses';
+import CategoryBudgetModal from '@/components/modals/budget/CategoryBudgetModal';
 
 interface CategoryAnalyticsModalProps {
   visible: boolean;

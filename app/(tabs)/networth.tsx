@@ -31,13 +31,13 @@ import {
   calculateIlliquidNetWorth,
   formatDate,
   parseDate,
-} from '@/lib/net-worth-db';
+} from '@/lib/db/models/net-worth';
 import * as Crypto from 'expo-crypto';
 import { LineChart } from 'react-native-chart-kit';
 import Svg, { Path, Line as SvgLine, Text as SvgText } from 'react-native-svg';
-import UndoToast from '@/components/UndoToast';
-import CalendarPicker from '@/components/CalendarPicker';
-import CalculatorKeypad from '@/components/CalculatorKeypad';
+import UndoToast from '@/components/shared/UndoToast';
+import CalendarPicker from '@/components/shared/CalendarPicker';
+import CalculatorKeypad from '@/components/shared/CalculatorKeypad';
 
 type ActiveFieldType = 'liquid' | 'illiquid' | 'retirement' | 'liability';
 

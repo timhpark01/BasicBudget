@@ -1,6 +1,6 @@
 import * as SQLite from 'expo-sqlite';
 import { SAMPLE_EXPENSES } from '@/constants/sample-data';
-import { createExpense } from './expenses-db';
+import { createExpense } from '../db/models/expenses';
 
 /**
  * Seed the database with sample expense data

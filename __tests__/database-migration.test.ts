@@ -4,8 +4,8 @@
  */
 
 import * as SQLite from 'expo-sqlite';
-import { initDatabase, CURRENT_SCHEMA_VERSION } from '../lib/database';
-import { performHealthCheck } from '../lib/db-health-check';
+import { initDatabase, CURRENT_SCHEMA_VERSION } from '../lib/db/core/database';
+import { performHealthCheck } from '../lib/db/core/health-check';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 // Mock database name for testing

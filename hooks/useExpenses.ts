@@ -1,14 +1,14 @@
 import { useState, useEffect, useCallback } from 'react';
 import * as SQLite from 'expo-sqlite';
 import { Expense, ExpenseInput } from '@/types/database';
-import { getDatabase } from '@/lib/database';
+import { getDatabase } from '@/lib/db/core/database';
 import {
   createExpense,
   getAllExpenses,
   updateExpense as updateExpenseDb,
   deleteExpense as deleteExpenseDb,
-} from '@/lib/expenses-db';
-import { seedSampleData } from '@/lib/seed-data';
+} from '@/lib/db/models/expenses';
+import { seedSampleData } from '@/lib/utils/seed-data';
 
 export interface UseExpensesReturn {
   expenses: Expense[];

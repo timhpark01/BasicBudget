@@ -3,7 +3,7 @@ import {
   NotificationPreferences,
   getNotificationPreferences,
   saveNotificationPreferences,
-} from '@/lib/notifications-storage';
+} from '@/lib/storage/notifications';
 
 export interface UseNotificationPreferencesReturn {
   preferences: NotificationPreferences;

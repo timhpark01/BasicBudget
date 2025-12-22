@@ -10,7 +10,7 @@ import {
   Alert,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { getSettings, setSetting, AppSettings } from '@/lib/settings';
+import { getSettings, setSetting, AppSettings } from '@/lib/storage/settings';
 import { useSettings } from '@/contexts/SettingsContext';
 
 interface AdvancedSettingsModalProps {

@@ -1,23 +1,9 @@
 import * as SQLite from 'expo-sqlite';
-import * as Crypto from 'expo-crypto';
+import { generateId } from '../../utils/id-generator';
+import { formatDate, parseDate } from '../../utils/date-formatter';
 
-/**
- * Format Date to YYYY-MM-DD string
- */
-export function formatDate(date: Date): string {
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, '0');
-  const day = String(date.getDate()).padStart(2, '0');
-  return `${year}-${month}-${day}`;
-}
-
-/**
- * Parse YYYY-MM-DD string to Date
- */
-export function parseDate(dateStr: string): Date {
-  const [year, month, day] = dateStr.split('-').map(Number);
-  return new Date(year, month - 1, day);
-}
+// Re-export date utilities for backward compatibility
+export { formatDate, parseDate };
 
 export interface NetWorthItem {
   id: string;
@@ -50,17 +36,6 @@ interface NetWorthRow {
   notes: string | null;
   created_at: number;
   updated_at: number;
-}
-
-/**
- * Generate a unique ID
- */
-function generateId(): string {
-  try {
-    return Crypto.randomUUID();
-  } catch (err) {
-    return `${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
-  }
 }
 
 /**

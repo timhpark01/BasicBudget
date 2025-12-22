@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Profile, getProfile, saveProfile } from '@/lib/profile-storage';
+import { Profile, getProfile, saveProfile } from '@/lib/storage/profile';
 
 export interface UseProfileReturn {
   profile: Profile;

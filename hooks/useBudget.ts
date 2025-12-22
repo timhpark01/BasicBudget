@@ -1,5 +1,5 @@
-import { getBudgetForMonth, setBudgetForMonth as setBudgetDb } from '@/lib/budgets-db';
-import { getDatabase } from '@/lib/database';
+import { getBudgetForMonth, setBudgetForMonth as setBudgetDb } from '@/lib/db/models/budgets';
+import { getDatabase } from '@/lib/db/core/database';
 import { Budget, BudgetInput } from '@/types/database';
 import * as SQLite from 'expo-sqlite';
 import { useCallback, useEffect, useState } from 'react';

@@ -1,18 +1,6 @@
 import * as SQLite from 'expo-sqlite';
-import * as Crypto from 'expo-crypto';
 import { CategoryBudget, CategoryBudgetInput, CategoryBudgetRow } from '@/types/database';
-
-/**
- * Generate a unique ID for new category budgets
- */
-function generateId(): string {
-  try {
-    return Crypto.randomUUID();
-  } catch (err) {
-    // Fallback for older devices
-    return `${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
-  }
-}
+import { generateId } from '../../utils/id-generator';
 
 /**
  * Transform database row to CategoryBudget object

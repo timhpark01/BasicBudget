@@ -1,14 +1,14 @@
 import { useState } from 'react';
 import { StyleSheet, Text, View, ScrollView, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import ProfileModal from '@/components/ProfileModal';
-import NotificationsModal from '@/components/NotificationsModal';
-import CategoriesModal from '@/components/CategoriesModal';
-import AdvancedSettingsModal from '@/components/AdvancedSettingsModal';
-import BudgetCalculatorModal from '@/components/BudgetCalculatorModal';
-import InsightsModal from '@/components/InsightsModal';
-import HelpModal from '@/components/HelpModal';
-import AboutModal from '@/components/AboutModal';
+import ProfileModal from '@/components/modals/settings/ProfileModal';
+import NotificationsModal from '@/components/modals/settings/NotificationsModal';
+import CategoriesModal from '@/components/modals/categories/CategoriesModal';
+import AdvancedSettingsModal from '@/components/modals/settings/AdvancedSettingsModal';
+import BudgetCalculatorModal from '@/components/modals/budget/BudgetCalculatorModal';
+import InsightsModal from '@/components/modals/analytics/InsightsModal';
+import HelpModal from '@/components/modals/HelpModal';
+import AboutModal from '@/components/modals/settings/AboutModal';
 
 export default function MoreScreen() {
   const [profileModalVisible, setProfileModalVisible] = useState(false);

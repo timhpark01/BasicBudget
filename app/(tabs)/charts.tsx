@@ -12,9 +12,9 @@ import { useFocusEffect } from '@react-navigation/native';
 import { useExpenses } from '@/hooks/useExpenses';
 import { useBudget } from '@/hooks/useBudget';
 import { Expense } from '@/types/database';
-import SpendingCalendar from '@/components/SpendingCalendar';
-import SpendingLineChart from '@/components/SpendingLineChart';
-import CategoryPieChart from '@/components/CategoryPieChart';
+import SpendingCalendar from '@/components/charts/SpendingCalendar';
+import SpendingLineChart from '@/components/charts/SpendingLineChart';
+import CategoryPieChart from '@/components/charts/CategoryPieChart';
 
 export default function ChartsScreen() {
   // Calculate current month in YYYY-MM format

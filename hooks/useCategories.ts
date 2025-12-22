@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import * as SQLite from 'expo-sqlite';
 import { Category, CustomCategory, CustomCategoryInput } from '@/types/database';
-import { getDatabase } from '@/lib/database';
+import { getDatabase } from '@/lib/db/core/database';
 import {
   getCustomCategories,
   createCustomCategory,
@@ -10,7 +10,7 @@ import {
   getExpenseCountByCategory,
   reassignExpensesToCategory,
   reorderCategories as reorderCategoriesDb,
-} from '@/lib/categories-db';
+} from '@/lib/db/models/categories';
 
 export interface UseCategoriesReturn {
   allCategories: Category[];

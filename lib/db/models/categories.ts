@@ -4,6 +4,7 @@ import {
   CustomCategoryRow,
   CustomCategoryInput,
 } from '@/types/database';
+import { generateId } from '../../utils/id-generator';
 
 /**
  * Convert database row to CustomCategory object
@@ -46,7 +47,7 @@ export async function createCustomCategory(
   category: CustomCategoryInput
 ): Promise<CustomCategory> {
   try {
-    const id = `custom_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    const id = `custom_${generateId()}`;
     const now = Date.now();
 
     // Get the max position and assign position + 1

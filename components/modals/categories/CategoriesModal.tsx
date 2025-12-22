@@ -14,8 +14,8 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useCategories } from '@/hooks/useCategories';
-import ColorPicker from './ColorPicker';
-import CategoryIconPicker from './CategoryIconPicker';
+import ColorPicker from '@/components/shared/ColorPicker';
+import CategoryIconPicker from '@/components/shared/CategoryIconPicker';
 import DraggableFlatList, {
   RenderItemParams,
   ScaleDecorator,
