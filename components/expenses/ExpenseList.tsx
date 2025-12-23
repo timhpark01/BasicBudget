@@ -1,0 +1,269 @@
+import { useState } from 'react';
+import {
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+  Animated,
+} from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
+import Swipeable from 'react-native-gesture-handler/Swipeable';
+import { Expense } from '@/types/database';
+
+interface ExpenseListProps {
+  groupedExpenses: [string, Expense[]][];
+  onExpenseTap: (expense: Expense) => void;
+  onExpenseLongPress: (expense: Expense) => void;
+  onSwipeDelete: (expense: Expense) => void;
+}
+
+export default function ExpenseList({
+  groupedExpenses,
+  onExpenseTap,
+  onExpenseLongPress,
+  onSwipeDelete,
+}: ExpenseListProps) {
+  const [collapsedDates, setCollapsedDates] = useState<Set<string>>(new Set());
+
+  const toggleDateCollapse = (dateKey: string) => {
+    setCollapsedDates((prev) => {
+      const newSet = new Set(prev);
+      if (newSet.has(dateKey)) {
+        newSet.delete(dateKey);
+      } else {
+        newSet.add(dateKey);
+      }
+      return newSet;
+    });
+  };
+
+  const formatDateHeader = (dateString: string) => {
+    const date = new Date(dateString);
+    const today = new Date();
+    const yesterday = new Date(today);
+    yesterday.setDate(yesterday.getDate() - 1);
+
+    if (date.toDateString() === today.toDateString()) {
+      return 'Today';
+    } else if (date.toDateString() === yesterday.toDateString()) {
+      return 'Yesterday';
+    } else {
+      return date.toLocaleDateString('en-US', {
+        weekday: 'long',
+        month: 'short',
+        day: 'numeric',
+      });
+    }
+  };
+
+  const getDayTotal = (dayExpenses: Expense[]) => {
+    return dayExpenses.reduce((sum, expense) => sum + parseFloat(expense.amount), 0);
+  };
+
+  const renderRightActions = (
+    progress: Animated.AnimatedInterpolation<number>,
+    dragX: Animated.AnimatedInterpolation<number>,
+    expense: Expense
+  ) => {
+    const scale = progress.interpolate({
+      inputRange: [0, 1],
+      outputRange: [0.7, 1],
+      extrapolate: 'clamp',
+    });
+
+    const opacity = progress.interpolate({
+      inputRange: [0, 0.5, 1],
+      outputRange: [0, 0.8, 1],
+      extrapolate: 'clamp',
+    });
+
+    return (
+      <Animated.View
+        style={[
+          styles.deleteAction,
+          {
+            opacity,
+            transform: [{ scale }],
+          },
+        ]}
+      >
+        <TouchableOpacity
+          style={styles.deleteActionButton}
+          onPress={() => onSwipeDelete(expense)}
+          activeOpacity={0.7}
+        >
+          <Ionicons name="trash" size={24} color="#FFFFFF" />
+          <Text style={styles.deleteActionText}>Delete</Text>
+        </TouchableOpacity>
+      </Animated.View>
+    );
+  };
+
+  return (
+    <View style={styles.expensesList}>
+      {groupedExpenses.map(([dateKey, dayExpenses]) => {
+        const isCollapsed = collapsedDates.has(dateKey);
+        return (
+          <View key={dateKey} style={styles.dateSection}>
+            <TouchableOpacity
+              style={styles.dateHeader}
+              onPress={() => toggleDateCollapse(dateKey)}
+              activeOpacity={0.7}
+            >
+              <View style={styles.dateHeaderLeft}>
+                <Ionicons
+                  name={isCollapsed ? 'chevron-forward' : 'chevron-down'}
+                  size={20}
+                  color="#666"
+                />
+                <Text style={styles.dateHeaderText}>
+                  {formatDateHeader(dateKey)}
+                </Text>
+              </View>
+              <Text style={styles.dateTotalText}>
+                ${getDayTotal(dayExpenses).toFixed(2)}
+              </Text>
+            </TouchableOpacity>
+
+            {!isCollapsed && (
+              <View style={styles.expensesContainer}>
+                {dayExpenses.map((expense) => (
+                  <Swipeable
+                    key={expense.id}
+                    renderRightActions={(progress, dragX) =>
+                      renderRightActions(progress, dragX, expense)
+                    }
+                    overshootRight={false}
+                  >
+                    <TouchableOpacity
+                      style={styles.expenseItem}
+                      onPress={() => onExpenseTap(expense)}
+                      onLongPress={() => onExpenseLongPress(expense)}
+                      activeOpacity={0.7}
+                    >
+                      <View
+                        style={[
+                          styles.categoryIcon,
+                          { backgroundColor: expense.category.color + '20' },
+                        ]}
+                      >
+                        <Ionicons
+                          name={expense.category.icon}
+                          size={24}
+                          color={expense.category.color}
+                        />
+                      </View>
+                      <View style={styles.expenseDetails}>
+                        <Text style={styles.expenseCategoryText}>
+                          {expense.category.name}
+                        </Text>
+                        {expense.note ? (
+                          <Text style={styles.expenseNoteText}>{expense.note}</Text>
+                        ) : null}
+                      </View>
+                      <Text style={styles.expenseAmount}>
+                        ${parseFloat(expense.amount).toFixed(2)}
+                      </Text>
+                    </TouchableOpacity>
+                  </Swipeable>
+                ))}
+              </View>
+            )}
+          </View>
+        );
+      })}
+    </View>
+  );
+}
+
+const styles = StyleSheet.create({
+  expensesList: {
+    flex: 1,
+  },
+  dateSection: {
+    marginBottom: 16,
+  },
+  dateHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    backgroundColor: '#f8f8f8',
+    borderRadius: 8,
+    marginBottom: 8,
+  },
+  dateHeaderLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  dateHeaderText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#333',
+  },
+  dateTotalText: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#355e3b',
+  },
+  expensesContainer: {
+    gap: 8,
+  },
+  expenseItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#fff',
+    padding: 16,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#e0e0e0',
+    gap: 12,
+  },
+  categoryIcon: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  expenseDetails: {
+    flex: 1,
+  },
+  expenseCategoryText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#333',
+    marginBottom: 2,
+  },
+  expenseNoteText: {
+    fontSize: 14,
+    color: '#666',
+  },
+  expenseAmount: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#333',
+  },
+  deleteAction: {
+    backgroundColor: '#DC3545',
+    justifyContent: 'center',
+    alignItems: 'flex-end',
+    paddingRight: 20,
+    borderRadius: 12,
+    marginLeft: 8,
+  },
+  deleteActionButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    paddingVertical: 16,
+    paddingHorizontal: 12,
+  },
+  deleteActionText: {
+    color: '#FFFFFF',
+    fontWeight: '600',
+    fontSize: 16,
+  },
+});

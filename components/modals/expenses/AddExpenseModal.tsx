@@ -11,10 +11,13 @@ import {
   Text,
   TextInput,
   TouchableOpacity,
-  View
+  View,
+  useWindowDimensions,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import CalculatorKeypad from '@/components/shared/CalculatorKeypad';
 import CalendarPicker from '@/components/shared/CalendarPicker';
+import { moderateScale, scaleFontSize, scaleWidth, scaleHeight } from '@/lib/utils/responsive';
 
 interface AddExpenseModalProps {
   visible: boolean;
@@ -34,6 +37,10 @@ export default function AddExpenseModal({
   editExpense,
   onSave,
 }: AddExpenseModalProps) {
+  // Responsive sizing
+  const insets = useSafeAreaInsets();
+  const { height } = useWindowDimensions();
+
   const { allCategories, refreshCategories } = useCategories();
   const [amount, setAmount] = useState('0');
   const [selectedCategory, setSelectedCategory] = useState<Category | null>(null);
@@ -137,6 +144,10 @@ export default function AddExpenseModal({
     });
   };
 
+  // Calculate responsive heights
+  const calculatorHeight = scaleHeight(320); // Height of calculator
+  const bottomSpacing = calculatorHeight + moderateScale(20);
+
   return (
     <Modal
       visible={visible}
@@ -144,7 +155,7 @@ export default function AddExpenseModal({
       transparent={false}
       onRequestClose={onClose}
     >
-      <View style={styles.container}>
+      <View style={[styles.container, { paddingTop: insets.top }]}>
         {/* Header */}
         <View style={styles.header}>
           <TouchableOpacity onPress={onClose} disabled={loading}>
@@ -163,7 +174,11 @@ export default function AddExpenseModal({
         </View>
 
         {/* Category Selection Background */}
-        <ScrollView style={styles.categoryBackground} showsVerticalScrollIndicator={false}>
+        <ScrollView
+          style={styles.categoryBackground}
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={{ paddingBottom: bottomSpacing }}
+        >
           <View style={styles.categoriesGrid}>
             {allCategories.map((category) => (
               <TouchableOpacity
@@ -195,7 +210,6 @@ export default function AddExpenseModal({
               </TouchableOpacity>
             ))}
           </View>
-          <View style={styles.bottomSpacer} />
         </ScrollView>
 
         {/* Input Area - Calculator or Calendar */}
@@ -269,21 +283,16 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingVertical: 16,
-    paddingTop: 60,
+    paddingHorizontal: moderateScale(20),
+    paddingVertical: moderateScale(16),
     backgroundColor: '#fff',
     borderBottomWidth: 1,
     borderBottomColor: '#e0e0e0',
   },
   headerTitle: {
-    fontSize: 18,
+    fontSize: scaleFontSize(18),
     fontWeight: '600',
     color: '#333',
-  },
-  bottomSpacer: {
-    height: 100,
-    width: '100%',
   },
   categoryBackground: {
     flex: 1,
@@ -291,13 +300,12 @@ const styles = StyleSheet.create({
   categoriesGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    padding: 16,
-    paddingBottom: 400,
+    padding: moderateScale(16),
   },
   categoryTile: {
     width: '25%',
     aspectRatio: 1,
-    padding: 8,
+    padding: moderateScale(8),
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -305,15 +313,15 @@ const styles = StyleSheet.create({
     opacity: 1,
   },
   categoryIconContainer: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
+    width: scaleWidth(56),
+    height: scaleWidth(56),
+    borderRadius: scaleWidth(28),
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 8,
+    marginBottom: moderateScale(8),
   },
   categoryName: {
-    fontSize: 12,
+    fontSize: scaleFontSize(12, 10, 14),
     color: '#666',
     textAlign: 'center',
   },
@@ -323,10 +331,10 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     backgroundColor: '#fff',
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
-    paddingTop: 24,
-    paddingBottom: 40,
+    borderTopLeftRadius: moderateScale(24),
+    borderTopRightRadius: moderateScale(24),
+    paddingTop: moderateScale(20),
+    paddingBottom: moderateScale(20),
     shadowColor: '#000',
     shadowOffset: { width: 0, height: -4 },
     shadowOpacity: 0.1,

@@ -1,6 +1,7 @@
 import { useMemo } from 'react';
-import { StyleSheet, Text, View, Dimensions } from 'react-native';
+import { StyleSheet, Text, View, useWindowDimensions } from 'react-native';
 import Svg, { Polyline, Line, Circle, G, Text as SvgText } from 'react-native-svg';
+import { moderateScale, scaleFontSize } from '@/lib/utils/responsive';
 
 interface SpendingLineChartProps {
   daysInMonth: number;
@@ -15,10 +16,10 @@ export default function SpendingLineChart({
   budgetAmount,
   idealSpending,
 }: SpendingLineChartProps) {
-  const screenWidth = Dimensions.get('window').width;
-  const chartWidth = screenWidth - 48;
-  const chartHeight = 220;
-  const padding = 40;
+  const { width: screenWidth } = useWindowDimensions();
+  const chartWidth = screenWidth - moderateScale(48);
+  const chartHeight = moderateScale(220);
+  const padding = moderateScale(40);
   const graphWidth = chartWidth - padding * 2;
   const graphHeight = chartHeight - padding * 2;
 

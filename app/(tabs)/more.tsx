@@ -1,6 +1,16 @@
 import { useState } from 'react';
-import { StyleSheet, Text, View, ScrollView, TouchableOpacity } from 'react-native';
+import {
+  StyleSheet,
+  Text,
+  View,
+  ScrollView,
+  TouchableOpacity,
+  useWindowDimensions,
+} from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
+import { moderateScale, scaleFontSize } from '@/lib/utils/responsive';
 import ProfileModal from '@/components/modals/settings/ProfileModal';
 import NotificationsModal from '@/components/modals/settings/NotificationsModal';
 import CategoriesModal from '@/components/modals/categories/CategoriesModal';
@@ -11,6 +21,10 @@ import HelpModal from '@/components/modals/HelpModal';
 import AboutModal from '@/components/modals/settings/AboutModal';
 
 export default function MoreScreen() {
+  // Responsive sizing
+  const insets = useSafeAreaInsets();
+  const { width } = useWindowDimensions();
+
   const [profileModalVisible, setProfileModalVisible] = useState(false);
   const [notificationsModalVisible, setNotificationsModalVisible] = useState(false);
   const [categoriesModalVisible, setCategoriesModalVisible] = useState(false);
@@ -21,8 +35,11 @@ export default function MoreScreen() {
   const [aboutModalVisible, setAboutModalVisible] = useState(false);
 
   return (
-    <View style={styles.container}>
-      <ScrollView style={styles.scrollView}>
+    <SafeAreaView style={styles.container} edges={['top']}>
+      <ScrollView
+        style={styles.scrollView}
+        contentContainerStyle={{ paddingBottom: insets.bottom + moderateScale(20) }}
+      >
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Settings</Text>
 
@@ -155,7 +172,7 @@ export default function MoreScreen() {
         visible={aboutModalVisible}
         onClose={() => setAboutModalVisible(false)}
       />
-    </View>
+    </SafeAreaView>
   );
 }
 
@@ -168,29 +185,29 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   section: {
-    marginTop: 20,
+    marginTop: moderateScale(20),
     backgroundColor: '#fff',
   },
   sectionTitle: {
-    fontSize: 14,
+    fontSize: scaleFontSize(14),
     fontWeight: '600',
     color: '#666',
-    paddingHorizontal: 20,
-    paddingTop: 16,
-    paddingBottom: 8,
+    paddingHorizontal: moderateScale(20),
+    paddingTop: moderateScale(16),
+    paddingBottom: moderateScale(8),
   },
   menuItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 16,
-    paddingHorizontal: 20,
+    paddingVertical: moderateScale(16),
+    paddingHorizontal: moderateScale(20),
     borderBottomWidth: 1,
     borderBottomColor: '#f0f0f0',
   },
   menuText: {
     flex: 1,
-    fontSize: 16,
-    marginLeft: 16,
+    fontSize: scaleFontSize(16),
+    marginLeft: moderateScale(16),
     color: '#333',
   },
 });

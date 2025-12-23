@@ -6,7 +6,10 @@ import {
   ScrollView,
   TouchableOpacity,
   ActivityIndicator,
+  useWindowDimensions,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
 import { useExpenses } from '@/hooks/useExpenses';
@@ -15,8 +18,13 @@ import { Expense } from '@/types/database';
 import SpendingCalendar from '@/components/charts/SpendingCalendar';
 import SpendingLineChart from '@/components/charts/SpendingLineChart';
 import CategoryPieChart from '@/components/charts/CategoryPieChart';
+import { moderateScale, scaleFontSize } from '@/lib/utils/responsive';
 
 export default function ChartsScreen() {
+  // Responsive sizing
+  const insets = useSafeAreaInsets();
+  const { width } = useWindowDimensions();
+
   // Calculate current month in YYYY-MM format
   const currentMonth = useMemo(() => {
     const now = new Date();
@@ -123,8 +131,11 @@ export default function ChartsScreen() {
   const hasExpenses = filteredExpenses.length > 0;
 
   return (
-    <View style={styles.container}>
-      <ScrollView style={styles.scrollView}>
+    <SafeAreaView style={styles.container} edges={['top']}>
+      <ScrollView
+        style={styles.scrollView}
+        contentContainerStyle={{ paddingBottom: insets.bottom + moderateScale(20) }}
+      >
         <View style={styles.header}>
           <View style={styles.headerTop}>
             <View style={styles.monthSelector}>
@@ -189,7 +200,7 @@ export default function ChartsScreen() {
           </>
         )}
       </ScrollView>
-    </View>
+    </SafeAreaView>
   );
 }
 
@@ -203,7 +214,8 @@ const styles = StyleSheet.create({
   },
   header: {
     backgroundColor: '#fff',
-    padding: 20,
+    paddingHorizontal: moderateScale(20),
+    paddingVertical: moderateScale(16),
     borderBottomWidth: 1,
     borderBottomColor: '#e0e0e0',
   },
@@ -220,11 +232,11 @@ const styles = StyleSheet.create({
     padding: 4,
   },
   monthTitle: {
-    fontSize: 24,
+    fontSize: scaleFontSize(24, 20, 28),
     fontWeight: 'bold',
-    minWidth: 160,
     textAlign: 'center',
-    marginHorizontal: 8,
+    marginHorizontal: moderateScale(8),
+    flexShrink: 1,
   },
   loadingContainer: {
     flex: 1,
@@ -234,8 +246,8 @@ const styles = StyleSheet.create({
     marginTop: 100,
   },
   loadingText: {
-    marginTop: 16,
-    fontSize: 16,
+    marginTop: moderateScale(16),
+    fontSize: scaleFontSize(16),
     color: '#666',
   },
   content: {
@@ -246,19 +258,19 @@ const styles = StyleSheet.create({
     marginTop: 100,
   },
   emptyText: {
-    fontSize: 16,
+    fontSize: scaleFontSize(16),
     color: '#999',
     textAlign: 'center',
   },
   noBudgetContainer: {
     backgroundColor: '#fff',
-    padding: 20,
-    marginHorizontal: 16,
-    marginBottom: 16,
-    borderRadius: 8,
+    padding: moderateScale(20),
+    marginHorizontal: moderateScale(16),
+    marginBottom: moderateScale(16),
+    borderRadius: moderateScale(8),
   },
   noBudgetText: {
-    fontSize: 14,
+    fontSize: scaleFontSize(14),
     color: '#666',
     textAlign: 'center',
   },

@@ -7,133 +7,36 @@ import * as SQLite from 'expo-sqlite';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { CATEGORIES } from '@/constants/categories';
 
-const MIGRATION_KEY = 'migration_v1_categories_to_db';
-const MIGRATION_V2_KEY = 'migration_v2_category_budgets';
-const MIGRATION_V3_KEY = 'migration_v3_additional_categories';
-const MIGRATION_V4_KEY = 'migration_v4_networth_dynamic_items';
-const MIGRATION_V5_KEY = 'migration_v5_networth_full_dates';
+// Migration keys
+const MIGRATION_KEYS = {
+  v1: 'migration_v1_categories_to_db',
+  v2: 'migration_v2_category_budgets',
+  v3: 'migration_v3_additional_categories',
+  v4: 'migration_v4_networth_dynamic_items',
+  v5: 'migration_v5_networth_full_dates',
+} as const;
 
 /**
- * Check if migration has already been completed
+ * Check if a migration has already been completed
  */
-async function checkMigrationCompleted(): Promise<boolean> {
+async function checkMigration(key: string): Promise<boolean> {
   try {
-    const completed = await AsyncStorage.getItem(MIGRATION_KEY);
+    const completed = await AsyncStorage.getItem(key);
     return completed === 'true';
   } catch (error) {
-    console.error('Error checking migration status:', error);
+    console.error(`Error checking migration status for ${key}:`, error);
     return false;
   }
 }
 
 /**
- * Mark migration as completed
+ * Mark a migration as completed
  */
-async function markMigrationCompleted(): Promise<void> {
+async function markMigration(key: string): Promise<void> {
   try {
-    await AsyncStorage.setItem(MIGRATION_KEY, 'true');
+    await AsyncStorage.setItem(key, 'true');
   } catch (error) {
-    console.error('Error marking migration as completed:', error);
-    throw error;
-  }
-}
-
-/**
- * Check if v2 migration (category budgets) has already been completed
- */
-async function checkMigrationV2Completed(): Promise<boolean> {
-  try {
-    const completed = await AsyncStorage.getItem(MIGRATION_V2_KEY);
-    return completed === 'true';
-  } catch (error) {
-    console.error('Error checking migration v2 status:', error);
-    return false;
-  }
-}
-
-/**
- * Mark v2 migration as completed
- */
-async function markMigrationV2Completed(): Promise<void> {
-  try {
-    await AsyncStorage.setItem(MIGRATION_V2_KEY, 'true');
-  } catch (error) {
-    console.error('Error marking migration v2 as completed:', error);
-    throw error;
-  }
-}
-
-/**
- * Check if v3 migration (additional categories) has already been completed
- */
-async function checkMigrationV3Completed(): Promise<boolean> {
-  try {
-    const completed = await AsyncStorage.getItem(MIGRATION_V3_KEY);
-    return completed === 'true';
-  } catch (error) {
-    console.error('Error checking migration v3 status:', error);
-    return false;
-  }
-}
-
-/**
- * Mark v3 migration as completed
- */
-async function markMigrationV3Completed(): Promise<void> {
-  try {
-    await AsyncStorage.setItem(MIGRATION_V3_KEY, 'true');
-  } catch (error) {
-    console.error('Error marking migration v3 as completed:', error);
-    throw error;
-  }
-}
-
-/**
- * Check if v4 migration (net worth dynamic items) has already been completed
- */
-async function checkMigrationV4Completed(): Promise<boolean> {
-  try {
-    const completed = await AsyncStorage.getItem(MIGRATION_V4_KEY);
-    return completed === 'true';
-  } catch (error) {
-    console.error('Error checking migration v4 status:', error);
-    return false;
-  }
-}
-
-/**
- * Mark v4 migration as completed
- */
-async function markMigrationV4Completed(): Promise<void> {
-  try {
-    await AsyncStorage.setItem(MIGRATION_V4_KEY, 'true');
-  } catch (error) {
-    console.error('Error marking migration v4 as completed:', error);
-    throw error;
-  }
-}
-
-/**
- * Check if v5 migration (net worth full dates) has already been completed
- */
-async function checkMigrationV5Completed(): Promise<boolean> {
-  try {
-    const completed = await AsyncStorage.getItem(MIGRATION_V5_KEY);
-    return completed === 'true';
-  } catch (error) {
-    console.error('Error checking migration v5 status:', error);
-    return false;
-  }
-}
-
-/**
- * Mark v5 migration as completed
- */
-async function markMigrationV5Completed(): Promise<void> {
-  try {
-    await AsyncStorage.setItem(MIGRATION_V5_KEY, 'true');
-  } catch (error) {
-    console.error('Error marking migration v5 as completed:', error);
+    console.error(`Error marking migration ${key} as completed:`, error);
     throw error;
   }
 }
@@ -540,24 +443,15 @@ export async function runMigrations(db: SQLite.SQLiteDatabase): Promise<void> {
   console.log('🔄 Starting migration runner...');
 
   try {
-    // Check if v1 migration already completed
-    const completed = await checkMigrationCompleted();
-    if (!completed) {
+    // V1 Migration: Categories with position
+    if (!(await checkMigration(MIGRATION_KEYS.v1))) {
       console.log('🔄 Running v1 database migrations (categories with position)...');
-
       try {
-        // Wrap v1 migrations in a transaction for atomicity
         await db.withTransactionAsync(async () => {
-          // Step 1: Add position column to existing table
           await addPositionColumn(db);
-
-          // Step 2: Migrate default categories to database
           await migrateDefaultCategories(db);
         });
-
-        // Mark v1 migration as completed
-        await markMigrationCompleted();
-
+        await markMigration(MIGRATION_KEYS.v1);
         console.log('✅ v1 migrations completed successfully');
       } catch (error) {
         console.error('❌ v1 migration FAILED:', error);
@@ -567,21 +461,14 @@ export async function runMigrations(db: SQLite.SQLiteDatabase): Promise<void> {
       console.log('✅ v1 migrations already completed');
     }
 
-    // Check if v2 migration already completed
-    const v2Completed = await checkMigrationV2Completed();
-    if (!v2Completed) {
+    // V2 Migration: Category budgets table
+    if (!(await checkMigration(MIGRATION_KEYS.v2))) {
       console.log('🔄 Running v2 database migrations (category budgets table)...');
-
       try {
-        // Wrap v2 migrations in a transaction for atomicity
         await db.withTransactionAsync(async () => {
-          // Step 1: Create category_budgets table
           await createCategoryBudgetsTable(db);
         });
-
-        // Mark v2 migration as completed
-        await markMigrationV2Completed();
-
+        await markMigration(MIGRATION_KEYS.v2);
         console.log('✅ v2 migrations completed successfully');
       } catch (error) {
         console.error('❌ v2 migration FAILED:', error);
@@ -591,21 +478,14 @@ export async function runMigrations(db: SQLite.SQLiteDatabase): Promise<void> {
       console.log('✅ v2 migrations already completed');
     }
 
-    // Check if v3 migration already completed
-    const v3Completed = await checkMigrationV3Completed();
-    if (!v3Completed) {
+    // V3 Migration: Additional categories
+    if (!(await checkMigration(MIGRATION_KEYS.v3))) {
       console.log('🔄 Running v3 database migrations (additional categories)...');
-
       try {
-        // Wrap v3 migrations in a transaction for atomicity
         await db.withTransactionAsync(async () => {
-          // Step 1: Add additional categories (13-32)
           await addAdditionalCategories(db);
         });
-
-        // Mark v3 migration as completed
-        await markMigrationV3Completed();
-
+        await markMigration(MIGRATION_KEYS.v3);
         console.log('✅ v3 migrations completed successfully');
       } catch (error) {
         console.error('❌ v3 migration FAILED:', error);
@@ -615,53 +495,33 @@ export async function runMigrations(db: SQLite.SQLiteDatabase): Promise<void> {
       console.log('✅ v3 migrations already completed');
     }
 
-    // Check if v4 migration already completed
-    const v4Completed = await checkMigrationV4Completed();
-    if (!v4Completed) {
+    // V4 Migration: Net worth dynamic items
+    if (!(await checkMigration(MIGRATION_KEYS.v4))) {
       console.log('🔄 Running v4 database migrations (net worth dynamic items)...');
-
       try {
-        // Step 1: Convert net_worth_entries to dynamic items
-        // Note: Not using transaction wrapper due to DDL statement conflicts
         await convertNetWorthToDynamicItems(db);
-
-        // Mark v4 migration as completed
-        await markMigrationV4Completed();
-
+        await markMigration(MIGRATION_KEYS.v4);
         console.log('✅ v4 migrations completed successfully');
       } catch (error) {
         console.error('❌ v4 migration failed, but continuing:', error);
-        // Mark as completed anyway to avoid retrying a failed migration
-        await markMigrationV4Completed();
+        await markMigration(MIGRATION_KEYS.v4);
         console.warn('⚠️  v4 migration marked as complete despite failure (non-critical)');
-        // Don't throw - allow app to continue even if net worth migration fails
-        // This prevents breaking the entire app if only net worth has issues
       }
     } else {
       console.log('✅ v4 migrations already completed');
     }
 
-    // Check if v5 migration already completed
-    const v5Completed = await checkMigrationV5Completed();
-    if (!v5Completed) {
+    // V5 Migration: Net worth full dates
+    if (!(await checkMigration(MIGRATION_KEYS.v5))) {
       console.log('🔄 Running v5 database migrations (net worth full dates)...');
-
       try {
-        // Step 1: Convert net_worth_entries from month to full date
-        // Note: Not using transaction wrapper due to DDL statement conflicts
         await migrateNetWorthToFullDates(db);
-
-        // Mark v5 migration as completed
-        await markMigrationV5Completed();
-
+        await markMigration(MIGRATION_KEYS.v5);
         console.log('✅ v5 migrations completed successfully');
       } catch (error) {
         console.error('❌ v5 migration failed, but continuing:', error);
-        // Mark as completed anyway to avoid retrying a failed migration
-        await markMigrationV5Completed();
+        await markMigration(MIGRATION_KEYS.v5);
         console.warn('⚠️  v5 migration marked as complete despite failure (non-critical)');
-        // Don't throw - allow app to continue even if net worth migration fails
-        // This prevents breaking the entire app if only net worth has issues
       }
     } else {
       console.log('✅ v5 migrations already completed');
@@ -670,7 +530,6 @@ export async function runMigrations(db: SQLite.SQLiteDatabase): Promise<void> {
     console.log('✅ All migrations completed successfully');
   } catch (error) {
     console.error('❌ CRITICAL Migration failed:', error);
-    // Don't mark as completed - will retry on next app launch
     throw error;
   }
 }
@@ -681,7 +540,7 @@ export async function runMigrations(db: SQLite.SQLiteDatabase): Promise<void> {
  */
 export async function resetMigrationStatus(): Promise<void> {
   try {
-    await AsyncStorage.removeItem(MIGRATION_KEY);
+    await AsyncStorage.removeItem(MIGRATION_KEYS.v1);
     console.log('✅ Migration status reset');
   } catch (error) {
     console.error('Failed to reset migration status:', error);

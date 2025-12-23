@@ -1,8 +1,9 @@
 import { useMemo } from 'react';
-import { StyleSheet, Text, View, Dimensions } from 'react-native';
+import { StyleSheet, Text, View, useWindowDimensions } from 'react-native';
 import Svg, { Path, G, Circle } from 'react-native-svg';
 import { Ionicons } from '@expo/vector-icons';
 import { Expense } from '@/types/database';
+import { moderateScale, scaleFontSize } from '@/lib/utils/responsive';
 
 interface CategoryPieChartProps {
   expenses: Expense[];
@@ -18,11 +19,11 @@ interface CategoryData {
 }
 
 export default function CategoryPieChart({ expenses }: CategoryPieChartProps) {
-  const screenWidth = Dimensions.get('window').width;
-  const chartSize = Math.min(screenWidth - 64, 250);
+  const { width: screenWidth } = useWindowDimensions();
+  const chartSize = Math.min(screenWidth - moderateScale(64), moderateScale(250));
   const centerX = chartSize / 2;
   const centerY = chartSize / 2;
-  const radius = chartSize / 2 - 20;
+  const radius = chartSize / 2 - moderateScale(20);
 
   // Group expenses by category and calculate totals
   const categoryData = useMemo(() => {
