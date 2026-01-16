@@ -333,7 +333,7 @@ export default function BudgetsScreen() {
   const fabRight = moderateScale(20);
 
   return (
-    <SafeAreaView style={styles.container} edges={['top']}>
+    <SafeAreaView style={styles.container} edges={[]}>
       <ScrollView
         style={styles.scrollView}
         contentContainerStyle={{ paddingBottom: insets.bottom + fabSize + moderateScale(40) }}
@@ -471,7 +471,8 @@ const styles = StyleSheet.create({
   header: {
     backgroundColor: '#fff',
     paddingHorizontal: moderateScale(20),
-    paddingVertical: moderateScale(16),
+    paddingTop: moderateScale(16),
+    paddingBottom: moderateScale(16),
     borderBottomWidth: 1,
     borderBottomColor: '#e0e0e0',
   },

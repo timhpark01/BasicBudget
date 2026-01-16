@@ -113,7 +113,7 @@ export default function ExpenseList({
               <View style={styles.dateHeaderLeft}>
                 <Ionicons
                   name={isCollapsed ? 'chevron-forward' : 'chevron-down'}
-                  size={20}
+                  size={16}
                   color="#666"
                 />
                 <Text style={styles.dateHeaderText}>
@@ -149,7 +149,7 @@ export default function ExpenseList({
                       >
                         <Ionicons
                           name={expense.category.icon}
-                          size={24}
+                          size={20}
                           color={expense.category.color}
                         />
                       </View>
@@ -181,17 +181,18 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   dateSection: {
-    marginBottom: 16,
+    marginTop: 8,
+    marginBottom: 8
   },
   dateHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingVertical: 12,
-    paddingHorizontal: 16,
+    paddingVertical: 2,
+    paddingHorizontal: 12,
     backgroundColor: '#f8f8f8',
-    borderRadius: 8,
-    marginBottom: 8,
+    borderRadius: 6,
+    marginBottom: 6,
   },
   dateHeaderLeft: {
     flexDirection: 'row',
@@ -209,22 +210,22 @@ const styles = StyleSheet.create({
     color: '#355e3b',
   },
   expensesContainer: {
-    gap: 8,
+    gap: 2,
   },
   expenseItem: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: '#fff',
-    padding: 16,
-    borderRadius: 12,
+    padding: 10,
+    borderRadius: 10,
     borderWidth: 1,
     borderColor: '#e0e0e0',
-    gap: 12,
+    gap: 10,
   },
   categoryIcon: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -232,17 +233,17 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   expenseCategoryText: {
-    fontSize: 16,
+    fontSize: 15,
     fontWeight: '600',
     color: '#333',
     marginBottom: 2,
   },
   expenseNoteText: {
-    fontSize: 14,
+    fontSize: 13,
     color: '#666',
   },
   expenseAmount: {
-    fontSize: 18,
+    fontSize: 16,
     fontWeight: '700',
     color: '#333',
   },

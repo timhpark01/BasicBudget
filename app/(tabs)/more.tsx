@@ -35,7 +35,7 @@ export default function MoreScreen() {
   const [aboutModalVisible, setAboutModalVisible] = useState(false);
 
   return (
-    <SafeAreaView style={styles.container} edges={['top']}>
+    <SafeAreaView style={styles.container} edges={[]}>
       <ScrollView
         style={styles.scrollView}
         contentContainerStyle={{ paddingBottom: insets.bottom + moderateScale(20) }}
@@ -185,7 +185,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   section: {
-    marginTop: moderateScale(20),
+    marginTop: moderateScale(16),
     backgroundColor: '#fff',
   },
   sectionTitle: {

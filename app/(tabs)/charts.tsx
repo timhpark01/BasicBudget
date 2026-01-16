@@ -131,7 +131,7 @@ export default function ChartsScreen() {
   const hasExpenses = filteredExpenses.length > 0;
 
   return (
-    <SafeAreaView style={styles.container} edges={['top']}>
+    <SafeAreaView style={styles.container} edges={[]}>
       <ScrollView
         style={styles.scrollView}
         contentContainerStyle={{ paddingBottom: insets.bottom + moderateScale(20) }}
@@ -215,7 +215,8 @@ const styles = StyleSheet.create({
   header: {
     backgroundColor: '#fff',
     paddingHorizontal: moderateScale(20),
-    paddingVertical: moderateScale(16),
+    paddingTop: moderateScale(16),
+    paddingBottom: moderateScale(16),
     borderBottomWidth: 1,
     borderBottomColor: '#e0e0e0',
   },

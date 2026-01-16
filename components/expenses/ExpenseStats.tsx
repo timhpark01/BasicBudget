@@ -58,15 +58,18 @@ export default function ExpenseStats({
 
 const styles = StyleSheet.create({
   totalContainer: {
-    marginBottom: 16,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 8,
   },
   totalLabel: {
-    fontSize: 14,
+    fontSize: 20,
     color: '#666',
-    marginBottom: 4,
+    fontWeight: '600',
   },
   totalAmount: {
-    fontSize: 36,
+    fontSize: 30,
     fontWeight: 'bold',
     color: '#333',
   },

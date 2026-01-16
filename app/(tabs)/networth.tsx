@@ -172,7 +172,7 @@ export default function NetWorthScreen() {
   const currentEntry = entries.find(e => e.date === currentDateStr);
 
   return (
-    <SafeAreaView style={styles.container} edges={['top']}>
+    <SafeAreaView style={styles.container} edges={[]}>
       {/* Header with view toggle */}
       <View style={styles.header}>
         <Text style={styles.headerTitle}>Net Worth</Text>
@@ -309,7 +309,8 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingHorizontal: moderateScale(20),
-    paddingVertical: moderateScale(16),
+    paddingTop: moderateScale(16),
+    paddingBottom: moderateScale(16),
     backgroundColor: '#fff',
     borderBottomWidth: 1,
     borderBottomColor: '#e0e0e0',
