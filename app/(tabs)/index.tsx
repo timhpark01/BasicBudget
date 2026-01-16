@@ -329,14 +329,14 @@ export default function BudgetsScreen() {
 
   const fabSize = scaleWidth(56);
   const fabIconSize = scaleWidth(28);
-  const fabBottom = undoVisible ? moderateScale(60) : moderateScale(20);
+  const fabBottom = undoVisible ? moderateScale(140) : moderateScale(100);
   const fabRight = moderateScale(20);
 
   return (
     <SafeAreaView style={styles.container} edges={[]}>
       <ScrollView
         style={styles.scrollView}
-        contentContainerStyle={{ paddingBottom: insets.bottom + fabSize + moderateScale(40) }}
+        contentContainerStyle={{ paddingBottom: fabSize + moderateScale(120) }}
       >
         <View style={styles.header}>
           <ExpenseMonthHeader
@@ -395,7 +395,7 @@ export default function BudgetsScreen() {
         style={[
           styles.fab,
           {
-            bottom: fabBottom + insets.bottom,
+            bottom: fabBottom,
             right: fabRight,
             width: fabSize,
             height: fabSize,

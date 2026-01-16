@@ -38,7 +38,7 @@ export default function MoreScreen() {
     <SafeAreaView style={styles.container} edges={[]}>
       <ScrollView
         style={styles.scrollView}
-        contentContainerStyle={{ paddingBottom: insets.bottom + moderateScale(20) }}
+        contentContainerStyle={{ paddingBottom: moderateScale(100) }}
       >
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Settings</Text>

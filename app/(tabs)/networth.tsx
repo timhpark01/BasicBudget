@@ -204,7 +204,7 @@ export default function NetWorthScreen() {
         <ScrollView
           style={styles.scrollView}
           showsVerticalScrollIndicator={false}
-          contentContainerStyle={{ paddingBottom: insets.bottom + moderateScale(20) }}
+          contentContainerStyle={{ paddingBottom: moderateScale(100) }}
         >
           {/* Net Worth Summary */}
           {currentEntry && <NetWorthSummaryCard entry={currentEntry} />}

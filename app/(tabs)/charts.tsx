@@ -134,7 +134,7 @@ export default function ChartsScreen() {
     <SafeAreaView style={styles.container} edges={[]}>
       <ScrollView
         style={styles.scrollView}
-        contentContainerStyle={{ paddingBottom: insets.bottom + moderateScale(20) }}
+        contentContainerStyle={{ paddingBottom: moderateScale(100) }}
       >
         <View style={styles.header}>
           <View style={styles.headerTop}>
