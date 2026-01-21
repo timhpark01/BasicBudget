@@ -4,42 +4,26 @@
  */
 
 import * as SQLite from 'expo-sqlite';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import { CATEGORIES } from '@/constants/categories';
-
-// Migration keys
-const MIGRATION_KEYS = {
-  v1: 'migration_v1_categories_to_db',
-  v2: 'migration_v2_category_budgets',
-  v3: 'migration_v3_additional_categories',
-  v4: 'migration_v4_networth_dynamic_items',
-  v5: 'migration_v5_networth_full_dates',
-} as const;
+import { getTableSchema, getTableIndexes } from './schema';
 
 /**
- * Check if a migration has already been completed
+ * Migration Criticality:
+ *
+ * CRITICAL migrations (v1-v3):
+ * - Core functionality depends on these
+ * - Must succeed for app to function properly
+ * - Failure will block app startup
+ * - Examples: category system, budget tracking
+ *
+ * OPTIONAL migrations (v4-v5):
+ * - Advanced features that can gracefully degrade
+ * - Failure is logged but doesn't block app startup
+ * - User can still use core expense tracking
+ * - Examples: net worth tracking enhancements
  */
-async function checkMigration(key: string): Promise<boolean> {
-  try {
-    const completed = await AsyncStorage.getItem(key);
-    return completed === 'true';
-  } catch (error) {
-    console.error(`Error checking migration status for ${key}:`, error);
-    return false;
-  }
-}
-
-/**
- * Mark a migration as completed
- */
-async function markMigration(key: string): Promise<void> {
-  try {
-    await AsyncStorage.setItem(key, 'true');
-  } catch (error) {
-    console.error(`Error marking migration ${key} as completed:`, error);
-    throw error;
-  }
-}
+const CRITICAL_MIGRATIONS = ['v1', 'v2', 'v3'] as const;
+const OPTIONAL_MIGRATIONS = ['v4', 'v5'] as const;
 
 /**
  * Add position column to custom_categories table
@@ -56,21 +40,9 @@ async function addPositionColumn(db: SQLite.SQLiteDatabase): Promise<void> {
     if (tableInfo.length === 0) {
       console.log('✅ Table does not exist yet, will be created by setupDatabase');
       // Create the table with position column for new installations
-      await db.execAsync(`
-        CREATE TABLE IF NOT EXISTS custom_categories (
-          id TEXT PRIMARY KEY NOT NULL,
-          name TEXT NOT NULL,
-          icon TEXT NOT NULL,
-          color TEXT NOT NULL,
-          position INTEGER NOT NULL,
-          is_active INTEGER DEFAULT 1,
-          created_at INTEGER NOT NULL,
-          updated_at INTEGER NOT NULL
-        );
-
-        CREATE INDEX IF NOT EXISTS idx_custom_categories_active ON custom_categories(is_active);
-        CREATE INDEX IF NOT EXISTS idx_custom_categories_position ON custom_categories(position);
-      `);
+      const tableSchema = getTableSchema('custom_categories');
+      const indexes = getTableIndexes('custom_categories');
+      await db.execAsync(`${tableSchema};\n${indexes.join(';\n')};`);
       return;
     }
 
@@ -127,12 +99,12 @@ async function addPositionColumn(db: SQLite.SQLiteDatabase): Promise<void> {
     }
 
     // Replace old table with new one
+    const indexes = getTableIndexes('custom_categories');
     await db.execAsync(`
       DROP TABLE custom_categories;
       ALTER TABLE custom_categories_temp RENAME TO custom_categories;
 
-      CREATE INDEX IF NOT EXISTS idx_custom_categories_active ON custom_categories(is_active);
-      CREATE INDEX IF NOT EXISTS idx_custom_categories_position ON custom_categories(position);
+      ${indexes.join(';\n')};
     `);
 
     console.log(`✅ Position column added, ${existingCategories.length} existing categories migrated`);
@@ -166,7 +138,7 @@ async function migrateDefaultCategories(db: SQLite.SQLiteDatabase): Promise<void
     for (let i = 0; i < CATEGORIES.length; i++) {
       const category = CATEGORIES[i];
       await db.runAsync(
-        `INSERT INTO custom_categories
+        `INSERT OR IGNORE INTO custom_categories
          (id, name, icon, color, position, is_active, created_at, updated_at)
          VALUES (?, ?, ?, ?, ?, 1, ?, ?)`,
         [category.id, category.name, category.icon, category.color, i, now, now]
@@ -182,6 +154,7 @@ async function migrateDefaultCategories(db: SQLite.SQLiteDatabase): Promise<void
 
 /**
  * Create category_budgets table
+ * Uses centralized schema definition from schema.ts
  */
 async function createCategoryBudgetsTable(db: SQLite.SQLiteDatabase): Promise<void> {
   try {
@@ -197,20 +170,9 @@ async function createCategoryBudgetsTable(db: SQLite.SQLiteDatabase): Promise<vo
 
     console.log('Creating category_budgets table...');
 
-    await db.execAsync(`
-      CREATE TABLE IF NOT EXISTS category_budgets (
-        id TEXT PRIMARY KEY NOT NULL,
-        month TEXT NOT NULL,
-        category_id TEXT NOT NULL,
-        budget_amount TEXT NOT NULL,
-        created_at INTEGER NOT NULL,
-        updated_at INTEGER NOT NULL,
-        UNIQUE(month, category_id)
-      );
-
-      CREATE INDEX IF NOT EXISTS idx_category_budgets_month ON category_budgets(month);
-      CREATE INDEX IF NOT EXISTS idx_category_budgets_category ON category_budgets(category_id);
-    `);
+    const tableSchema = getTableSchema('category_budgets');
+    const indexes = getTableIndexes('category_budgets');
+    await db.execAsync(`${tableSchema};\n${indexes.join(';\n')};`);
 
     console.log('✅ category_budgets table created successfully');
   } catch (error) {
@@ -422,7 +384,7 @@ async function addAdditionalCategories(db: SQLite.SQLiteDatabase): Promise<void>
     for (let i = 12; i < CATEGORIES.length; i++) {
       const category = CATEGORIES[i];
       await db.runAsync(
-        `INSERT INTO custom_categories
+        `INSERT OR IGNORE INTO custom_categories
          (id, name, icon, color, position, is_active, created_at, updated_at)
          VALUES (?, ?, ?, ?, ?, 1, ?, ?)`,
         [category.id, category.name, category.icon, category.color, i, now, now]
@@ -437,113 +399,140 @@ async function addAdditionalCategories(db: SQLite.SQLiteDatabase): Promise<void>
 }
 
 /**
- * Main migration runner - executes all pending migrations
+ * Initialize a new database with default data
+ * This function is ONLY for new installations, not migrations
+ *
+ * @param db - SQLite database instance
  */
-export async function runMigrations(db: SQLite.SQLiteDatabase): Promise<void> {
-  console.log('🔄 Starting migration runner...');
+export async function initializeNewDatabase(db: SQLite.SQLiteDatabase): Promise<void> {
+  console.log('🆕 Initializing new database with default data...');
 
   try {
-    // V1 Migration: Categories with position
-    if (!(await checkMigration(MIGRATION_KEYS.v1))) {
-      console.log('🔄 Running v1 database migrations (categories with position)...');
-      try {
-        await db.withTransactionAsync(async () => {
-          await addPositionColumn(db);
-          await migrateDefaultCategories(db);
-        });
-        await markMigration(MIGRATION_KEYS.v1);
-        console.log('✅ v1 migrations completed successfully');
-      } catch (error) {
-        console.error('❌ v1 migration FAILED:', error);
-        throw new Error(`v1 migration failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
-      }
-    } else {
-      console.log('✅ v1 migrations already completed');
+    const now = Date.now();
+
+    // Insert all 32 default categories in one operation
+    // This is more efficient than running migrations that check "if already exists"
+    for (let i = 0; i < CATEGORIES.length; i++) {
+      const category = CATEGORIES[i];
+      await db.runAsync(
+        `INSERT OR IGNORE INTO custom_categories
+         (id, name, icon, color, position, is_active, created_at, updated_at)
+         VALUES (?, ?, ?, ?, ?, 1, ?, ?)`,
+        [category.id, category.name, category.icon, category.color, i, now, now]
+      );
     }
 
-    // V2 Migration: Category budgets table
-    if (!(await checkMigration(MIGRATION_KEYS.v2))) {
-      console.log('🔄 Running v2 database migrations (category budgets table)...');
-      try {
-        await db.withTransactionAsync(async () => {
-          await createCategoryBudgetsTable(db);
-        });
-        await markMigration(MIGRATION_KEYS.v2);
-        console.log('✅ v2 migrations completed successfully');
-      } catch (error) {
-        console.error('❌ v2 migration FAILED:', error);
-        throw new Error(`v2 migration failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
-      }
-    } else {
-      console.log('✅ v2 migrations already completed');
-    }
+    console.log(`✅ Initialized with ${CATEGORIES.length} default categories`);
 
-    // V3 Migration: Additional categories
-    if (!(await checkMigration(MIGRATION_KEYS.v3))) {
-      console.log('🔄 Running v3 database migrations (additional categories)...');
-      try {
-        await db.withTransactionAsync(async () => {
-          await addAdditionalCategories(db);
-        });
-        await markMigration(MIGRATION_KEYS.v3);
-        console.log('✅ v3 migrations completed successfully');
-      } catch (error) {
-        console.error('❌ v3 migration FAILED:', error);
-        throw new Error(`v3 migration failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
-      }
-    } else {
-      console.log('✅ v3 migrations already completed');
-    }
-
-    // V4 Migration: Net worth dynamic items
-    if (!(await checkMigration(MIGRATION_KEYS.v4))) {
-      console.log('🔄 Running v4 database migrations (net worth dynamic items)...');
-      try {
-        await convertNetWorthToDynamicItems(db);
-        await markMigration(MIGRATION_KEYS.v4);
-        console.log('✅ v4 migrations completed successfully');
-      } catch (error) {
-        console.error('❌ v4 migration failed, but continuing:', error);
-        await markMigration(MIGRATION_KEYS.v4);
-        console.warn('⚠️  v4 migration marked as complete despite failure (non-critical)');
-      }
-    } else {
-      console.log('✅ v4 migrations already completed');
-    }
-
-    // V5 Migration: Net worth full dates
-    if (!(await checkMigration(MIGRATION_KEYS.v5))) {
-      console.log('🔄 Running v5 database migrations (net worth full dates)...');
-      try {
-        await migrateNetWorthToFullDates(db);
-        await markMigration(MIGRATION_KEYS.v5);
-        console.log('✅ v5 migrations completed successfully');
-      } catch (error) {
-        console.error('❌ v5 migration failed, but continuing:', error);
-        await markMigration(MIGRATION_KEYS.v5);
-        console.warn('⚠️  v5 migration marked as complete despite failure (non-critical)');
-      }
-    } else {
-      console.log('✅ v5 migrations already completed');
-    }
-
-    console.log('✅ All migrations completed successfully');
+    // Note: No need to mark migrations as complete - this is a fresh database
+    // The schema_version will be set to current version by database.ts
   } catch (error) {
-    console.error('❌ CRITICAL Migration failed:', error);
+    console.error('❌ Failed to initialize new database:', error);
     throw error;
   }
 }
 
 /**
- * Reset migration status (for testing/recovery)
- * WARNING: This will cause migrations to run again on next app launch
+ * Main migration runner - executes all pending migrations
+ * This function is ONLY for existing databases that need to be upgraded
+ *
+ * Uses database schema_version as single source of truth (no AsyncStorage)
+ *
+ * @param db - SQLite database instance
+ * @param fromVersion - Current schema version (0-5), determines which migrations to run
  */
-export async function resetMigrationStatus(): Promise<void> {
+export async function runMigrations(db: SQLite.SQLiteDatabase, fromVersion: number): Promise<void> {
+  console.log(`🔄 Starting migration runner from version ${fromVersion}...`);
+
   try {
-    await AsyncStorage.removeItem(MIGRATION_KEYS.v1);
-    console.log('✅ Migration status reset');
+    // V1 Migration: Categories with position (CRITICAL)
+    if (fromVersion < 1) {
+      console.log('🔄 Running v1 database migrations (categories with position)...');
+      try {
+        await addPositionColumn(db);
+        await migrateDefaultCategories(db);
+        console.log('✅ v1 migrations completed successfully');
+      } catch (error) {
+        // v1 is CRITICAL - category system is core to app functionality
+        // Failure will prevent app from starting
+        console.error('❌ v1 migration FAILED (CRITICAL):', error);
+        throw new Error(`v1 migration failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      }
+    } else {
+      console.log('✅ v1 migrations already completed (version >= 1)');
+    }
+
+    // V2 Migration: Category budgets table (CRITICAL)
+    if (fromVersion < 2) {
+      console.log('🔄 Running v2 database migrations (category budgets table)...');
+      try {
+        await createCategoryBudgetsTable(db);
+        console.log('✅ v2 migrations completed successfully');
+      } catch (error) {
+        // v2 is CRITICAL - budget tracking is core functionality
+        // Failure will prevent app from starting
+        console.error('❌ v2 migration FAILED (CRITICAL):', error);
+        throw new Error(`v2 migration failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      }
+    } else {
+      console.log('✅ v2 migrations already completed (version >= 2)');
+    }
+
+    // V3 Migration: Additional categories (CRITICAL)
+    if (fromVersion < 3) {
+      console.log('🔄 Running v3 database migrations (additional categories)...');
+      try {
+        await addAdditionalCategories(db);
+        console.log('✅ v3 migrations completed successfully');
+      } catch (error) {
+        // v3 is CRITICAL - users need full category set
+        // Failure will prevent app from starting
+        console.error('❌ v3 migration FAILED (CRITICAL):', error);
+        throw new Error(`v3 migration failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      }
+    } else {
+      console.log('✅ v3 migrations already completed (version >= 3)');
+    }
+
+    // V4 Migration: Net worth dynamic items (OPTIONAL)
+    if (fromVersion < 4) {
+      console.log('🔄 Running v4 database migrations (net worth dynamic items)...');
+      try {
+        await convertNetWorthToDynamicItems(db);
+        console.log('✅ v4 migrations completed successfully');
+      } catch (error) {
+        // v4 is OPTIONAL - net worth is an advanced feature
+        // App can function without it, log error but continue
+        console.error('❌ v4 migration failed (OPTIONAL migration):', error);
+        console.warn('⚠️  Net worth feature may not function correctly');
+        console.warn('⚠️  Core expense tracking is unaffected');
+        // Don't throw - allow app to continue
+      }
+    } else {
+      console.log('✅ v4 migrations already completed (version >= 4)');
+    }
+
+    // V5 Migration: Net worth full dates (OPTIONAL)
+    if (fromVersion < 5) {
+      console.log('🔄 Running v5 database migrations (net worth full dates)...');
+      try {
+        await migrateNetWorthToFullDates(db);
+        console.log('✅ v5 migrations completed successfully');
+      } catch (error) {
+        // v5 is OPTIONAL - net worth date format enhancement
+        // App can function without it, log error but continue
+        console.error('❌ v5 migration failed (OPTIONAL migration):', error);
+        console.warn('⚠️  Net worth date tracking may not function correctly');
+        console.warn('⚠️  Core expense tracking is unaffected');
+        // Don't throw - allow app to continue
+      }
+    } else {
+      console.log('✅ v5 migrations already completed (version >= 5)');
+    }
+
+    console.log('✅ All migrations completed successfully');
   } catch (error) {
-    console.error('Failed to reset migration status:', error);
+    console.error('❌ CRITICAL Migration failed:', error);
     throw error;
   }
 }

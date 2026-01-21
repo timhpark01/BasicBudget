@@ -1,71 +1,12 @@
 import * as SQLite from 'expo-sqlite';
-import { runMigrations } from './migrations';
+import { runMigrations, initializeNewDatabase } from './migrations';
+import { generateCompleteSchema } from './schema';
 
 const DATABASE_NAME = 'budget.db';
 export const CURRENT_SCHEMA_VERSION = 5; // Update this when schema changes
 
-// SQL schema for expenses, budgets, and custom_categories tables
-const SCHEMA = `
-  CREATE TABLE IF NOT EXISTS expenses (
-    id TEXT PRIMARY KEY NOT NULL,
-    amount TEXT NOT NULL,
-    category_id TEXT NOT NULL,
-    category_name TEXT NOT NULL,
-    category_icon TEXT NOT NULL,
-    category_color TEXT NOT NULL,
-    date INTEGER NOT NULL,
-    note TEXT,
-    created_at INTEGER NOT NULL,
-    updated_at INTEGER NOT NULL
-  );
-
-  CREATE INDEX IF NOT EXISTS idx_expenses_date ON expenses(date);
-  CREATE INDEX IF NOT EXISTS idx_expenses_category ON expenses(category_id);
-
-  CREATE TABLE IF NOT EXISTS budgets (
-    id TEXT PRIMARY KEY NOT NULL,
-    month TEXT NOT NULL UNIQUE,
-    budget_amount TEXT NOT NULL,
-    created_at INTEGER NOT NULL,
-    updated_at INTEGER NOT NULL
-  );
-
-  CREATE INDEX IF NOT EXISTS idx_budgets_month ON budgets(month);
-
-  CREATE TABLE IF NOT EXISTS custom_categories (
-    id TEXT PRIMARY KEY NOT NULL,
-    name TEXT NOT NULL,
-    icon TEXT NOT NULL,
-    color TEXT NOT NULL,
-    position INTEGER NOT NULL,
-    is_active INTEGER DEFAULT 1,
-    created_at INTEGER NOT NULL,
-    updated_at INTEGER NOT NULL
-  );
-
-  CREATE INDEX IF NOT EXISTS idx_custom_categories_active ON custom_categories(is_active);
-  CREATE INDEX IF NOT EXISTS idx_custom_categories_position ON custom_categories(position);
-
-  CREATE TABLE IF NOT EXISTS net_worth_entries (
-    id TEXT PRIMARY KEY NOT NULL,
-    date TEXT NOT NULL UNIQUE,
-    assets TEXT NOT NULL DEFAULT '[]',
-    liabilities TEXT NOT NULL DEFAULT '[]',
-    notes TEXT,
-    created_at INTEGER NOT NULL,
-    updated_at INTEGER NOT NULL
-  );
-
-  CREATE INDEX IF NOT EXISTS idx_net_worth_date ON net_worth_entries(date);
-
-  CREATE TABLE IF NOT EXISTS schema_version (
-    id INTEGER PRIMARY KEY CHECK (id = 1),
-    version INTEGER NOT NULL,
-    updated_at INTEGER NOT NULL
-  );
-`;
-
 let databaseInstance: SQLite.SQLiteDatabase | null = null;
+let initializationPromise: Promise<SQLite.SQLiteDatabase> | null = null;
 
 /**
  * Check if this is an existing database with data
@@ -149,16 +90,16 @@ export async function initDatabase(): Promise<SQLite.SQLiteDatabase> {
 
     if (hasExistingData && currentVersion < CURRENT_SCHEMA_VERSION) {
       // EXISTING DATABASE - Run migrations FIRST, then ensure schema is complete
-      console.log('🔄 Existing database detected, running migrations first...');
+      console.log(`🔄 Existing database detected (version ${currentVersion}), running migrations...`);
 
       try {
-        // Run migrations to transform old structure
-        await runMigrations(db);
+        // Run migrations to transform old structure (pass current version)
+        await runMigrations(db, currentVersion);
 
         // After migrations, ensure all tables exist (in case new tables were added)
         await setupDatabase(db);
 
-        // Update schema version
+        // Update schema version to current
         await setSchemaVersion(db, CURRENT_SCHEMA_VERSION);
 
         console.log('✅ Database migration and setup completed successfully');
@@ -169,17 +110,19 @@ export async function initDatabase(): Promise<SQLite.SQLiteDatabase> {
         throw new Error('Database migration failed. Please contact support.');
       }
     } else if (!hasExistingData) {
-      // NEW DATABASE - Create schema directly and mark all migrations as complete
+      // NEW DATABASE - Create fresh schema and initialize with default data
       console.log('🆕 New database detected, creating fresh schema...');
+
+      // Step 1: Create all tables with current schema
       await setupDatabase(db);
 
-      // Mark all migrations as complete for new databases
-      await runMigrations(db);
+      // Step 2: Initialize with default data (categories, etc.)
+      await initializeNewDatabase(db);
 
-      // Set current schema version
+      // Step 3: Set current schema version (no migrations needed for new DB)
       await setSchemaVersion(db, CURRENT_SCHEMA_VERSION);
 
-      console.log('✅ New database created successfully');
+      console.log('✅ New database created and initialized successfully');
     } else {
       // Database is up to date
       console.log('✅ Database is up to date');
@@ -195,10 +138,12 @@ export async function initDatabase(): Promise<SQLite.SQLiteDatabase> {
 
 /**
  * Create database schema (tables and indexes)
+ * Uses centralized schema definitions from schema.ts
  */
 async function setupDatabase(db: SQLite.SQLiteDatabase): Promise<void> {
   try {
-    await db.execAsync(SCHEMA);
+    const schema = generateCompleteSchema();
+    await db.execAsync(schema);
     console.log('Database schema created successfully');
   } catch (error) {
     console.error('Failed to create database schema:', error);
@@ -207,11 +152,27 @@ async function setupDatabase(db: SQLite.SQLiteDatabase): Promise<void> {
 }
 
 /**
- * Get or create database instance (singleton pattern)
+ * Get or create database instance (singleton pattern with proper async handling)
  */
 export async function getDatabase(): Promise<SQLite.SQLiteDatabase> {
-  if (!databaseInstance) {
-    databaseInstance = await initDatabase();
+  // If already initialized, return immediately
+  if (databaseInstance) {
+    return databaseInstance;
   }
-  return databaseInstance;
+
+  // If initialization is in progress, wait for it
+  if (initializationPromise) {
+    return initializationPromise;
+  }
+
+  // Start initialization and store the promise
+  initializationPromise = initDatabase();
+
+  try {
+    databaseInstance = await initializationPromise;
+    return databaseInstance;
+  } finally {
+    // Clear the initialization promise after completion (success or failure)
+    initializationPromise = null;
+  }
 }
