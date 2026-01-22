@@ -10,28 +10,29 @@ See: .planning/PROJECT.md (updated 2026-01-21)
 ## Current Position
 
 Phase: 2 of 5 (Category Reliability)
-Plan: Ready to plan
-Status: Phase 1 complete and verified
-Last activity: 2026-01-22 — Phase 1: Database Stabilization verified
+Plan: 1 of 2
+Status: In progress
+Last activity: 2026-01-22 — Completed 02-01-PLAN.md (Cascading Category Updates)
 
-Progress: [██░░░░░░░░] 20%
+Progress: [██░░░░░░░░] 25%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 4
+- Total plans completed: 5
 - Average duration: 5 min
-- Total execution time: 0.33 hours
+- Total execution time: 0.4 hours
 
 **By Phase:**
 
 | Phase | Plans | Total | Avg/Plan |
 |-------|-------|-------|----------|
 | 01-database-stabilization | 4 | 20 min | 5 min |
+| 02-category-reliability | 1 | 3 min | 3 min |
 
 **Recent Trend:**
-- Last 5 plans: 01-01 (2 min), 01-02 (12 min), 01-03 (3 min), 01-04 (3 min)
-- Trend: Accelerating
+- Last 5 plans: 01-02 (12 min), 01-03 (3 min), 01-04 (3 min), 02-01 (3 min)
+- Trend: Consistently fast
 
 *Updated after each plan completion*
 
@@ -58,6 +59,10 @@ Recent decisions affecting current work:
 - Upgrade reorderCategories to withExclusiveTransactionAsync (01-04): Prevents race conditions from async timing in non-exclusive transactions
 - Log detailed JSON corruption info (01-04): Entry ID, date, and raw data enable debugging; safe fallback prevents crashes
 - Validate JSON parse results are arrays (01-04): Runtime validation catches schema mismatches beyond parse success
+- Use withExclusiveTransactionAsync for cascading updates (02-01): Atomic multi-table updates for denormalized category metadata
+- Implement callback pattern for cache invalidation (02-01): Optional onChanged callbacks enable loose coupling between independent hooks
+- Wire callbacks through modal components (02-01): Modals act as bridge between parent screens and hooks, maintaining separation of concerns
+- Keep backward-compatible functions (02-01): New cascading function alongside existing non-cascading for zero breaking changes
 
 ### Pending Todos
 
@@ -69,8 +74,8 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-01-22T03:20:36Z
-Stopped at: Completed 01-04-PLAN.md
+Last session: 2026-01-22T04:22:54Z
+Stopped at: Completed 02-01-PLAN.md
 Resume file: None
 
 ---
