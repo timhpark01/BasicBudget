@@ -12,7 +12,7 @@ This roadmap guides stabilization of the BasicBudget app from feature-complete t
 
 Decimal phases appear between their surrounding integers in numeric order.
 
-- [ ] **Phase 1: Database Stabilization** - Eliminate race conditions and improve error handling
+- [x] **Phase 1: Database Stabilization** - Eliminate race conditions and improve error handling
 - [ ] **Phase 2: Category Reliability** - Fix category operations data integrity
 - [ ] **Phase 3: Category UX Improvements** - Polish category management interface
 - [ ] **Phase 4: Navigation Polish** - Rename index tab for clarity
@@ -32,10 +32,10 @@ Decimal phases appear between their surrounding integers in numeric order.
 **Plans**: 4 plans
 
 Plans:
-- [ ] 01-01-PLAN.md — Database error infrastructure (error classes + mapper)
-- [ ] 01-02-PLAN.md — Fix database singleton race condition
-- [ ] 01-03-PLAN.md — Update expenses, budgets, category-budgets error handling
-- [ ] 01-04-PLAN.md — Add transactions to categories, improve net-worth validation
+- [x] 01-01-PLAN.md — Database error infrastructure (error classes + mapper)
+- [x] 01-02-PLAN.md — Fix database singleton race condition
+- [x] 01-03-PLAN.md — Update expenses, budgets, category-budgets error handling
+- [x] 01-04-PLAN.md — Add transactions to categories, improve net-worth validation
 
 ### Phase 2: Category Reliability
 **Goal**: Category operations maintain data consistency without corruption or orphaned expenses
@@ -99,7 +99,7 @@ Phases execute in numeric order with dependencies respected.
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Database Stabilization | 0/4 | Not started | - |
+| 1. Database Stabilization | 4/4 | Complete | 2026-01-22 |
 | 2. Category Reliability | 0/TBD | Not started | - |
 | 3. Category UX Improvements | 0/TBD | Not started | - |
 | 4. Navigation Polish | 0/TBD | Not started | - |
