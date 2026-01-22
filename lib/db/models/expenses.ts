@@ -1,6 +1,8 @@
 import * as SQLite from 'expo-sqlite';
 import { Expense, ExpenseInput, ExpenseRow } from '@/types/database';
 import { generateId } from '../../utils/id-generator';
+import { DatabaseError } from '@/lib/db/core/errors';
+import { mapSQLiteErrorToUserMessage } from '@/lib/db/utils/error-mapper';
 
 /**
  * Transform database row to Expense object
@@ -28,14 +30,14 @@ export async function createExpense(
   expense: ExpenseInput
 ): Promise<Expense> {
   try {
-    // Validation
+    // Input validation (fail fast)
     if (!expense.category) {
-      throw new Error('Category is required');
+      throw new DatabaseError('Category is required', undefined, 'validation');
     }
 
     const amountNum = parseFloat(expense.amount);
     if (isNaN(amountNum) || amountNum <= 0) {
-      throw new Error('Amount must be a positive number');
+      throw new DatabaseError('Amount must be a positive number', undefined, 'validation');
     }
 
     // Generate ID and timestamps
@@ -71,8 +73,21 @@ export async function createExpense(
       note: expense.note,
     };
   } catch (error) {
-    console.error('Failed to create expense:', error);
-    throw new Error('Failed to save expense. Please try again.');
+    // If already a DatabaseError (validation), re-throw as-is
+    if (error instanceof DatabaseError) {
+      throw error;
+    }
+
+    // Map SQLite errors to user messages
+    const sqliteError = error as { code?: number; message?: string };
+    const userMessage = mapSQLiteErrorToUserMessage(sqliteError);
+
+    throw new DatabaseError(
+      userMessage,
+      sqliteError.code,
+      'create_expense',
+      error as Error
+    );
   }
 }
 
@@ -89,8 +104,21 @@ export async function getAllExpenses(
 
     return rows.map(rowToExpense);
   } catch (error) {
-    console.error('Failed to get expenses:', error);
-    throw new Error('Failed to load expenses. Please try again.');
+    // If already a DatabaseError, re-throw as-is
+    if (error instanceof DatabaseError) {
+      throw error;
+    }
+
+    // Map SQLite errors to user messages
+    const sqliteError = error as { code?: number; message?: string };
+    const userMessage = mapSQLiteErrorToUserMessage(sqliteError);
+
+    throw new DatabaseError(
+      userMessage,
+      sqliteError.code,
+      'get_all_expenses',
+      error as Error
+    );
   }
 }
 
@@ -102,6 +130,11 @@ export async function getExpenseById(
   id: string
 ): Promise<Expense | null> {
   try {
+    // Input validation
+    if (!id || id.trim() === '') {
+      throw new DatabaseError('Expense ID is required', undefined, 'validation');
+    }
+
     const row = await db.getFirstAsync<ExpenseRow>(
       'SELECT * FROM expenses WHERE id = ?',
       [id]
@@ -109,8 +142,21 @@ export async function getExpenseById(
 
     return row ? rowToExpense(row) : null;
   } catch (error) {
-    console.error('Failed to get expense:', error);
-    return null;
+    // If already a DatabaseError, re-throw as-is
+    if (error instanceof DatabaseError) {
+      throw error;
+    }
+
+    // Map SQLite errors to user messages
+    const sqliteError = error as { code?: number; message?: string };
+    const userMessage = mapSQLiteErrorToUserMessage(sqliteError);
+
+    throw new DatabaseError(
+      userMessage,
+      sqliteError.code,
+      'get_expense_by_id',
+      error as Error
+    );
   }
 }
 
@@ -123,10 +169,15 @@ export async function updateExpense(
   expense: Partial<ExpenseInput>
 ): Promise<Expense> {
   try {
+    // Input validation
+    if (!id || id.trim() === '') {
+      throw new DatabaseError('Expense ID is required', undefined, 'validation');
+    }
+
     // Get existing expense
     const existing = await getExpenseById(db, id);
     if (!existing) {
-      throw new Error('Expense not found');
+      throw new DatabaseError('Expense not found', undefined, 'validation');
     }
 
     // Merge updates with existing data
@@ -139,12 +190,12 @@ export async function updateExpense(
 
     // Validation
     if (!updated.category) {
-      throw new Error('Category is required');
+      throw new DatabaseError('Category is required', undefined, 'validation');
     }
 
     const amountNum = parseFloat(updated.amount);
     if (isNaN(amountNum) || amountNum <= 0) {
-      throw new Error('Amount must be a positive number');
+      throw new DatabaseError('Amount must be a positive number', undefined, 'validation');
     }
 
     // Update in database
@@ -177,8 +228,21 @@ export async function updateExpense(
       note: updated.note,
     };
   } catch (error) {
-    console.error('Failed to update expense:', error);
-    throw new Error('Failed to update expense. Please try again.');
+    // If already a DatabaseError (validation), re-throw as-is
+    if (error instanceof DatabaseError) {
+      throw error;
+    }
+
+    // Map SQLite errors to user messages
+    const sqliteError = error as { code?: number; message?: string };
+    const userMessage = mapSQLiteErrorToUserMessage(sqliteError);
+
+    throw new DatabaseError(
+      userMessage,
+      sqliteError.code,
+      'update_expense',
+      error as Error
+    );
   }
 }
 
@@ -190,10 +254,28 @@ export async function deleteExpense(
   id: string
 ): Promise<void> {
   try {
+    // Input validation
+    if (!id || id.trim() === '') {
+      throw new DatabaseError('Expense ID is required', undefined, 'validation');
+    }
+
     await db.runAsync('DELETE FROM expenses WHERE id = ?', [id]);
   } catch (error) {
-    console.error('Failed to delete expense:', error);
-    throw new Error('Failed to delete expense. Please try again.');
+    // If already a DatabaseError, re-throw as-is
+    if (error instanceof DatabaseError) {
+      throw error;
+    }
+
+    // Map SQLite errors to user messages
+    const sqliteError = error as { code?: number; message?: string };
+    const userMessage = mapSQLiteErrorToUserMessage(sqliteError);
+
+    throw new DatabaseError(
+      userMessage,
+      sqliteError.code,
+      'delete_expense',
+      error as Error
+    );
   }
 }
 
@@ -206,8 +288,21 @@ export async function deleteAllExpenses(
   try {
     await db.runAsync('DELETE FROM expenses');
   } catch (error) {
-    console.error('Failed to delete all expenses:', error);
-    throw new Error('Failed to delete expenses. Please try again.');
+    // If already a DatabaseError, re-throw as-is
+    if (error instanceof DatabaseError) {
+      throw error;
+    }
+
+    // Map SQLite errors to user messages
+    const sqliteError = error as { code?: number; message?: string };
+    const userMessage = mapSQLiteErrorToUserMessage(sqliteError);
+
+    throw new DatabaseError(
+      userMessage,
+      sqliteError.code,
+      'delete_all_expenses',
+      error as Error
+    );
   }
 }
 
@@ -219,6 +314,11 @@ export async function getExpensesByCategory(
   categoryId: string
 ): Promise<Expense[]> {
   try {
+    // Input validation
+    if (!categoryId || categoryId.trim() === '') {
+      throw new DatabaseError('Category ID is required', undefined, 'validation');
+    }
+
     const rows = await db.getAllAsync<ExpenseRow>(
       'SELECT * FROM expenses WHERE category_id = ? ORDER BY date DESC',
       [categoryId]
@@ -226,7 +326,20 @@ export async function getExpensesByCategory(
 
     return rows.map(rowToExpense);
   } catch (error) {
-    console.error('Failed to get expenses by category:', error);
-    throw new Error('Failed to load category expenses. Please try again.');
+    // If already a DatabaseError, re-throw as-is
+    if (error instanceof DatabaseError) {
+      throw error;
+    }
+
+    // Map SQLite errors to user messages
+    const sqliteError = error as { code?: number; message?: string };
+    const userMessage = mapSQLiteErrorToUserMessage(sqliteError);
+
+    throw new DatabaseError(
+      userMessage,
+      sqliteError.code,
+      'get_expenses_by_category',
+      error as Error
+    );
   }
 }
