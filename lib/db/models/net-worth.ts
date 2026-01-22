@@ -1,6 +1,8 @@
 import * as SQLite from 'expo-sqlite';
 import { generateId } from '../../utils/id-generator';
 import { formatDate, parseDate } from '../../utils/date-formatter';
+import { DatabaseError } from '@/lib/db/core/errors';
+import { mapSQLiteErrorToUserMessage } from '@/lib/db/utils/error-mapper';
 
 // Re-export date utilities for backward compatibility
 export { formatDate, parseDate };
@@ -40,22 +42,65 @@ interface NetWorthRow {
 
 /**
  * Transform database row to NetWorthEntry object
+ * Validates JSON parsing and logs detailed corruption information
  */
 function rowToNetWorthEntry(row: NetWorthRow): NetWorthEntry {
   let assets: NetWorthItem[] = [];
   let liabilities: NetWorthItem[] = [];
 
+  // Parse and validate assets JSON
   try {
     assets = JSON.parse(row.assets || '[]');
-  } catch (e) {
-    console.error('Failed to parse assets JSON:', e);
+
+    // Runtime validation: ensure result is an array
+    if (!Array.isArray(assets)) {
+      console.error('⚠️  Net worth data corruption detected:', {
+        entryId: row.id,
+        date: row.date,
+        issue: 'Assets JSON parsed but not an array',
+        assetsType: typeof assets,
+        rawAssets: row.assets,
+      });
+      console.warn('User should be notified: Net worth entry may be corrupted, showing default values');
+      assets = [{ id: '1', name: 'Savings', amount: '0' }];
+    }
+  } catch (error) {
+    // Log detailed corruption information
+    console.error('⚠️  Net worth assets JSON corruption detected:', {
+      entryId: row.id,
+      date: row.date,
+      rawAssets: row.assets,
+      error: (error as Error).message,
+    });
+    console.warn('User should be notified: Net worth entry may be corrupted, showing default values');
     assets = [{ id: '1', name: 'Savings', amount: '0' }];
   }
 
+  // Parse and validate liabilities JSON
   try {
     liabilities = JSON.parse(row.liabilities || '[]');
-  } catch (e) {
-    console.error('Failed to parse liabilities JSON:', e);
+
+    // Runtime validation: ensure result is an array
+    if (!Array.isArray(liabilities)) {
+      console.error('⚠️  Net worth data corruption detected:', {
+        entryId: row.id,
+        date: row.date,
+        issue: 'Liabilities JSON parsed but not an array',
+        liabilitiesType: typeof liabilities,
+        rawLiabilities: row.liabilities,
+      });
+      console.warn('User should be notified: Net worth entry may be corrupted, showing default values');
+      liabilities = [{ id: '1', name: 'Credit Card Debt', amount: '0' }];
+    }
+  } catch (error) {
+    // Log detailed corruption information
+    console.error('⚠️  Net worth liabilities JSON corruption detected:', {
+      entryId: row.id,
+      date: row.date,
+      rawLiabilities: row.liabilities,
+      error: (error as Error).message,
+    });
+    console.warn('User should be notified: Net worth entry may be corrupted, showing default values');
     liabilities = [{ id: '1', name: 'Credit Card Debt', amount: '0' }];
   }
 
@@ -78,6 +123,16 @@ export async function saveNetWorthEntry(
   entry: NetWorthEntryInput
 ): Promise<NetWorthEntry> {
   try {
+    // Input validation
+    const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
+    if (!dateRegex.test(entry.date)) {
+      throw new DatabaseError('Invalid date format. Expected YYYY-MM-DD', undefined, 'validation');
+    }
+
+    if (!Array.isArray(entry.assets) || !Array.isArray(entry.liabilities)) {
+      throw new DatabaseError('Assets and liabilities must be arrays', undefined, 'validation');
+    }
+
     const timestamp = Date.now();
 
     // Check if entry exists for this date
@@ -140,8 +195,19 @@ export async function saveNetWorthEntry(
       };
     }
   } catch (error) {
-    console.error('Failed to save net worth entry:', error);
-    throw new Error('Failed to save net worth entry. Please try again.');
+    if (error instanceof DatabaseError) {
+      throw error;
+    }
+
+    const sqliteError = error as { code?: number; message?: string };
+    const userMessage = mapSQLiteErrorToUserMessage(sqliteError);
+
+    throw new DatabaseError(
+      userMessage,
+      sqliteError.code,
+      'save_net_worth_entry',
+      error as Error
+    );
   }
 }
 
@@ -158,8 +224,19 @@ export async function getAllNetWorthEntries(
 
     return rows.map(rowToNetWorthEntry);
   } catch (error) {
-    console.error('Failed to get net worth entries:', error);
-    throw new Error('Failed to load net worth entries. Please try again.');
+    if (error instanceof DatabaseError) {
+      throw error;
+    }
+
+    const sqliteError = error as { code?: number; message?: string };
+    const userMessage = mapSQLiteErrorToUserMessage(sqliteError);
+
+    throw new DatabaseError(
+      userMessage,
+      sqliteError.code,
+      'get_all_net_worth_entries',
+      error as Error
+    );
   }
 }
 
@@ -171,6 +248,12 @@ export async function getNetWorthEntryByDate(
   date: string
 ): Promise<NetWorthEntry | null> {
   try {
+    // Input validation
+    const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
+    if (!dateRegex.test(date)) {
+      throw new DatabaseError('Invalid date format. Expected YYYY-MM-DD', undefined, 'validation');
+    }
+
     const row = await db.getFirstAsync<NetWorthRow>(
       'SELECT * FROM net_worth_entries WHERE date = ?',
       [date]
@@ -178,8 +261,19 @@ export async function getNetWorthEntryByDate(
 
     return row ? rowToNetWorthEntry(row) : null;
   } catch (error) {
-    console.error('Failed to get net worth entry:', error);
-    return null;
+    if (error instanceof DatabaseError) {
+      throw error;
+    }
+
+    const sqliteError = error as { code?: number; message?: string };
+    const userMessage = mapSQLiteErrorToUserMessage(sqliteError);
+
+    throw new DatabaseError(
+      userMessage,
+      sqliteError.code,
+      'get_net_worth_entry_by_date',
+      error as Error
+    );
   }
 }
 
@@ -191,10 +285,27 @@ export async function deleteNetWorthEntry(
   date: string
 ): Promise<void> {
   try {
+    // Input validation
+    const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
+    if (!dateRegex.test(date)) {
+      throw new DatabaseError('Invalid date format. Expected YYYY-MM-DD', undefined, 'validation');
+    }
+
     await db.runAsync('DELETE FROM net_worth_entries WHERE date = ?', [date]);
   } catch (error) {
-    console.error('Failed to delete net worth entry:', error);
-    throw new Error('Failed to delete net worth entry. Please try again.');
+    if (error instanceof DatabaseError) {
+      throw error;
+    }
+
+    const sqliteError = error as { code?: number; message?: string };
+    const userMessage = mapSQLiteErrorToUserMessage(sqliteError);
+
+    throw new DatabaseError(
+      userMessage,
+      sqliteError.code,
+      'delete_net_worth_entry',
+      error as Error
+    );
   }
 }
 
