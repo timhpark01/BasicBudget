@@ -7,6 +7,7 @@ export const CURRENT_SCHEMA_VERSION = 5; // Update this when schema changes
 
 let databaseInstance: SQLite.SQLiteDatabase | null = null;
 let initializationPromise: Promise<SQLite.SQLiteDatabase> | null = null;
+let isInitializing = false;
 
 /**
  * Check if this is an existing database with data
@@ -160,19 +161,25 @@ export async function getDatabase(): Promise<SQLite.SQLiteDatabase> {
     return databaseInstance;
   }
 
-  // If initialization is in progress, wait for it
-  if (initializationPromise) {
+  // Wait for any in-progress initialization
+  if (isInitializing && initializationPromise) {
     return initializationPromise;
   }
 
-  // Start initialization and store the promise
+  // Set mutex before creating promise
+  isInitializing = true;
   initializationPromise = initDatabase();
 
   try {
     databaseInstance = await initializationPromise;
     return databaseInstance;
+  } catch (error) {
+    // On failure, clear instance so retry is possible
+    databaseInstance = null;
+    throw error;
   } finally {
-    // Clear the initialization promise after completion (success or failure)
+    // Clear promise AFTER setting instance/error
     initializationPromise = null;
+    isInitializing = false;
   }
 }
