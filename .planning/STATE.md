@@ -10,28 +10,28 @@ See: .planning/PROJECT.md (updated 2026-01-21)
 ## Current Position
 
 Phase: 1 of 5 (Database Stabilization)
-Plan: 2 of 5 (Database Singleton Race Condition)
+Plan: 3 of 5 (Database Model Error Handling)
 Status: In progress
-Last activity: 2026-01-21 — Completed 01-02-PLAN.md
+Last activity: 2026-01-22 — Completed 01-03-PLAN.md
 
-Progress: [██░░░░░░░░] 20%
+Progress: [███░░░░░░░] 30%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 2
-- Average duration: 7 min
-- Total execution time: 0.23 hours
+- Total plans completed: 3
+- Average duration: 6 min
+- Total execution time: 0.28 hours
 
 **By Phase:**
 
 | Phase | Plans | Total | Avg/Plan |
 |-------|-------|-------|----------|
-| 01-database-stabilization | 2 | 14 min | 7 min |
+| 01-database-stabilization | 3 | 17 min | 6 min |
 
 **Recent Trend:**
-- Last 5 plans: 01-01 (2 min), 01-02 (12 min)
-- Trend: Building momentum
+- Last 5 plans: 01-01 (2 min), 01-02 (12 min), 01-03 (3 min)
+- Trend: Accelerating
 
 *Updated after each plan completion*
 
@@ -50,6 +50,10 @@ Recent decisions affecting current work:
 - Object.setPrototypeOf for instanceof checks (01-01): Required for TypeScript class inheritance
 - Use isInitializing flag as mutex instead of retry logic (01-02): SQLite has built-in busy handling; mutex provides clean semantics
 - Clear databaseInstance on error to allow retry (01-02): Prevents infinite failure state after transient errors
+- Validate inputs before database operations (01-03): Fail fast with clear validation messages
+- Preserve SQLite error codes in DatabaseError (01-03): Enables debugging while providing user-friendly messages
+- Re-throw validation DatabaseErrors as-is (01-03): Prevents double-wrapping of validation errors
+- Use mapSQLiteErrorToUserMessage for all SQLite errors (01-03): Consistent actionable error messages across all database operations
 
 ### Pending Todos
 
@@ -61,8 +65,8 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-01-21T21:21:00-06:00
-Stopped at: Completed 01-02-PLAN.md
+Last session: 2026-01-22T03:20:29Z
+Stopped at: Completed 01-03-PLAN.md
 Resume file: None
 
 ---
