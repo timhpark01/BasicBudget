@@ -6,6 +6,7 @@ import {
   getCustomCategories,
   createCustomCategory,
   updateCustomCategory,
+  updateCustomCategoryWithCascade,
   deleteCustomCategory,
   getExpenseCountByCategory,
   reassignExpensesToCategory,
@@ -26,7 +27,9 @@ export interface UseCategoriesReturn {
 
 const MAX_CUSTOM_CATEGORIES = 20;
 
-export function useCategories(): UseCategoriesReturn {
+export function useCategories(
+  options?: { onCategoryChanged?: (categoryId: string) => Promise<void> }
+): UseCategoriesReturn {
   const [customCategories, setCustomCategories] = useState<CustomCategory[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
@@ -118,17 +121,22 @@ export function useCategories(): UseCategoriesReturn {
       }
 
       try {
-        const updated = await updateCustomCategory(db, id, category);
+        const updated = await updateCustomCategoryWithCascade(db, id, category);
         setCustomCategories((prev) =>
           prev.map((c) => (c.id === id ? updated : c))
         );
         setError(null);
+
+        // Trigger cache invalidation callback if provided
+        if (options?.onCategoryChanged) {
+          await options.onCategoryChanged(id);
+        }
       } catch (err) {
         await loadCustomCategories(db);
         throw err;
       }
     },
-    [db, allCategories]
+    [db, allCategories, options]
   );
 
   // Delete a category
