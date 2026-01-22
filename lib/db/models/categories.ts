@@ -498,6 +498,16 @@ export async function reorderCategories(
   categoryIds: string[]
 ): Promise<void> {
   try {
+    // Validate input: ensure no duplicates
+    const uniqueIds = new Set(categoryIds);
+    if (uniqueIds.size !== categoryIds.length) {
+      throw new DatabaseError(
+        'Duplicate category IDs in reorder list',
+        undefined,
+        'validation'
+      );
+    }
+
     const now = Date.now();
 
     // Use exclusive transaction for atomic updates
