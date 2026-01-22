@@ -5,6 +5,8 @@ import {
   CustomCategoryInput,
 } from '@/types/database';
 import { generateId } from '../../utils/id-generator';
+import { DatabaseError, DatabaseConstraintError } from '@/lib/db/core/errors';
+import { mapSQLiteErrorToUserMessage } from '@/lib/db/utils/error-mapper';
 
 /**
  * Convert database row to CustomCategory object
@@ -34,8 +36,19 @@ export async function getCustomCategories(
     );
     return result.map(rowToCustomCategory);
   } catch (error) {
-    console.error('Failed to get custom categories:', error);
-    throw error;
+    if (error instanceof DatabaseError) {
+      throw error;
+    }
+
+    const sqliteError = error as { code?: number; message?: string };
+    const userMessage = mapSQLiteErrorToUserMessage(sqliteError);
+
+    throw new DatabaseError(
+      userMessage,
+      sqliteError.code,
+      'get_categories',
+      error as Error
+    );
   }
 }
 
@@ -47,6 +60,11 @@ export async function createCustomCategory(
   category: CustomCategoryInput
 ): Promise<CustomCategory> {
   try {
+    // Input validation
+    if (!category.name || category.name.trim().length === 0) {
+      throw new DatabaseError('Category name is required', undefined, 'validation');
+    }
+
     const id = `custom_${generateId()}`;
     const now = Date.now();
 
@@ -73,8 +91,29 @@ export async function createCustomCategory(
       updatedAt: new Date(now),
     };
   } catch (error) {
-    console.error('Failed to create custom category:', error);
-    throw error;
+    if (error instanceof DatabaseError) {
+      throw error;
+    }
+
+    const sqliteError = error as { code?: number; message?: string };
+
+    // Handle constraint violations (duplicate category name)
+    if (sqliteError.code === 19 || sqliteError.code === 2067) {
+      throw new DatabaseConstraintError(
+        'A category with this name already exists',
+        'unique',
+        error as Error
+      );
+    }
+
+    const userMessage = mapSQLiteErrorToUserMessage(sqliteError);
+
+    throw new DatabaseError(
+      userMessage,
+      sqliteError.code,
+      'create_category',
+      error as Error
+    );
   }
 }
 
@@ -87,6 +126,11 @@ export async function updateCustomCategory(
   category: Partial<CustomCategoryInput>
 ): Promise<CustomCategory> {
   try {
+    // Input validation
+    if (category.name !== undefined && category.name.trim().length === 0) {
+      throw new DatabaseError('Category name cannot be empty', undefined, 'validation');
+    }
+
     const now = Date.now();
     const updates: string[] = [];
     const values: any[] = [];
@@ -120,32 +164,82 @@ export async function updateCustomCategory(
     );
 
     if (!result) {
-      throw new Error('Category not found after update');
+      throw new DatabaseError('Category not found after update', undefined, 'not_found');
     }
 
     return rowToCustomCategory(result);
   } catch (error) {
-    console.error('Failed to update custom category:', error);
-    throw error;
+    if (error instanceof DatabaseError) {
+      throw error;
+    }
+
+    const sqliteError = error as { code?: number; message?: string };
+
+    // Handle constraint violations (duplicate category name)
+    if (sqliteError.code === 19 || sqliteError.code === 2067) {
+      throw new DatabaseConstraintError(
+        'A category with this name already exists',
+        'unique',
+        error as Error
+      );
+    }
+
+    const userMessage = mapSQLiteErrorToUserMessage(sqliteError);
+
+    throw new DatabaseError(
+      userMessage,
+      sqliteError.code,
+      'update_category',
+      error as Error
+    );
   }
 }
 
 /**
  * Soft delete a custom category (set is_active = 0)
+ * Reassigns all expenses from this category to the default "Other" category
+ * Uses atomic transaction to ensure both operations succeed or fail together
  */
 export async function deleteCustomCategory(
   db: SQLite.SQLiteDatabase,
   id: string
 ): Promise<void> {
   try {
-    const now = Date.now();
-    await db.runAsync(
-      'UPDATE custom_categories SET is_active = 0, updated_at = ? WHERE id = ?',
-      [now, id]
-    );
+    await db.withExclusiveTransactionAsync(async () => {
+      const now = Date.now();
+
+      // Step 1: Soft delete category
+      await db.runAsync(
+        'UPDATE custom_categories SET is_active = 0, updated_at = ? WHERE id = ?',
+        [now, id]
+      );
+
+      // Step 2: Reassign expenses to default "Other" category
+      // Default category details (typically category ID "12" for Other)
+      const defaultCategory = { id: '12', name: 'Other', icon: 'help-circle', color: '#666666' };
+      await db.runAsync(
+        `UPDATE expenses
+         SET category_id = ?, category_name = ?, category_icon = ?, category_color = ?, updated_at = ?
+         WHERE category_id = ?`,
+        [defaultCategory.id, defaultCategory.name, defaultCategory.icon, defaultCategory.color, now, id]
+      );
+
+      // Both operations commit together or roll back together
+    });
   } catch (error) {
-    console.error('Failed to delete custom category:', error);
-    throw error;
+    if (error instanceof DatabaseError) {
+      throw error;
+    }
+
+    const sqliteError = error as { code?: number; message?: string };
+    const userMessage = mapSQLiteErrorToUserMessage(sqliteError);
+
+    throw new DatabaseError(
+      userMessage,
+      sqliteError.code,
+      'delete_category',
+      error as Error
+    );
   }
 }
 
@@ -163,8 +257,19 @@ export async function getExpenseCountByCategory(
     );
     return result?.count || 0;
   } catch (error) {
-    console.error('Failed to get expense count:', error);
-    throw error;
+    if (error instanceof DatabaseError) {
+      throw error;
+    }
+
+    const sqliteError = error as { code?: number; message?: string };
+    const userMessage = mapSQLiteErrorToUserMessage(sqliteError);
+
+    throw new DatabaseError(
+      userMessage,
+      sqliteError.code,
+      'get_expense_count',
+      error as Error
+    );
   }
 }
 
@@ -196,13 +301,25 @@ export async function reassignExpensesToCategory(
       ]
     );
   } catch (error) {
-    console.error('Failed to reassign expenses:', error);
-    throw error;
+    if (error instanceof DatabaseError) {
+      throw error;
+    }
+
+    const sqliteError = error as { code?: number; message?: string };
+    const userMessage = mapSQLiteErrorToUserMessage(sqliteError);
+
+    throw new DatabaseError(
+      userMessage,
+      sqliteError.code,
+      'reassign_expenses',
+      error as Error
+    );
   }
 }
 
 /**
  * Reorder categories by updating their positions
+ * Uses atomic transaction to ensure all position updates succeed together
  * @param db - Database instance
  * @param categoryIds - Array of category IDs in the desired order
  */
@@ -213,8 +330,8 @@ export async function reorderCategories(
   try {
     const now = Date.now();
 
-    // Use transaction for atomic updates
-    await db.withTransactionAsync(async () => {
+    // Use exclusive transaction for atomic updates
+    await db.withExclusiveTransactionAsync(async () => {
       for (let i = 0; i < categoryIds.length; i++) {
         await db.runAsync(
           'UPDATE custom_categories SET position = ?, updated_at = ? WHERE id = ?',
@@ -223,7 +340,18 @@ export async function reorderCategories(
       }
     });
   } catch (error) {
-    console.error('Failed to reorder categories:', error);
-    throw error;
+    if (error instanceof DatabaseError) {
+      throw error;
+    }
+
+    const sqliteError = error as { code?: number; message?: string };
+    const userMessage = mapSQLiteErrorToUserMessage(sqliteError);
+
+    throw new DatabaseError(
+      userMessage,
+      sqliteError.code,
+      'reorder_categories',
+      error as Error
+    );
   }
 }
