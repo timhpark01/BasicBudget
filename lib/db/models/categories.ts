@@ -434,6 +434,60 @@ export async function reassignExpensesToCategory(
 }
 
 /**
+ * Validate category positions and repair if gaps or duplicates exist
+ * Positions should be sequential starting from 0 (0, 1, 2, 3...)
+ * @param db - Database instance
+ * @returns Result indicating whether repair was performed
+ */
+export async function validateAndRepairPositions(
+  db: SQLite.SQLiteDatabase
+): Promise<{ repaired: boolean; message: string }> {
+  try {
+    // Load all active categories ordered by position
+    const categories = await db.getAllAsync<{ id: string; position: number }>(
+      'SELECT id, position FROM custom_categories WHERE is_active = 1 ORDER BY position ASC'
+    );
+
+    // Check if positions are sequential (0, 1, 2, 3...)
+    const needsRepair = categories.some((cat, index) => cat.position !== index);
+
+    if (!needsRepair) {
+      return { repaired: false, message: 'Positions are valid' };
+    }
+
+    // Repair positions: renumber all categories sequentially
+    const now = Date.now();
+    await db.withExclusiveTransactionAsync(async () => {
+      for (let i = 0; i < categories.length; i++) {
+        await db.runAsync(
+          'UPDATE custom_categories SET position = ?, updated_at = ? WHERE id = ?',
+          [i, now, categories[i].id]
+        );
+      }
+    });
+
+    return {
+      repaired: true,
+      message: `Repaired ${categories.length} category positions`,
+    };
+  } catch (error) {
+    if (error instanceof DatabaseError) {
+      throw error;
+    }
+
+    const sqliteError = error as { code?: number; message?: string };
+    const userMessage = mapSQLiteErrorToUserMessage(sqliteError);
+
+    throw new DatabaseError(
+      userMessage,
+      sqliteError.code,
+      'validate_positions',
+      error as Error
+    );
+  }
+}
+
+/**
  * Reorder categories by updating their positions
  * Uses atomic transaction to ensure all position updates succeed together
  * @param db - Database instance
