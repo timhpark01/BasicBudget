@@ -46,10 +46,11 @@ Plans:
   2. User can change a category icon and it persists correctly across app restarts
   3. User can reorder categories and the new order persists reliably
   4. Category operations never orphan expenses or corrupt data
-**Plans**: TBD
+**Plans**: 2 plans
 
 Plans:
-- [ ] TBD during planning
+- [ ] 02-01-PLAN.md — Cascading category updates with cache invalidation
+- [ ] 02-02-PLAN.md — Category position integrity validation and repair
 
 ### Phase 3: Category UX Improvements
 **Goal**: Category management interface is intuitive and provides clear feedback
@@ -100,7 +101,7 @@ Phases execute in numeric order with dependencies respected.
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Database Stabilization | 4/4 | Complete | 2026-01-22 |
-| 2. Category Reliability | 0/TBD | Not started | - |
+| 2. Category Reliability | 0/2 | Not started | - |
 | 3. Category UX Improvements | 0/TBD | Not started | - |
 | 4. Navigation Polish | 0/TBD | Not started | - |
 | 5. Testing & Verification | 0/TBD | Not started | - |
