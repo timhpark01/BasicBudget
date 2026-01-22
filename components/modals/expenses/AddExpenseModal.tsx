@@ -29,6 +29,7 @@ interface AddExpenseModalProps {
     date: Date;
     note: string;
   }) => void | Promise<void>;
+  onCategoryChanged?: (categoryId: string) => Promise<void>;
 }
 
 export default function AddExpenseModal({
@@ -36,12 +37,15 @@ export default function AddExpenseModal({
   onClose,
   editExpense,
   onSave,
+  onCategoryChanged,
 }: AddExpenseModalProps) {
   // Responsive sizing
   const insets = useSafeAreaInsets();
   const { height } = useWindowDimensions();
 
-  const { allCategories, refreshCategories } = useCategories();
+  const { allCategories, refreshCategories } = useCategories({
+    onCategoryChanged,
+  });
   const [amount, setAmount] = useState('0');
   const [selectedCategory, setSelectedCategory] = useState<Category | null>(null);
   const [date, setDate] = useState(new Date());

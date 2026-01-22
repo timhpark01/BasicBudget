@@ -438,6 +438,9 @@ export default function BudgetsScreen() {
             Alert.alert('Error', 'Failed to save expense. Please try again.');
           }
         }}
+        onCategoryChanged={async (categoryId) => {
+          await refreshExpenses();
+        }}
       />
 
       <BudgetModal
