@@ -1,6 +1,8 @@
 import * as SQLite from 'expo-sqlite';
 import { CategoryBudget, CategoryBudgetInput, CategoryBudgetRow } from '@/types/database';
 import { generateId } from '../../utils/id-generator';
+import { DatabaseError } from '@/lib/db/core/errors';
+import { mapSQLiteErrorToUserMessage } from '@/lib/db/utils/error-mapper';
 
 /**
  * Transform database row to CategoryBudget object
@@ -29,6 +31,16 @@ export async function getCategoryBudget(
   categoryId: string
 ): Promise<CategoryBudget | null> {
   try {
+    // Input validation
+    const monthRegex = /^\d{4}-\d{2}$/;
+    if (!monthRegex.test(month)) {
+      throw new DatabaseError('Invalid month format. Expected YYYY-MM', undefined, 'validation');
+    }
+
+    if (!categoryId || categoryId.trim() === '') {
+      throw new DatabaseError('Category ID is required', undefined, 'validation');
+    }
+
     const row = await db.getFirstAsync<CategoryBudgetRow>(
       'SELECT * FROM category_budgets WHERE month = ? AND category_id = ?',
       [month, categoryId]
@@ -36,8 +48,21 @@ export async function getCategoryBudget(
 
     return row ? rowToCategoryBudget(row) : null;
   } catch (error) {
-    console.error('Failed to get category budget:', error);
-    return null;
+    // If already a DatabaseError, re-throw as-is
+    if (error instanceof DatabaseError) {
+      throw error;
+    }
+
+    // Map SQLite errors to user messages
+    const sqliteError = error as { code?: number; message?: string };
+    const userMessage = mapSQLiteErrorToUserMessage(sqliteError);
+
+    throw new DatabaseError(
+      userMessage,
+      sqliteError.code,
+      'get_category_budget',
+      error as Error
+    );
   }
 }
 
@@ -52,6 +77,12 @@ export async function getCategoryBudgetsForMonth(
   month: string
 ): Promise<CategoryBudget[]> {
   try {
+    // Input validation
+    const monthRegex = /^\d{4}-\d{2}$/;
+    if (!monthRegex.test(month)) {
+      throw new DatabaseError('Invalid month format. Expected YYYY-MM', undefined, 'validation');
+    }
+
     const rows = await db.getAllAsync<CategoryBudgetRow>(
       'SELECT * FROM category_budgets WHERE month = ?',
       [month]
@@ -59,8 +90,21 @@ export async function getCategoryBudgetsForMonth(
 
     return rows.map(rowToCategoryBudget);
   } catch (error) {
-    console.error('Failed to get category budgets for month:', error);
-    return [];
+    // If already a DatabaseError, re-throw as-is
+    if (error instanceof DatabaseError) {
+      throw error;
+    }
+
+    // Map SQLite errors to user messages
+    const sqliteError = error as { code?: number; message?: string };
+    const userMessage = mapSQLiteErrorToUserMessage(sqliteError);
+
+    throw new DatabaseError(
+      userMessage,
+      sqliteError.code,
+      'get_category_budgets_for_month',
+      error as Error
+    );
   }
 }
 
@@ -75,16 +119,20 @@ export async function setCategoryBudget(
   budgetInput: CategoryBudgetInput
 ): Promise<CategoryBudget> {
   try {
-    // Validation
+    // Input validation (fail fast)
+    if (!budgetInput.categoryId || budgetInput.categoryId.trim() === '') {
+      throw new DatabaseError('Category ID is required', undefined, 'validation');
+    }
+
     const amountNum = parseFloat(budgetInput.budgetAmount);
     if (isNaN(amountNum) || amountNum < 0) {
-      throw new Error('Budget amount must be a non-negative number');
+      throw new DatabaseError('Budget amount must be a non-negative number', undefined, 'validation');
     }
 
     // Validate month format (YYYY-MM)
     const monthRegex = /^\d{4}-\d{2}$/;
     if (!monthRegex.test(budgetInput.month)) {
-      throw new Error('Invalid month format. Expected YYYY-MM');
+      throw new DatabaseError('Invalid month format. Expected YYYY-MM', undefined, 'validation');
     }
 
     // Check if budget exists for this month and category
@@ -127,8 +175,21 @@ export async function setCategoryBudget(
       };
     }
   } catch (error) {
-    console.error('Failed to set category budget:', error);
-    throw new Error('Failed to save category budget. Please try again.');
+    // If already a DatabaseError (validation), re-throw as-is
+    if (error instanceof DatabaseError) {
+      throw error;
+    }
+
+    // Map SQLite errors to user messages
+    const sqliteError = error as { code?: number; message?: string };
+    const userMessage = mapSQLiteErrorToUserMessage(sqliteError);
+
+    throw new DatabaseError(
+      userMessage,
+      sqliteError.code,
+      'set_category_budget',
+      error as Error
+    );
   }
 }
 
@@ -144,13 +205,36 @@ export async function deleteCategoryBudget(
   categoryId: string
 ): Promise<void> {
   try {
+    // Input validation
+    const monthRegex = /^\d{4}-\d{2}$/;
+    if (!monthRegex.test(month)) {
+      throw new DatabaseError('Invalid month format. Expected YYYY-MM', undefined, 'validation');
+    }
+
+    if (!categoryId || categoryId.trim() === '') {
+      throw new DatabaseError('Category ID is required', undefined, 'validation');
+    }
+
     await db.runAsync(
       'DELETE FROM category_budgets WHERE month = ? AND category_id = ?',
       [month, categoryId]
     );
   } catch (error) {
-    console.error('Failed to delete category budget:', error);
-    throw new Error('Failed to delete category budget. Please try again.');
+    // If already a DatabaseError, re-throw as-is
+    if (error instanceof DatabaseError) {
+      throw error;
+    }
+
+    // Map SQLite errors to user messages
+    const sqliteError = error as { code?: number; message?: string };
+    const userMessage = mapSQLiteErrorToUserMessage(sqliteError);
+
+    throw new DatabaseError(
+      userMessage,
+      sqliteError.code,
+      'delete_category_budget',
+      error as Error
+    );
   }
 }
 
@@ -164,9 +248,28 @@ export async function deleteCategoryBudgetsForMonth(
   month: string
 ): Promise<void> {
   try {
+    // Input validation
+    const monthRegex = /^\d{4}-\d{2}$/;
+    if (!monthRegex.test(month)) {
+      throw new DatabaseError('Invalid month format. Expected YYYY-MM', undefined, 'validation');
+    }
+
     await db.runAsync('DELETE FROM category_budgets WHERE month = ?', [month]);
   } catch (error) {
-    console.error('Failed to delete category budgets for month:', error);
-    throw new Error('Failed to delete category budgets. Please try again.');
+    // If already a DatabaseError, re-throw as-is
+    if (error instanceof DatabaseError) {
+      throw error;
+    }
+
+    // Map SQLite errors to user messages
+    const sqliteError = error as { code?: number; message?: string };
+    const userMessage = mapSQLiteErrorToUserMessage(sqliteError);
+
+    throw new DatabaseError(
+      userMessage,
+      sqliteError.code,
+      'delete_category_budgets_for_month',
+      error as Error
+    );
   }
 }
