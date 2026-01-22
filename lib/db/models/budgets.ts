@@ -1,6 +1,8 @@
 import * as SQLite from 'expo-sqlite';
 import { Budget, BudgetInput, BudgetRow } from '@/types/database';
 import { generateId } from '../../utils/id-generator';
+import { DatabaseError } from '@/lib/db/core/errors';
+import { mapSQLiteErrorToUserMessage } from '@/lib/db/utils/error-mapper';
 
 /**
  * Transform database row to Budget object
@@ -26,6 +28,12 @@ export async function getBudgetForMonth(
   month: string
 ): Promise<Budget | null> {
   try {
+    // Input validation
+    const monthRegex = /^\d{4}-\d{2}$/;
+    if (!monthRegex.test(month)) {
+      throw new DatabaseError('Invalid month format. Expected YYYY-MM', undefined, 'validation');
+    }
+
     const row = await db.getFirstAsync<BudgetRow>(
       'SELECT * FROM budgets WHERE month = ?',
       [month]
@@ -33,8 +41,21 @@ export async function getBudgetForMonth(
 
     return row ? rowToBudget(row) : null;
   } catch (error) {
-    console.error('Failed to get budget for month:', error);
-    return null;
+    // If already a DatabaseError, re-throw as-is
+    if (error instanceof DatabaseError) {
+      throw error;
+    }
+
+    // Map SQLite errors to user messages
+    const sqliteError = error as { code?: number; message?: string };
+    const userMessage = mapSQLiteErrorToUserMessage(sqliteError);
+
+    throw new DatabaseError(
+      userMessage,
+      sqliteError.code,
+      'get_budget_for_month',
+      error as Error
+    );
   }
 }
 
@@ -49,16 +70,16 @@ export async function setBudgetForMonth(
   budgetInput: BudgetInput
 ): Promise<Budget> {
   try {
-    // Validation
+    // Input validation (fail fast)
     const amountNum = parseFloat(budgetInput.budgetAmount);
     if (isNaN(amountNum) || amountNum <= 0) {
-      throw new Error('Budget amount must be a positive number');
+      throw new DatabaseError('Budget amount must be a positive number', undefined, 'validation');
     }
 
     // Validate month format (YYYY-MM)
     const monthRegex = /^\d{4}-\d{2}$/;
     if (!monthRegex.test(budgetInput.month)) {
-      throw new Error('Invalid month format. Expected YYYY-MM');
+      throw new DatabaseError('Invalid month format. Expected YYYY-MM', undefined, 'validation');
     }
 
     // Check if budget exists for this month
@@ -98,8 +119,21 @@ export async function setBudgetForMonth(
       };
     }
   } catch (error) {
-    console.error('Failed to set budget for month:', error);
-    throw new Error('Failed to save budget. Please try again.');
+    // If already a DatabaseError (validation), re-throw as-is
+    if (error instanceof DatabaseError) {
+      throw error;
+    }
+
+    // Map SQLite errors to user messages
+    const sqliteError = error as { code?: number; message?: string };
+    const userMessage = mapSQLiteErrorToUserMessage(sqliteError);
+
+    throw new DatabaseError(
+      userMessage,
+      sqliteError.code,
+      'set_budget_for_month',
+      error as Error
+    );
   }
 }
 
@@ -116,8 +150,21 @@ export async function getAllBudgets(
 
     return rows.map(rowToBudget);
   } catch (error) {
-    console.error('Failed to get all budgets:', error);
-    throw new Error('Failed to load budgets. Please try again.');
+    // If already a DatabaseError, re-throw as-is
+    if (error instanceof DatabaseError) {
+      throw error;
+    }
+
+    // Map SQLite errors to user messages
+    const sqliteError = error as { code?: number; message?: string };
+    const userMessage = mapSQLiteErrorToUserMessage(sqliteError);
+
+    throw new DatabaseError(
+      userMessage,
+      sqliteError.code,
+      'get_all_budgets',
+      error as Error
+    );
   }
 }
 
@@ -129,10 +176,28 @@ export async function deleteBudget(
   id: string
 ): Promise<void> {
   try {
+    // Input validation
+    if (!id || id.trim() === '') {
+      throw new DatabaseError('Budget ID is required', undefined, 'validation');
+    }
+
     await db.runAsync('DELETE FROM budgets WHERE id = ?', [id]);
   } catch (error) {
-    console.error('Failed to delete budget:', error);
-    throw new Error('Failed to delete budget. Please try again.');
+    // If already a DatabaseError, re-throw as-is
+    if (error instanceof DatabaseError) {
+      throw error;
+    }
+
+    // Map SQLite errors to user messages
+    const sqliteError = error as { code?: number; message?: string };
+    const userMessage = mapSQLiteErrorToUserMessage(sqliteError);
+
+    throw new DatabaseError(
+      userMessage,
+      sqliteError.code,
+      'delete_budget',
+      error as Error
+    );
   }
 }
 
@@ -144,9 +209,28 @@ export async function deleteBudgetForMonth(
   month: string
 ): Promise<void> {
   try {
+    // Input validation
+    const monthRegex = /^\d{4}-\d{2}$/;
+    if (!monthRegex.test(month)) {
+      throw new DatabaseError('Invalid month format. Expected YYYY-MM', undefined, 'validation');
+    }
+
     await db.runAsync('DELETE FROM budgets WHERE month = ?', [month]);
   } catch (error) {
-    console.error('Failed to delete budget for month:', error);
-    throw new Error('Failed to delete budget. Please try again.');
+    // If already a DatabaseError, re-throw as-is
+    if (error instanceof DatabaseError) {
+      throw error;
+    }
+
+    // Map SQLite errors to user messages
+    const sqliteError = error as { code?: number; message?: string };
+    const userMessage = mapSQLiteErrorToUserMessage(sqliteError);
+
+    throw new DatabaseError(
+      userMessage,
+      sqliteError.code,
+      'delete_budget_for_month',
+      error as Error
+    );
   }
 }
