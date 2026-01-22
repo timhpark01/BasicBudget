@@ -10,27 +10,27 @@ See: .planning/PROJECT.md (updated 2026-01-21)
 ## Current Position
 
 Phase: 1 of 5 (Database Stabilization)
-Plan: 3 of 5 (Database Model Error Handling)
-Status: In progress
-Last activity: 2026-01-22 — Completed 01-03-PLAN.md
+Plan: 4 of 4 (Categories & Net Worth Transactions)
+Status: Phase complete
+Last activity: 2026-01-21 — Completed 01-04-PLAN.md
 
-Progress: [███░░░░░░░] 30%
+Progress: [████░░░░░░] 31%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 3
-- Average duration: 6 min
-- Total execution time: 0.28 hours
+- Total plans completed: 4
+- Average duration: 5 min
+- Total execution time: 0.33 hours
 
 **By Phase:**
 
 | Phase | Plans | Total | Avg/Plan |
 |-------|-------|-------|----------|
-| 01-database-stabilization | 3 | 17 min | 6 min |
+| 01-database-stabilization | 4 | 20 min | 5 min |
 
 **Recent Trend:**
-- Last 5 plans: 01-01 (2 min), 01-02 (12 min), 01-03 (3 min)
+- Last 5 plans: 01-01 (2 min), 01-02 (12 min), 01-03 (3 min), 01-04 (3 min)
 - Trend: Accelerating
 
 *Updated after each plan completion*
@@ -54,6 +54,10 @@ Recent decisions affecting current work:
 - Preserve SQLite error codes in DatabaseError (01-03): Enables debugging while providing user-friendly messages
 - Re-throw validation DatabaseErrors as-is (01-03): Prevents double-wrapping of validation errors
 - Use mapSQLiteErrorToUserMessage for all SQLite errors (01-03): Consistent actionable error messages across all database operations
+- Use withExclusiveTransactionAsync for deleteCustomCategory (01-04): Category delete + expense reassign must be atomic to prevent orphaned expenses
+- Upgrade reorderCategories to withExclusiveTransactionAsync (01-04): Prevents race conditions from async timing in non-exclusive transactions
+- Log detailed JSON corruption info (01-04): Entry ID, date, and raw data enable debugging; safe fallback prevents crashes
+- Validate JSON parse results are arrays (01-04): Runtime validation catches schema mismatches beyond parse success
 
 ### Pending Todos
 
@@ -65,8 +69,8 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-01-22T03:20:29Z
-Stopped at: Completed 01-03-PLAN.md
+Last session: 2026-01-22T03:20:36Z
+Stopped at: Completed 01-04-PLAN.md
 Resume file: None
 
 ---
