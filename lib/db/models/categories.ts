@@ -196,6 +196,122 @@ export async function updateCustomCategory(
 }
 
 /**
+ * Update an existing custom category with cascading updates to expenses
+ * Uses atomic transaction to ensure both custom_categories and expenses tables are updated together
+ */
+export async function updateCustomCategoryWithCascade(
+  db: SQLite.SQLiteDatabase,
+  id: string,
+  category: Partial<CustomCategoryInput>
+): Promise<CustomCategory> {
+  try {
+    // Input validation
+    if (category.name !== undefined && category.name.trim().length === 0) {
+      throw new DatabaseError('Category name cannot be empty', undefined, 'validation');
+    }
+
+    const now = Date.now();
+    let updatedCategory: CustomCategory | null = null;
+
+    // Use exclusive transaction for atomic multi-table updates
+    await db.withExclusiveTransactionAsync(async () => {
+      // Build dynamic SQL for custom_categories table update
+      const categoryUpdates: string[] = [];
+      const categoryValues: any[] = [];
+
+      if (category.name !== undefined) {
+        categoryUpdates.push('name = ?');
+        categoryValues.push(category.name);
+      }
+      if (category.icon !== undefined) {
+        categoryUpdates.push('icon = ?');
+        categoryValues.push(category.icon);
+      }
+      if (category.color !== undefined) {
+        categoryUpdates.push('color = ?');
+        categoryValues.push(category.color);
+      }
+
+      categoryUpdates.push('updated_at = ?');
+      categoryValues.push(now);
+      categoryValues.push(id);
+
+      // Update custom_categories table
+      await db.runAsync(
+        `UPDATE custom_categories SET ${categoryUpdates.join(', ')} WHERE id = ?`,
+        categoryValues
+      );
+
+      // Build dynamic SQL for expenses table cascade update
+      const expenseUpdates: string[] = [];
+      const expenseValues: any[] = [];
+
+      if (category.name !== undefined) {
+        expenseUpdates.push('category_name = ?');
+        expenseValues.push(category.name);
+      }
+      if (category.icon !== undefined) {
+        expenseUpdates.push('category_icon = ?');
+        expenseValues.push(category.icon);
+      }
+      if (category.color !== undefined) {
+        expenseUpdates.push('category_color = ?');
+        expenseValues.push(category.color);
+      }
+
+      // Only cascade to expenses if at least one denormalized field is changing
+      if (expenseUpdates.length > 0) {
+        expenseUpdates.push('updated_at = ?');
+        expenseValues.push(now);
+        expenseValues.push(id);
+
+        // Update expenses table with cascading changes
+        await db.runAsync(
+          `UPDATE expenses SET ${expenseUpdates.join(', ')} WHERE category_id = ?`,
+          expenseValues
+        );
+      }
+    });
+
+    // Fetch updated category after transaction commits
+    const result = await db.getFirstAsync<CustomCategoryRow>(
+      'SELECT * FROM custom_categories WHERE id = ?',
+      [id]
+    );
+
+    if (!result) {
+      throw new DatabaseError('Category not found after update', undefined, 'not_found');
+    }
+
+    return rowToCustomCategory(result);
+  } catch (error) {
+    if (error instanceof DatabaseError) {
+      throw error;
+    }
+
+    const sqliteError = error as { code?: number; message?: string };
+
+    // Handle constraint violations (duplicate category name)
+    if (sqliteError.code === 19 || sqliteError.code === 2067) {
+      throw new DatabaseConstraintError(
+        'A category with this name already exists',
+        'unique',
+        error as Error
+      );
+    }
+
+    const userMessage = mapSQLiteErrorToUserMessage(sqliteError);
+
+    throw new DatabaseError(
+      userMessage,
+      sqliteError.code,
+      'update_category_cascade',
+      error as Error
+    );
+  }
+}
+
+/**
  * Soft delete a custom category (set is_active = 0)
  * Reassigns all expenses from this category to the default "Other" category
  * Uses atomic transaction to ensure both operations succeed or fail together
