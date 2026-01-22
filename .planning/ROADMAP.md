@@ -29,10 +29,13 @@ Decimal phases appear between their surrounding integers in numeric order.
   2. Database errors display actionable messages to users (not generic failures)
   3. Transaction boundaries protect multi-step operations from partial failures
   4. Error handling is consistent across all database models (expenses, budgets, categories, net worth)
-**Plans**: TBD
+**Plans**: 4 plans
 
 Plans:
-- [ ] TBD during planning
+- [ ] 01-01-PLAN.md — Database error infrastructure (error classes + mapper)
+- [ ] 01-02-PLAN.md — Fix database singleton race condition
+- [ ] 01-03-PLAN.md — Update expenses, budgets, category-budgets error handling
+- [ ] 01-04-PLAN.md — Add transactions to categories, improve net-worth validation
 
 ### Phase 2: Category Reliability
 **Goal**: Category operations maintain data consistency without corruption or orphaned expenses
@@ -96,7 +99,7 @@ Phases execute in numeric order with dependencies respected.
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Database Stabilization | 0/TBD | Not started | - |
+| 1. Database Stabilization | 0/4 | Not started | - |
 | 2. Category Reliability | 0/TBD | Not started | - |
 | 3. Category UX Improvements | 0/TBD | Not started | - |
 | 4. Navigation Polish | 0/TBD | Not started | - |
