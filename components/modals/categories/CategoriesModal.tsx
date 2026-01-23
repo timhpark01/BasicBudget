@@ -14,6 +14,7 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import Toast from 'react-native-toast-message';
+import * as Haptics from 'expo-haptics';
 import { useCategories } from '@/hooks/useCategories';
 import ColorPicker from '@/components/shared/ColorPicker';
 import CategoryIconPicker from '@/components/shared/CategoryIconPicker';
@@ -178,6 +179,7 @@ export default function CategoriesModal({ visible, onClose }: CategoriesModalPro
     try {
       const categoryIds = data.map((c) => c.id);
       await reorderCategories(categoryIds);
+      await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     } catch (err: any) {
       Alert.alert('Error', err.message || 'Failed to reorder categories.');
     }
@@ -190,11 +192,18 @@ export default function CategoriesModal({ visible, onClose }: CategoriesModalPro
       <ScaleDecorator>
         <View style={[styles.categoryCard, isActive && styles.categoryCardActive]}>
           <TouchableOpacity
-            onLongPress={drag}
+            onLongPress={async () => {
+              await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+              drag();
+            }}
             disabled={isActive}
-            style={styles.dragHandle}
+            style={[styles.dragHandle, { flexDirection: 'row', alignItems: 'center', gap: 4 }]}
+            accessibilityRole="button"
+            accessibilityLabel="Drag to reorder"
+            accessibilityHint="Long press and drag to change category order"
           >
-            <Ionicons name="reorder-two" size={24} color="#999" />
+            <Ionicons name="reorder-two" size={24} color="#355e3b" />
+            <Text style={{ fontSize: 11, color: '#999' }}>Hold</Text>
           </TouchableOpacity>
           <View
             style={[
