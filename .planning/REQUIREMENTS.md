@@ -79,10 +79,10 @@ Which phases cover which requirements. Updated during roadmap creation.
 | DB-02 | Phase 1 | Complete |
 | DB-03 | Phase 1 | Complete |
 | DB-04 | Phase 1 | Complete |
-| CAT-01 | Phase 2 | Pending |
-| CAT-02 | Phase 2 | Pending |
-| CAT-03 | Phase 2 | Pending |
-| CAT-04 | Phase 2 | Pending |
+| CAT-01 | Phase 2 | Complete |
+| CAT-02 | Phase 2 | Complete |
+| CAT-03 | Phase 2 | Complete |
+| CAT-04 | Phase 2 | Complete |
 | UX-01 | Phase 3 | Pending |
 | UX-02 | Phase 3 | Pending |
 | UX-03 | Phase 3 | Pending |

@@ -13,7 +13,7 @@ This roadmap guides stabilization of the BasicBudget app from feature-complete t
 Decimal phases appear between their surrounding integers in numeric order.
 
 - [x] **Phase 1: Database Stabilization** - Eliminate race conditions and improve error handling
-- [ ] **Phase 2: Category Reliability** - Fix category operations data integrity
+- [x] **Phase 2: Category Reliability** - Fix category operations data integrity
 - [ ] **Phase 3: Category UX Improvements** - Polish category management interface
 - [ ] **Phase 4: Navigation Polish** - Rename index tab for clarity
 - [ ] **Phase 5: Testing & Verification** - Complete manual testing coverage
@@ -49,8 +49,8 @@ Plans:
 **Plans**: 2 plans
 
 Plans:
-- [ ] 02-01-PLAN.md — Cascading category updates with cache invalidation
-- [ ] 02-02-PLAN.md — Category position integrity validation and repair
+- [x] 02-01-PLAN.md — Cascading category updates with cache invalidation
+- [x] 02-02-PLAN.md — Category position integrity validation and repair
 
 ### Phase 3: Category UX Improvements
 **Goal**: Category management interface is intuitive and provides clear feedback
@@ -101,7 +101,7 @@ Phases execute in numeric order with dependencies respected.
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Database Stabilization | 4/4 | Complete | 2026-01-22 |
-| 2. Category Reliability | 0/2 | Not started | - |
+| 2. Category Reliability | 2/2 | Complete | 2026-01-22 |
 | 3. Category UX Improvements | 0/TBD | Not started | - |
 | 4. Navigation Polish | 0/TBD | Not started | - |
 | 5. Testing & Verification | 0/TBD | Not started | - |
