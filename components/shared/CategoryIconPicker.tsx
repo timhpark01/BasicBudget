@@ -1,5 +1,5 @@
-import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import React, { useState } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, TextInput } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { CATEGORY_ICONS } from '@/constants/colors';
 
@@ -14,11 +14,30 @@ export default function CategoryIconPicker({
   onSelectIcon,
   color,
 }: CategoryIconPickerProps) {
+  const [searchQuery, setSearchQuery] = useState('');
+
+  const filteredIcons = CATEGORY_ICONS.filter(icon =>
+    searchQuery ? icon.toLowerCase().includes(searchQuery.toLowerCase()) : true
+  );
+
   return (
     <View style={styles.container}>
       <Text style={styles.label}>Icon</Text>
+
+      <TextInput
+        style={styles.searchInput}
+        placeholder="Search icons (e.g., food, travel)..."
+        value={searchQuery}
+        onChangeText={setSearchQuery}
+        clearButtonMode="while-editing"
+        autoCapitalize="none"
+        autoCorrect={false}
+        accessibilityLabel="Search category icons"
+        placeholderTextColor="#999"
+      />
+
       <View style={styles.iconsGrid}>
-        {CATEGORY_ICONS.map((iconName) => (
+        {filteredIcons.map((iconName) => (
           <TouchableOpacity
             key={iconName}
             style={[
@@ -39,6 +58,12 @@ export default function CategoryIconPicker({
           </TouchableOpacity>
         ))}
       </View>
+
+      {filteredIcons.length === 0 && (
+        <Text style={styles.noResults}>
+          No icons found for "{searchQuery}". Try a different search.
+        </Text>
+      )}
     </View>
   );
 }
@@ -67,5 +92,23 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     borderWidth: 2,
     borderColor: 'transparent',
+  },
+  searchInput: {
+    backgroundColor: '#fff',
+    borderWidth: 1,
+    borderColor: '#e0e0e0',
+    borderRadius: 8,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    fontSize: 16,
+    color: '#333',
+    marginBottom: 16,
+  },
+  noResults: {
+    textAlign: 'center',
+    color: '#999',
+    marginTop: 24,
+    fontSize: 14,
+    fontStyle: 'italic',
   },
 });
