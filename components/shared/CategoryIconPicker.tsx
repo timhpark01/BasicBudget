@@ -49,6 +49,10 @@ export default function CategoryIconPicker({
             ]}
             onPress={() => onSelectIcon(iconName)}
             activeOpacity={0.7}
+            accessibilityRole="button"
+            accessibilityLabel={`${iconName} icon`}
+            accessibilityState={{ selected: selectedIcon === iconName }}
+            accessibilityHint="Double tap to select this icon for your category"
           >
             <Ionicons
               name={iconName as any}
