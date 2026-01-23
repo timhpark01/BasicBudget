@@ -61,10 +61,12 @@ Plans:
   2. User can easily browse and select category icons
   3. User understands how to reorder categories (drag mechanism is clear)
   4. User receives clear visual confirmation when category changes succeed
-**Plans**: TBD
+**Plans**: 3 plans
 
 Plans:
-- [ ] TBD during planning
+- [ ] 03-01-PLAN.md — Toast notification infrastructure setup
+- [ ] 03-02-PLAN.md — Replace alerts with toasts and add haptic feedback
+- [ ] 03-03-PLAN.md — Add icon search and accessibility improvements
 
 ### Phase 4: Navigation Polish
 **Goal**: Navigation labels accurately reflect screen content
@@ -102,7 +104,7 @@ Phases execute in numeric order with dependencies respected.
 |-------|----------------|--------|-----------|
 | 1. Database Stabilization | 4/4 | Complete | 2026-01-22 |
 | 2. Category Reliability | 2/2 | Complete | 2026-01-22 |
-| 3. Category UX Improvements | 0/TBD | Not started | - |
+| 3. Category UX Improvements | 0/3 | Not started | - |
 | 4. Navigation Polish | 0/TBD | Not started | - |
 | 5. Testing & Verification | 0/TBD | Not started | - |
 
