@@ -276,11 +276,17 @@ export default function CategoriesModal({ visible, onClose }: CategoriesModalPro
                 style={styles.input}
                 value={name}
                 onChangeText={setName}
-                placeholder="Enter category name"
+                placeholder={mode === 'add' ? 'e.g., Groceries, Entertainment' : 'Enter new name'}
                 placeholderTextColor="#999"
                 maxLength={20}
                 autoCapitalize="words"
+                autoFocus={true}
               />
+              {mode === 'edit' && (
+                <Text style={styles.helperText}>
+                  Renaming will update all expenses in this category
+                </Text>
+              )}
             </View>
 
             <CategoryIconPicker
@@ -497,5 +503,11 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(255, 255, 255, 0.9)',
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  helperText: {
+    fontSize: 13,
+    color: '#666',
+    marginTop: 6,
+    fontStyle: 'italic',
   },
 });
