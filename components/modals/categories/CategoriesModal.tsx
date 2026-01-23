@@ -13,6 +13,7 @@ import {
   Platform,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import Toast from 'react-native-toast-message';
 import { useCategories } from '@/hooks/useCategories';
 import ColorPicker from '@/components/shared/ColorPicker';
 import CategoryIconPicker from '@/components/shared/CategoryIconPicker';
@@ -86,14 +87,28 @@ export default function CategoriesModal({ visible, onClose }: CategoriesModalPro
           icon: selectedIcon,
           color: selectedColor,
         });
-        Alert.alert('Success', 'Category created successfully!');
+        Toast.show({
+          type: 'success',
+          text1: 'Category created',
+          text2: `${name.trim()} is ready to use`,
+          position: 'top',
+          visibilityTime: 3000,
+          autoHide: true,
+        });
       } else if (mode === 'edit' && editingId) {
         await updateCategory(editingId, {
           name: name.trim(),
           icon: selectedIcon,
           color: selectedColor,
         });
-        Alert.alert('Success', 'Category updated successfully!');
+        Toast.show({
+          type: 'success',
+          text1: 'Category updated',
+          text2: 'Changes saved successfully',
+          position: 'top',
+          visibilityTime: 3000,
+          autoHide: true,
+        });
       }
       setMode('list');
     } catch (err: any) {
@@ -136,7 +151,14 @@ export default function CategoriesModal({ visible, onClose }: CategoriesModalPro
                   ]
                 );
               } else {
-                Alert.alert('Success', 'Category deleted successfully!');
+                Toast.show({
+                  type: 'success',
+                  text1: 'Category deleted',
+                  text2: `${category.name} has been removed`,
+                  position: 'top',
+                  visibilityTime: 3000,
+                  autoHide: true,
+                });
               }
             } catch (err: any) {
               Alert.alert('Error', err.message || 'Failed to delete category.');
