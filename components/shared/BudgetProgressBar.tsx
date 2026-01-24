@@ -249,7 +249,7 @@ export default function BudgetProgressBar({
               <View style={styles.dailySpendingDivider} />
               <View style={styles.dailySpendingItem}>
                 <Text style={styles.dailySpendingLabel}>
-                  {daysRemaining > 0 ? 'Rest of month' : 'Month ended'}
+                  {daysRemaining > 0 ? 'Remaining per day' : 'Month ended'}
                 </Text>
                 <Text style={[
                   styles.dailySpendingValue,

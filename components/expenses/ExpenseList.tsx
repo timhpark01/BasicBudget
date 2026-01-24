@@ -127,7 +127,7 @@ export default function ExpenseList({
 
             {!isCollapsed && (
               <View style={styles.expensesContainer}>
-                {dayExpenses.map((expense) => (
+                {dayExpenses.map((expense, index) => (
                   <Swipeable
                     key={expense.id}
                     renderRightActions={(progress, dragX) =>
@@ -136,7 +136,12 @@ export default function ExpenseList({
                     overshootRight={false}
                   >
                     <TouchableOpacity
-                      style={styles.expenseItem}
+                      style={[
+                        styles.expenseItem,
+                        index === 0 && styles.expenseItemFirst,
+                        index === dayExpenses.length - 1 && styles.expenseItemLast,
+                        index !== 0 && styles.expenseItemNotFirst,
+                      ]}
                       onPress={() => onExpenseTap(expense)}
                       onLongPress={() => onExpenseLongPress(expense)}
                       activeOpacity={0.7}
@@ -181,18 +186,14 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   dateSection: {
-    marginTop: 8,
-    marginBottom: 8
+    marginBottom: 2,
   },
   dateHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingVertical: 2,
+    paddingVertical: 8,
     paddingHorizontal: 12,
-    backgroundColor: '#f8f8f8',
-    borderRadius: 6,
-    marginBottom: 6,
   },
   dateHeaderLeft: {
     flexDirection: 'row',
@@ -210,17 +211,31 @@ const styles = StyleSheet.create({
     color: '#355e3b',
   },
   expensesContainer: {
-    gap: 2,
+    gap: 0,
   },
   expenseItem: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: '#fff',
     padding: 10,
-    borderRadius: 10,
-    borderWidth: 1,
+    borderRadius: 0,
+    borderLeftWidth: 1,
+    borderRightWidth: 1,
+    borderBottomWidth: 1,
     borderColor: '#e0e0e0',
     gap: 10,
+  },
+  expenseItemFirst: {
+    borderTopWidth: 1,
+    borderTopLeftRadius: 10,
+    borderTopRightRadius: 10,
+  },
+  expenseItemLast: {
+    borderBottomLeftRadius: 10,
+    borderBottomRightRadius: 10,
+  },
+  expenseItemNotFirst: {
+    borderTopWidth: 0,
   },
   categoryIcon: {
     width: 40,
