@@ -8,7 +8,6 @@ import {
   updateExpense as updateExpenseDb,
   deleteExpense as deleteExpenseDb,
 } from '@/lib/db/models/expenses';
-import { seedSampleData } from '@/lib/utils/seed-data';
 
 export interface UseExpensesReturn {
   expenses: Expense[];
@@ -33,11 +32,6 @@ export function useExpenses(): UseExpensesReturn {
       try {
         const database = await getDatabase();
         setDb(database);
-
-        // Seed sample data in development mode
-        if (__DEV__) {
-          await seedSampleData(database);
-        }
 
         await loadExpenses(database);
       } catch (err) {

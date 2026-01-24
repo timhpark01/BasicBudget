@@ -15,8 +15,10 @@ import {
   useWindowDimensions,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import * as Haptics from 'expo-haptics';
 import CalculatorKeypad from '@/components/shared/CalculatorKeypad';
 import CalendarPicker from '@/components/shared/CalendarPicker';
+import CategoriesModal from '@/components/modals/categories/CategoriesModal';
 import { moderateScale, scaleFontSize, scaleWidth, scaleHeight } from '@/lib/utils/responsive';
 
 interface AddExpenseModalProps {
@@ -52,11 +54,12 @@ export default function AddExpenseModal({
   const [note, setNote] = useState('');
   const [loading, setLoading] = useState(false);
   const [inputMode, setInputMode] = useState<'calculator' | 'calendar'>('calculator');
+  const [showCategoriesModal, setShowCategoriesModal] = useState(false);
 
   // Pre-fill form when editing
   useEffect(() => {
     if (visible) {
-      // Refresh categories to show latest changes from CategoriesModal
+      // Refresh categories to show latest changes
       refreshCategories();
     }
 
@@ -100,6 +103,22 @@ export default function AddExpenseModal({
 
   const handleClear = () => {
     setAmount('0');
+  };
+
+  const handleCategoryLongPress = async () => {
+    await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+
+    Alert.alert(
+      'Edit Categories',
+      'Would you like to edit your categories?',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Edit Categories',
+          onPress: () => setShowCategoriesModal(true),
+        },
+      ]
+    );
   };
 
   const handleSave = async () => {
@@ -153,29 +172,30 @@ export default function AddExpenseModal({
   const bottomSpacing = calculatorHeight + moderateScale(20);
 
   return (
-    <Modal
-      visible={visible}
-      animationType="slide"
-      transparent={false}
-      onRequestClose={onClose}
-    >
-      <View style={[styles.container, { paddingTop: insets.top }]}>
-        {/* Header */}
-        <View style={styles.header}>
-          <TouchableOpacity onPress={onClose} disabled={loading}>
-            <Ionicons name="close" size={28} color="#333" />
-          </TouchableOpacity>
-          <Text style={styles.headerTitle}>
-            {editExpense ? 'Edit Expense' : 'Add Expense'}
-          </Text>
-          <TouchableOpacity onPress={handleSave} disabled={loading}>
-            {loading ? (
-              <ActivityIndicator size="small" color="#355e3b" />
-            ) : (
-              <Ionicons name="checkmark" size={28} color="#355e3b" />
-            )}
-          </TouchableOpacity>
-        </View>
+    <>
+      <Modal
+        visible={visible && !showCategoriesModal}
+        animationType="slide"
+        transparent={false}
+        onRequestClose={onClose}
+      >
+        <View style={[styles.container, { paddingTop: insets.top }]}>
+          {/* Header */}
+          <View style={styles.header}>
+            <TouchableOpacity onPress={onClose} disabled={loading}>
+              <Ionicons name="close" size={28} color="#333" />
+            </TouchableOpacity>
+            <Text style={styles.headerTitle}>
+              {editExpense ? 'Edit Expense' : 'Add Expense'}
+            </Text>
+            <TouchableOpacity onPress={handleSave} disabled={loading}>
+              {loading ? (
+                <ActivityIndicator size="small" color="#355e3b" />
+              ) : (
+                <Ionicons name="checkmark" size={28} color="#355e3b" />
+              )}
+            </TouchableOpacity>
+          </View>
 
         {/* Category Selection Background */}
         <ScrollView
@@ -192,6 +212,7 @@ export default function AddExpenseModal({
                   selectedCategory?.id === category.id && styles.categoryTileSelected,
                 ]}
                 onPress={() => setSelectedCategory(category)}
+                onLongPress={handleCategoryLongPress}
               >
                 <View
                   style={[
@@ -203,7 +224,7 @@ export default function AddExpenseModal({
                   ]}
                 >
                   <Ionicons
-                    name={category.icon}
+                    name={category.icon as any}
                     size={28}
                     color={
                       selectedCategory?.id === category.id ? '#fff' : category.color
@@ -274,7 +295,17 @@ export default function AddExpenseModal({
           )}
         </View>
       </View>
-    </Modal>
+      </Modal>
+
+      {/* Categories Modal for editing/adding/reordering categories */}
+      <CategoriesModal
+        visible={showCategoriesModal}
+        onClose={() => {
+          setShowCategoriesModal(false);
+          refreshCategories();
+        }}
+      />
+    </>
   );
 }
 
