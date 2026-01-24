@@ -1,6 +1,5 @@
 import AddExpenseModal from '@/components/modals/expenses/AddExpenseModal';
 import BudgetModal from '@/components/modals/budget/BudgetModal';
-import ExpenseDetailModal from '@/components/modals/expenses/ExpenseDetailModal';
 import UndoToast from '@/components/shared/UndoToast';
 import WelcomeModal from '@/components/modals/WelcomeModal';
 import ExpenseMonthHeader from '@/components/expenses/ExpenseMonthHeader';
@@ -47,8 +46,6 @@ export default function BudgetsScreen() {
   const [modalVisible, setModalVisible] = useState(false);
   const [editingExpense, setEditingExpense] = useState<Expense | null>(null);
   const [budgetModalVisible, setBudgetModalVisible] = useState(false);
-  const [detailExpense, setDetailExpense] = useState<Expense | null>(null);
-  const [detailModalVisible, setDetailModalVisible] = useState(false);
   const [welcomeModalVisible, setWelcomeModalVisible] = useState(false);
 
   // Undo state
@@ -63,7 +60,6 @@ export default function BudgetsScreen() {
     addExpense,
     updateExpense,
     deleteExpense,
-    duplicateExpense,
     refreshExpenses,
   } = useExpenses();
   const {
@@ -253,12 +249,6 @@ export default function BudgetsScreen() {
 
   const handleExpenseTap = (expense: Expense) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    setDetailExpense(expense);
-    setDetailModalVisible(true);
-  };
-
-  const handleEditFromDetail = (expense: Expense) => {
-    setDetailModalVisible(false);
     setEditingExpense(expense);
     setModalVisible(true);
   };
@@ -299,17 +289,6 @@ export default function BudgetsScreen() {
     }
 
     setDeletedExpense(null);
-  };
-
-  const handleDuplicate = async (expense: Expense) => {
-    setDetailModalVisible(false);
-    try {
-      await duplicateExpense(expense);
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-    } catch (err) {
-      console.error('Failed to duplicate expense:', err);
-      Alert.alert('Error', 'Failed to duplicate expense. Please try again.');
-    }
   };
 
   const handleSwipeDelete = (expense: Expense) => {
@@ -449,15 +428,6 @@ export default function BudgetsScreen() {
         currentBudget={budget?.budgetAmount}
         monthLabel={monthLabel}
         onSave={handleSaveBudget}
-      />
-
-      <ExpenseDetailModal
-        visible={detailModalVisible}
-        expense={detailExpense}
-        onClose={() => setDetailModalVisible(false)}
-        onEdit={handleEditFromDetail}
-        onDelete={(id) => handleDeleteWithUndo(id, detailExpense!)}
-        onDuplicate={handleDuplicate}
       />
     </SafeAreaView>
   );
