@@ -100,11 +100,11 @@ export const PRESET_COLORS = [
 export const CATEGORY_ICONS = [
   // Food & Dining
   'restaurant',
+  'basket',
   'pizza',
   'cafe',
   'fast-food',
   'beer',
-  'coffee',
   'wine',
   'ice-cream',
   'nutrition', // groceries
