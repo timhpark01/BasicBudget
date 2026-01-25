@@ -206,17 +206,18 @@ export default function CategoriesModal({ visible, onClose }: CategoriesModalPro
         <View style={[styles.categoryCard, isActive && styles.categoryCardActive]}>
           <TouchableOpacity
             onLongPress={async () => {
+              if (isProtected) return; // Prevent dragging protected categories
               await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
               drag();
             }}
-            disabled={isActive}
+            disabled={isActive || isProtected}
             style={[styles.dragHandle, { flexDirection: 'row', alignItems: 'center', gap: 4 }]}
             accessibilityRole="button"
-            accessibilityLabel="Drag to reorder"
-            accessibilityHint="Long press and drag to change category order"
+            accessibilityLabel={isProtected ? "Cannot reorder protected category" : "Drag to reorder"}
+            accessibilityHint={isProtected ? "" : "Long press and drag to change category order"}
           >
-            <Ionicons name="reorder-two" size={24} color="#355e3b" />
-            <Text style={{ fontSize: 11, color: '#999' }}>Hold</Text>
+            <Ionicons name="reorder-two" size={24} color={isProtected ? "#ccc" : "#355e3b"} />
+            <Text style={{ fontSize: 11, color: isProtected ? '#ccc' : '#999' }}>Hold</Text>
           </TouchableOpacity>
           <View
             style={[

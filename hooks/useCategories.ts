@@ -63,8 +63,15 @@ export function useCategories(
   }
 
   // All categories are now in the database (including former defaults)
+  // Sort to ensure "Unlabeled" always appears at the bottom
   const allCategories = useMemo(() => {
-    return customCategories;
+    return [...customCategories].sort((a, b) => {
+      // Unlabeled always goes to the end
+      if (a.id === '6' || a.name === 'Unlabeled') return 1;
+      if (b.id === '6' || b.name === 'Unlabeled') return -1;
+      // Otherwise maintain position order
+      return a.position - b.position;
+    });
   }, [customCategories]);
 
   // Add a new custom category
@@ -228,15 +235,30 @@ export function useCategories(
       if (!db) throw new Error('Database not initialized');
 
       try {
+        // Find "Unlabeled" category
+        const unlabeledCategory = customCategories.find(
+          (c) => c.id === '6' || c.name === 'Unlabeled'
+        );
+
+        // Filter out "Unlabeled" from the reorder list (it should always be at the end)
+        const idsWithoutUnlabeled = categoryIds.filter(
+          (id) => id !== '6' && customCategories.find((c) => c.id === id)?.name !== 'Unlabeled'
+        );
+
+        // Add "Unlabeled" to the end
+        const finalIds = unlabeledCategory
+          ? [...idsWithoutUnlabeled, unlabeledCategory.id]
+          : idsWithoutUnlabeled;
+
         // Optimistically update UI
-        const reordered = categoryIds
+        const reordered = finalIds
           .map((id) => customCategories.find((c) => c.id === id))
           .filter((c): c is CustomCategory => c !== undefined);
 
         setCustomCategories(reordered);
 
         // Persist to database
-        await reorderCategoriesDb(db, categoryIds);
+        await reorderCategoriesDb(db, finalIds);
         setError(null);
       } catch (err) {
         // Rollback on error
