@@ -275,7 +275,7 @@ export default function NetWorthScreen() {
       {/* Calendar Picker Modal */}
       <Modal
         visible={showDatePicker}
-        animationType="slide"
+        animationType="fade"
         transparent={true}
         onRequestClose={() => setShowDatePicker(false)}
       >

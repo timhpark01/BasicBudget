@@ -162,7 +162,7 @@ export default function CalendarPicker({
   };
 
   return (
-    <TouchableWithoutFeedback onPress={handleConfirm}>
+    <TouchableWithoutFeedback onPress={handleCancel}>
       <View style={styles.overlay}>
         <TouchableWithoutFeedback onPress={(e) => e.stopPropagation()}>
           <View style={styles.modalContainer} {...panResponder.panHandlers}>
@@ -265,20 +265,21 @@ export default function CalendarPicker({
 const styles = StyleSheet.create({
   overlay: {
     flex: 1,
-    backgroundColor: 'transparent',
-    justifyContent: 'flex-end',
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   modalContainer: {
-    width: '100%',
+    width: '90%',
+    maxWidth: 400,
     backgroundColor: '#fff',
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
+    borderRadius: 20,
     overflow: 'hidden',
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: -2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 8,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 12,
+    elevation: 10,
   },
   container: {
     paddingVertical: 16,
