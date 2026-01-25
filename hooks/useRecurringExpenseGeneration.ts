@@ -1,4 +1,4 @@
-import { useEffect, useCallback } from 'react';
+import { useEffect, useCallback, useRef } from 'react';
 import * as SQLite from 'expo-sqlite';
 import { getDatabase } from '@/lib/db/core/database';
 import { generateDueRecurringExpenses } from '@/lib/services/recurring-expense-generator';
@@ -19,9 +19,18 @@ export function useRecurringExpenseGeneration(
   generateNow: () => Promise<void>;
 } {
   const { onGenerationComplete, onError } = options;
+  const isGeneratingRef = useRef(false);
+  const hasGeneratedRef = useRef(false);
 
   // Generate recurring expenses
   const generateNow = useCallback(async () => {
+    // Prevent concurrent execution (race condition guard)
+    if (isGeneratingRef.current) {
+      console.log('⏭️  Skipping recurring expense generation (already in progress)');
+      return;
+    }
+
+    isGeneratingRef.current = true;
     try {
       const db = await getDatabase();
       const result = await generateDueRecurringExpenses(db);
@@ -40,12 +49,17 @@ export function useRecurringExpenseGeneration(
       if (onError) {
         onError(error as Error);
       }
+    } finally {
+      isGeneratingRef.current = false;
     }
   }, [refreshExpenses, onGenerationComplete, onError]);
 
-  // Auto-generate on mount (app startup)
+  // Auto-generate on mount (app startup) - run only once
   useEffect(() => {
-    generateNow();
+    if (!hasGeneratedRef.current) {
+      hasGeneratedRef.current = true;
+      generateNow();
+    }
   }, [generateNow]);
 
   return {

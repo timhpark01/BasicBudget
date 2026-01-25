@@ -461,36 +461,38 @@ export default function BudgetsScreen() {
         </View>
 
         {/* Recurring Expenses Section */}
-        <View style={styles.recurringSection}>
-          <TouchableOpacity
-            style={styles.recurringSectionHeader}
-            onPress={() => setRecurringCollapsed(!recurringCollapsed)}
-            activeOpacity={0.7}
-          >
-            <View style={styles.sectionHeaderLeft}>
-              <Ionicons
-                name={recurringCollapsed ? 'chevron-forward' : 'chevron-down'}
-                size={20}
-                color="#666"
-              />
-              <Text style={styles.sectionHeaderText}>
-                Recurring Expenses ({recurringExpenses.filter(r => r.isActive).length})
-              </Text>
-            </View>
-          </TouchableOpacity>
+        {recurringExpenses.filter(r => r.isActive).length > 0 && (
+          <View style={styles.recurringSection}>
+            <TouchableOpacity
+              style={styles.recurringSectionHeader}
+              onPress={() => setRecurringCollapsed(!recurringCollapsed)}
+              activeOpacity={0.7}
+            >
+              <View style={styles.sectionHeaderLeft}>
+                <Ionicons
+                  name={recurringCollapsed ? 'chevron-forward' : 'chevron-down'}
+                  size={20}
+                  color="#666"
+                />
+                <Text style={styles.sectionHeaderText}>
+                  Recurring Expenses ({recurringExpenses.filter(r => r.isActive).length})
+                </Text>
+              </View>
+            </TouchableOpacity>
 
-          {!recurringCollapsed && (
-            <RecurringExpenseList
-              recurringExpenses={recurringExpenses}
-              onEdit={(recurring) => {
-                setEditingRecurringExpense(recurring);
-                setModalVisible(true);
-              }}
-              onDelete={handleRecurringDelete}
-              onToggleActive={toggleActive}
-            />
-          )}
-        </View>
+            {!recurringCollapsed && (
+              <RecurringExpenseList
+                recurringExpenses={recurringExpenses}
+                onEdit={(recurring) => {
+                  setEditingRecurringExpense(recurring);
+                  setModalVisible(true);
+                }}
+                onDelete={handleRecurringDelete}
+                onToggleActive={toggleActive}
+              />
+            )}
+          </View>
+        )}
 
         {loading ? (
           <View style={styles.loadingContainer}>
