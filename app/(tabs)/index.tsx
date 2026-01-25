@@ -366,6 +366,8 @@ export default function BudgetsScreen() {
             onExpenseTap={handleExpenseTap}
             onExpenseLongPress={handleExpenseLongPress}
             onSwipeDelete={handleSwipeDelete}
+            budget={budget}
+            selectedMonth={selectedMonth}
           />
         )}
       </ScrollView>

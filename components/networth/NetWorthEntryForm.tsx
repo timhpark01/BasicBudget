@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView, Modal } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { NetWorthItem } from '@/lib/db/models/net-worth';
 import { ActiveField } from './types';
@@ -230,18 +230,23 @@ export default function NetWorthEntryForm({
               numberOfLines={4}
             />
           </View>
+
+          {/* Save Button */}
+          <View style={styles.buttonContainer}>
+            <TouchableOpacity style={styles.saveButton} onPress={onSave}>
+              <Text style={styles.saveButtonText}>Save Entry</Text>
+            </TouchableOpacity>
+          </View>
         </View>
       </ScrollView>
 
-      {/* Sticky Save Button */}
-      <View style={styles.stickyButtonContainer}>
-        <TouchableOpacity style={styles.saveButton} onPress={onSave}>
-          <Text style={styles.saveButtonText}>Save Entry</Text>
-        </TouchableOpacity>
-      </View>
-
       {/* Calculator Keypad Modal */}
-      {activeField && (
+      <Modal
+        visible={activeField !== null}
+        transparent
+        animationType="slide"
+        onRequestClose={onCalculatorDone}
+      >
         <View style={styles.calculatorOverlay}>
           <TouchableOpacity
             style={styles.calculatorBackdrop}
@@ -265,7 +270,7 @@ export default function NetWorthEntryForm({
             <View style={styles.calculatorBottomSpacer} />
           </View>
         </View>
-      )}
+      </Modal>
     </>
   );
 }
@@ -273,10 +278,10 @@ export default function NetWorthEntryForm({
 const styles = StyleSheet.create({
   scrollView: {
     flex: 1,
-    paddingBottom: 80,
   },
   entryContainer: {
     padding: 16,
+    paddingBottom: 100,
   },
   dateSelector: {
     flexDirection: 'row',
@@ -393,23 +398,9 @@ const styles = StyleSheet.create({
     minHeight: 100,
     textAlignVertical: 'top',
   },
-  stickyButtonContainer: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-    backgroundColor: '#fff',
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    paddingBottom: 20,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: -4 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 8,
-    zIndex: 10,
+  buttonContainer: {
+    marginTop: 8,
+    marginBottom: 16,
   },
   saveButton: {
     backgroundColor: '#355e3b',
@@ -423,22 +414,18 @@ const styles = StyleSheet.create({
     color: '#fff',
   },
   calculatorOverlay: {
+    flex: 1,
+    justifyContent: 'flex-end',
+  },
+  calculatorBackdrop: {
     position: 'absolute',
     top: 0,
     left: 0,
     right: 0,
     bottom: 0,
-    zIndex: 1000,
-  },
-  calculatorBackdrop: {
-    flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    backgroundColor: 'transparent',
   },
   calculatorContainer: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
     backgroundColor: '#fff',
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
@@ -462,6 +449,6 @@ const styles = StyleSheet.create({
     color: '#333',
   },
   calculatorBottomSpacer: {
-    height: 40,
+    height: 20,
   },
 });

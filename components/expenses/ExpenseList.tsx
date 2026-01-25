@@ -15,6 +15,8 @@ interface ExpenseListProps {
   onExpenseTap: (expense: Expense) => void;
   onExpenseLongPress: (expense: Expense) => void;
   onSwipeDelete: (expense: Expense) => void;
+  budget?: { budgetAmount: string } | null;
+  selectedMonth: string;
 }
 
 export default function ExpenseList({
@@ -22,8 +24,21 @@ export default function ExpenseList({
   onExpenseTap,
   onExpenseLongPress,
   onSwipeDelete,
+  budget,
+  selectedMonth,
 }: ExpenseListProps) {
   const [collapsedDates, setCollapsedDates] = useState<Set<string>>(new Set());
+
+  // Calculate ideal spend per day
+  const getIdealSpendPerDay = () => {
+    if (!budget?.budgetAmount) return null;
+
+    const [year, month] = selectedMonth.split('-');
+    const daysInMonth = new Date(parseInt(year), parseInt(month), 0).getDate();
+    return parseFloat(budget.budgetAmount) / daysInMonth;
+  };
+
+  const idealSpendPerDay = getIdealSpendPerDay();
 
   const toggleDateCollapse = (dateKey: string) => {
     setCollapsedDates((prev) => {
@@ -103,6 +118,9 @@ export default function ExpenseList({
     <View style={styles.expensesList}>
       {groupedExpenses.map(([dateKey, dayExpenses]) => {
         const isCollapsed = collapsedDates.has(dateKey);
+        const dayTotal = getDayTotal(dayExpenses);
+        const exceedsIdeal = idealSpendPerDay !== null && dayTotal > idealSpendPerDay;
+
         return (
           <View key={dateKey} style={styles.dateSection}>
             <TouchableOpacity
@@ -120,8 +138,11 @@ export default function ExpenseList({
                   {formatDateHeader(dateKey)}
                 </Text>
               </View>
-              <Text style={styles.dateTotalText}>
-                ${getDayTotal(dayExpenses).toFixed(2)}
+              <Text style={[
+                styles.dateTotalText,
+                exceedsIdeal && styles.dateTotalTextOver
+              ]}>
+                ${dayTotal.toFixed(2)}
               </Text>
             </TouchableOpacity>
 
@@ -209,6 +230,9 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '700',
     color: '#355e3b',
+  },
+  dateTotalTextOver: {
+    color: '#DC3545',
   },
   expensesContainer: {
     gap: 0,
