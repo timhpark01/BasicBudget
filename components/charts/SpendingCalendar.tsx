@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react';
 import { StyleSheet, Text, View, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Expense } from '@/types/database';
-import { formatCurrency } from '@/lib/utils/number-formatter';
+import { formatCurrency, formatCompactCurrency } from '@/lib/utils/number-formatter';
 
 interface SpendingCalendarProps {
   month: string; // YYYY-MM format
@@ -133,6 +133,11 @@ export default function SpendingCalendar({ month, expenses, budgetAmount }: Spen
       <View style={styles.dateGrid}>
         {calendarDays.map((day, index) => {
           const hasExpenses = day.total > 0;
+          const today = new Date();
+          today.setHours(0, 0, 0, 0);
+          const dayDate = new Date(day.date);
+          dayDate.setHours(0, 0, 0, 0);
+          const isFutureDate = dayDate > today;
           const isToday =
             day.isCurrentMonth &&
             day.date.toDateString() === new Date().toDateString();
@@ -141,6 +146,11 @@ export default function SpendingCalendar({ month, expenses, budgetAmount }: Spen
             hasExpenses &&
             idealDailySpending !== null &&
             day.total > idealDailySpending;
+          const isWithinBudget =
+            day.isCurrentMonth &&
+            idealDailySpending !== null &&
+            !isOverBudget &&
+            !isFutureDate;
           const isSelectedAndOverBudget = isSelected && isOverBudget;
 
           const handleDayPress = () => {
@@ -160,7 +170,7 @@ export default function SpendingCalendar({ month, expenses, budgetAmount }: Spen
               <TouchableOpacity
                 style={[
                   styles.dateCellInner,
-                  hasExpenses && styles.dateCellWithExpenses,
+                  isWithinBudget && styles.dateCellWithExpenses,
                   isOverBudget && styles.dateCellOverBudget,
                   isToday && styles.dateCellToday,
                   isSelected && styles.dateCellSelected,
@@ -174,7 +184,7 @@ export default function SpendingCalendar({ month, expenses, budgetAmount }: Spen
                   style={[
                     styles.dateCellText,
                     !day.isCurrentMonth && styles.dateCellTextOtherMonth,
-                    hasExpenses && styles.dateCellTextWithExpenses,
+                    isWithinBudget && styles.dateCellTextWithExpenses,
                     isOverBudget && styles.dateCellTextOverBudget,
                     isSelected && styles.dateCellTextSelected,
                   ]}
@@ -189,7 +199,7 @@ export default function SpendingCalendar({ month, expenses, budgetAmount }: Spen
                       isSelected && styles.amountTextSelected,
                     ]}
                   >
-                    {formatCurrency(day.total)}
+                    {formatCompactCurrency(day.total)}
                   </Text>
                 )}
               </TouchableOpacity>

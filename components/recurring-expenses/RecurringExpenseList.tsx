@@ -40,7 +40,7 @@ export default function RecurringExpenseList({
 
     if (diffDays === 0) return 'Today';
     if (diffDays === 1) return 'Tomorrow';
-    if (diffDays > 0 && diffDays < 7) return `in ${diffDays} days`;
+    if (diffDays > 0 && diffDays < 14) return `in ${diffDays} days`;
 
     // Handle past dates (should not normally occur, but just in case)
     if (diffDays < 0) return 'Pending';

@@ -36,7 +36,11 @@ export function calculateNextOccurrence(
 ): Date | null {
   const { frequency, dayOfWeek, dayOfMonth, monthOfYear, endDate } = recurring;
 
-  let nextDate = new Date(fromDate);
+  // Normalize fromDate to midnight for consistent date comparisons
+  const normalizedFromDate = new Date(fromDate);
+  normalizedFromDate.setHours(0, 0, 0, 0);
+
+  let nextDate = new Date(normalizedFromDate);
   nextDate.setHours(0, 0, 0, 0); // Reset to midnight
 
   switch (frequency) {
@@ -67,8 +71,8 @@ export function calculateNextOccurrence(
       const candidateThisMonth = new Date(currentYear, currentMonth, targetDayThisMonth);
       candidateThisMonth.setHours(0, 0, 0, 0);
 
-      // If target day this month is after fromDate, use it
-      if (candidateThisMonth > fromDate) {
+      // If target day this month is after normalizedFromDate, use it
+      if (candidateThisMonth > normalizedFromDate) {
         nextDate = candidateThisMonth;
       } else {
         // Otherwise, move to next month
@@ -93,8 +97,8 @@ export function calculateNextOccurrence(
           candidateThisYear = new Date(currentYearForYearly, targetMonth, 29);
         } else {
           // Feb 29 doesn't exist this year, skip to next year
-          candidateThisYear = new Date(fromDate);
-          candidateThisYear.setTime(fromDate.getTime() - 1); // Make it earlier than fromDate
+          candidateThisYear = new Date(normalizedFromDate);
+          candidateThisYear.setTime(normalizedFromDate.getTime() - 1); // Make it earlier than normalizedFromDate
         }
       } else {
         const lastDayThisYear = getLastDayOfMonth(currentYearForYearly, targetMonth);
@@ -103,8 +107,8 @@ export function calculateNextOccurrence(
       }
       candidateThisYear.setHours(0, 0, 0, 0);
 
-      // If target date this year is after fromDate, use it
-      if (candidateThisYear > fromDate) {
+      // If target date this year is after normalizedFromDate, use it
+      if (candidateThisYear > normalizedFromDate) {
         nextDate = candidateThisYear;
       } else {
         // Otherwise, move to next year
@@ -252,9 +256,13 @@ export function getNextOccurrenceDate(recurring: RecurringExpense): Date | null 
   const now = new Date();
   now.setHours(0, 0, 0, 0);
 
-  // If start date is in the future, return start date
-  if (recurring.startDate > now) {
-    return recurring.startDate;
+  // Normalize start date to midnight for comparison
+  const startDateMidnight = new Date(recurring.startDate);
+  startDateMidnight.setHours(0, 0, 0, 0);
+
+  // If start date is in the future, return start date (normalized to midnight)
+  if (startDateMidnight > now) {
+    return startDateMidnight;
   }
 
   // Calculate from last generated or start date

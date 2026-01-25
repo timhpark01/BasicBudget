@@ -37,6 +37,36 @@ export function formatCurrency(value: string | number, decimals: number = 2): st
 }
 
 /**
+ * Format a currency amount in compact form using k, m, b suffixes
+ * @param value - Number or string to format
+ * @returns Compact formatted currency string (e.g., "$1.2k", "$5.3m")
+ */
+export function formatCompactCurrency(value: string | number): string {
+  const numValue = typeof value === 'string' ? parseFloat(value) : value;
+
+  if (isNaN(numValue)) {
+    return '$0';
+  }
+
+  const absValue = Math.abs(numValue);
+  const sign = numValue < 0 ? '-' : '';
+
+  if (absValue >= 1_000_000_000) {
+    // Billions
+    return `${sign}$${(absValue / 1_000_000_000).toFixed(1)}b`;
+  } else if (absValue >= 1_000_000) {
+    // Millions
+    return `${sign}$${(absValue / 1_000_000).toFixed(1)}m`;
+  } else if (absValue >= 1_000) {
+    // Thousands
+    return `${sign}$${(absValue / 1_000).toFixed(1)}k`;
+  } else {
+    // Less than 1000, show as normal
+    return `${sign}$${absValue.toFixed(0)}`;
+  }
+}
+
+/**
  * Check if adding a digit to the current amount would exceed the maximum decimal places
  * @param currentAmount - Current amount string
  * @param maxDecimals - Maximum decimal places allowed (default: 2)
