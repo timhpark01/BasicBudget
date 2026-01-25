@@ -31,6 +31,7 @@ interface AddExpenseModalProps {
   visible: boolean;
   onClose: () => void;
   editExpense?: Expense | null;
+  editRecurringExpense?: RecurringExpense | null;
   onSave: (expense: {
     amount: string;
     category: Category | null;
@@ -48,15 +49,27 @@ interface AddExpenseModalProps {
     monthOfYear?: number;
     startDate: Date;
   }) => void | Promise<void>;
+  onUpdateRecurring?: (id: string, expense: {
+    amount: string;
+    category: Category;
+    note: string;
+    frequency: RecurrenceFrequency;
+    dayOfWeek?: number;
+    dayOfMonth?: number;
+    monthOfYear?: number;
+    startDate: Date;
+  }) => void | Promise<void>;
 }
 
 export default function AddExpenseModal({
   visible,
   onClose,
   editExpense,
+  editRecurringExpense,
   onSave,
   onCategoryChanged,
   onSaveRecurring,
+  onUpdateRecurring,
 }: AddExpenseModalProps) {
   // Responsive sizing
   const insets = useSafeAreaInsets();
@@ -85,10 +98,10 @@ export default function AddExpenseModal({
 
   // Pre-fill form when editing
   useEffect(() => {
-    if (visible) {
-      // Refresh categories to show latest changes
-      refreshCategories();
-    }
+    if (!visible) return;
+
+    // Refresh categories to show latest changes
+    refreshCategories();
 
     if (editExpense) {
       setAmount(editExpense.amount);
@@ -97,6 +110,25 @@ export default function AddExpenseModal({
       setNote(editExpense.note);
       // For now, editing doesn't support recurring (only one-time expenses)
       setIsRecurring(false);
+    } else if (editRecurringExpense) {
+      // Editing recurring expense
+      setAmount(editRecurringExpense.amount);
+      setSelectedCategory(editRecurringExpense.category);
+      setDate(editRecurringExpense.startDate);
+      setNote(editRecurringExpense.note);
+      setIsRecurring(true);
+      setFrequency(editRecurringExpense.frequency);
+
+      // Set frequency-specific fields
+      setDayOfWeek(editRecurringExpense.dayOfWeek ?? 0);
+      setDayOfMonth(editRecurringExpense.dayOfMonth ?? 1);
+      setMonthOfYear(editRecurringExpense.monthOfYear ?? 1);
+
+      // Set end date if it exists
+      setHasEndDate(!!editRecurringExpense.endDate);
+      if (editRecurringExpense.endDate) {
+        setEndDate(editRecurringExpense.endDate);
+      }
     } else {
       // Reset form when adding new
       setAmount('0');
@@ -113,7 +145,7 @@ export default function AddExpenseModal({
     }
     // Reset to calculator mode when modal opens
     setInputMode('calculator');
-  }, [editExpense, visible, refreshCategories]);
+  }, [editExpense, editRecurringExpense, visible, refreshCategories]);
 
   const handleNumberPress = (num: string) => {
     // Check if adding this digit would exceed 2 decimal places
@@ -189,7 +221,23 @@ export default function AddExpenseModal({
     setLoading(true);
 
     try {
-      if (isRecurring) {
+      if (editRecurringExpense) {
+        // Update existing recurring expense
+        if (!onUpdateRecurring) {
+          Alert.alert('Error', 'Recurring expense update is not supported in this context.');
+          return;
+        }
+        await onUpdateRecurring(editRecurringExpense.id, {
+          amount,
+          category: selectedCategory,
+          note,
+          frequency,
+          dayOfWeek: frequency === 'weekly' ? dayOfWeek : undefined,
+          dayOfMonth: frequency === 'monthly' || frequency === 'yearly' ? dayOfMonth : undefined,
+          monthOfYear: frequency === 'yearly' ? monthOfYear : undefined,
+          startDate: date,
+        });
+      } else if (isRecurring) {
         // Save as recurring expense
         if (!onSaveRecurring) {
           Alert.alert('Error', 'Recurring expenses are not supported in this context.');
@@ -258,7 +306,7 @@ export default function AddExpenseModal({
               <Ionicons name="close" size={28} color="#333" />
             </TouchableOpacity>
             <Text style={styles.headerTitle}>
-              {editExpense ? 'Edit Expense' : 'Add Expense'}
+              {editExpense ? 'Edit Expense' : editRecurringExpense ? 'Edit Recurring Expense' : 'Add Expense'}
             </Text>
             <TouchableOpacity onPress={() => setShowCategoriesModal(true)}>
               <Ionicons name="create-outline" size={28} color="#355e3b" />
@@ -271,8 +319,8 @@ export default function AddExpenseModal({
           showsVerticalScrollIndicator={false}
           contentContainerStyle={{ paddingBottom: bottomSpacing }}
         >
-          {/* Recurring Expense Toggle - Only show when adding new */}
-          {!editExpense && (
+          {/* Recurring Expense Toggle - Show when adding new or editing recurring */}
+          {(!editExpense || editRecurringExpense) && (
             <View style={styles.recurringSection}>
               <View style={styles.recurringToggleRow}>
                 <View style={styles.recurringLabelContainer}>
@@ -285,6 +333,7 @@ export default function AddExpenseModal({
                   trackColor={{ false: '#D1D1D6', true: '#355e3b' }}
                   thumbColor="#FFFFFF"
                   ios_backgroundColor="#D1D1D6"
+                  disabled={!!editRecurringExpense}
                 />
               </View>
 

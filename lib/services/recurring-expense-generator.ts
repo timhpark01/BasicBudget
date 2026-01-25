@@ -58,34 +58,72 @@ export function calculateNextOccurrence(
     case 'monthly':
       if (dayOfMonth === undefined) return null;
 
-      // Move to next month
-      nextDate.setMonth(nextDate.getMonth() + 1);
+      // Try the target day in the current month first
+      const currentMonth = nextDate.getMonth();
+      const currentYear = nextDate.getFullYear();
+      const lastDayThisMonth = getLastDayOfMonth(currentYear, currentMonth);
+      const targetDayThisMonth = Math.min(dayOfMonth, lastDayThisMonth);
 
-      // Handle edge case: day of month doesn't exist in target month
-      const lastDay = getLastDayOfMonth(nextDate.getFullYear(), nextDate.getMonth());
-      const targetDay = Math.min(dayOfMonth, lastDay);
-      nextDate.setDate(targetDay);
+      const candidateThisMonth = new Date(currentYear, currentMonth, targetDayThisMonth);
+      candidateThisMonth.setHours(0, 0, 0, 0);
+
+      // If target day this month is after fromDate, use it
+      if (candidateThisMonth > fromDate) {
+        nextDate = candidateThisMonth;
+      } else {
+        // Otherwise, move to next month
+        nextDate.setMonth(nextDate.getMonth() + 1);
+        const lastDayNextMonth = getLastDayOfMonth(nextDate.getFullYear(), nextDate.getMonth());
+        const targetDayNextMonth = Math.min(dayOfMonth, lastDayNextMonth);
+        nextDate.setDate(targetDayNextMonth);
+      }
       break;
 
     case 'yearly':
       if (dayOfMonth === undefined || monthOfYear === undefined) return null;
 
-      // Move to next year
-      nextDate.setFullYear(nextDate.getFullYear() + 1);
-      nextDate.setMonth(monthOfYear - 1); // monthOfYear is 1-12, setMonth expects 0-11
+      // Try the target date in the current year first
+      const currentYearForYearly = nextDate.getFullYear();
+      const targetMonth = monthOfYear - 1; // monthOfYear is 1-12, setMonth expects 0-11
 
-      // Special handling for Feb 29 (leap day)
+      // Handle Feb 29 (leap day) for current year
+      let candidateThisYear: Date;
       if (monthOfYear === 2 && dayOfMonth === 29) {
-        // Only generate on leap years
-        if (!isLeapYear(nextDate.getFullYear())) {
-          return null; // Skip non-leap years
+        if (isLeapYear(currentYearForYearly)) {
+          candidateThisYear = new Date(currentYearForYearly, targetMonth, 29);
+        } else {
+          // Feb 29 doesn't exist this year, skip to next year
+          candidateThisYear = new Date(fromDate);
+          candidateThisYear.setTime(fromDate.getTime() - 1); // Make it earlier than fromDate
         }
-        nextDate.setDate(29);
       } else {
-        // Handle edge case: day doesn't exist in month (e.g., Feb 31)
-        const lastDay = getLastDayOfMonth(nextDate.getFullYear(), nextDate.getMonth());
-        const targetDay = Math.min(dayOfMonth, lastDay);
-        nextDate.setDate(targetDay);
+        const lastDayThisYear = getLastDayOfMonth(currentYearForYearly, targetMonth);
+        const targetDayThisYear = Math.min(dayOfMonth, lastDayThisYear);
+        candidateThisYear = new Date(currentYearForYearly, targetMonth, targetDayThisYear);
+      }
+      candidateThisYear.setHours(0, 0, 0, 0);
+
+      // If target date this year is after fromDate, use it
+      if (candidateThisYear > fromDate) {
+        nextDate = candidateThisYear;
+      } else {
+        // Otherwise, move to next year
+        const nextYear = currentYearForYearly + 1;
+
+        // Handle Feb 29 (leap day) for next year
+        if (monthOfYear === 2 && dayOfMonth === 29) {
+          if (isLeapYear(nextYear)) {
+            nextDate = new Date(nextYear, targetMonth, 29);
+          } else {
+            // Skip non-leap years for Feb 29
+            return null;
+          }
+        } else {
+          const lastDayNextYear = getLastDayOfMonth(nextYear, targetMonth);
+          const targetDayNextYear = Math.min(dayOfMonth, lastDayNextYear);
+          nextDate = new Date(nextYear, targetMonth, targetDayNextYear);
+        }
+        nextDate.setHours(0, 0, 0, 0);
       }
       break;
 
@@ -220,7 +258,21 @@ export function getNextOccurrenceDate(recurring: RecurringExpense): Date | null 
   }
 
   // Calculate from last generated or start date
-  const fromDate = recurring.lastGeneratedDate || recurring.startDate;
+  let fromDate = recurring.lastGeneratedDate || recurring.startDate;
 
-  return calculateNextOccurrence(recurring, fromDate);
+  // Keep calculating next occurrences until we find one that's today or in the future
+  // This handles cases where recurring expenses were created with past start dates
+  let nextOccurrence = calculateNextOccurrence(recurring, fromDate);
+
+  // Safety limit to prevent infinite loops
+  let iterations = 0;
+  const MAX_ITERATIONS = 1000;
+
+  while (nextOccurrence && nextOccurrence < now && iterations < MAX_ITERATIONS) {
+    fromDate = nextOccurrence;
+    nextOccurrence = calculateNextOccurrence(recurring, fromDate);
+    iterations++;
+  }
+
+  return nextOccurrence;
 }

@@ -51,11 +51,12 @@ export default function BudgetsScreen() {
   // Modal state
   const [modalVisible, setModalVisible] = useState(false);
   const [editingExpense, setEditingExpense] = useState<Expense | null>(null);
+  const [editingRecurringExpense, setEditingRecurringExpense] = useState<RecurringExpense | null>(null);
   const [budgetModalVisible, setBudgetModalVisible] = useState(false);
   const [welcomeModalVisible, setWelcomeModalVisible] = useState(false);
 
   // Recurring expenses state
-  const [recurringCollapsed, setRecurringCollapsed] = useState(false);
+  const [recurringCollapsed, setRecurringCollapsed] = useState(true);
 
   // Undo state
   const [deletedExpense, setDeletedExpense] = useState<Expense | null>(null);
@@ -89,13 +90,14 @@ export default function BudgetsScreen() {
   const {
     recurringExpenses,
     addRecurringExpense,
+    updateRecurringExpense,
     deleteRecurringExpense,
     toggleActive,
     refreshRecurringExpenses,
   } = useRecurringExpenses();
 
   // Auto-generate due recurring expenses
-  useRecurringExpenseGeneration(refreshExpenses);
+  const { generateNow } = useRecurringExpenseGeneration(refreshExpenses);
 
   // State for all category budgets (for analytics)
   const [allCategoryBudgets, setAllCategoryBudgets] = useState<any[]>([]);
@@ -402,6 +404,9 @@ export default function BudgetsScreen() {
   const onRefresh = async () => {
     setRefreshing(true);
     try {
+      // Generate any due recurring expenses first (including new ones with past start dates)
+      await generateNow();
+      // Then refresh the expenses list to show all current data
       await refreshExpenses();
     } catch (err) {
       console.error('Failed to refresh expenses:', err);
@@ -478,7 +483,8 @@ export default function BudgetsScreen() {
             <RecurringExpenseList
               recurringExpenses={recurringExpenses}
               onEdit={(recurring) => {
-                Alert.alert('Edit Recurring Expense', 'Editing recurring expenses is not yet supported. You can delete and recreate it, or toggle it off/on.');
+                setEditingRecurringExpense(recurring);
+                setModalVisible(true);
               }}
               onDelete={handleRecurringDelete}
               onToggleActive={toggleActive}
@@ -528,7 +534,11 @@ export default function BudgetsScreen() {
             borderRadius: fabSize / 2,
           },
         ]}
-        onPress={() => setModalVisible(true)}
+        onPress={() => {
+          setEditingExpense(null);
+          setEditingRecurringExpense(null);
+          setModalVisible(true);
+        }}
         activeOpacity={0.8}
       >
         <Ionicons name="add" size={fabIconSize} color="#fff" />
@@ -548,8 +558,10 @@ export default function BudgetsScreen() {
         onClose={() => {
           setModalVisible(false);
           setEditingExpense(null);
+          setEditingRecurringExpense(null);
         }}
         editExpense={editingExpense}
+        editRecurringExpense={editingRecurringExpense}
         onSave={async (expense) => {
           try {
             if (editingExpense) {
@@ -559,6 +571,7 @@ export default function BudgetsScreen() {
             }
             setModalVisible(false);
             setEditingExpense(null);
+            setEditingRecurringExpense(null);
           } catch (err) {
             console.error('Failed to save expense:', err);
             Alert.alert('Error', 'Failed to save expense. Please try again.');
@@ -571,10 +584,26 @@ export default function BudgetsScreen() {
           try {
             await addRecurringExpense(recurringExpense);
             await refreshRecurringExpenses();
+            // Generate any due expenses (e.g., if start date is in the past)
+            await generateNow();
             setModalVisible(false);
+            setEditingRecurringExpense(null);
           } catch (err) {
             console.error('Failed to save recurring expense:', err);
             Alert.alert('Error', 'Failed to save recurring expense. Please try again.');
+          }
+        }}
+        onUpdateRecurring={async (id, recurringExpense) => {
+          try {
+            await updateRecurringExpense(id, recurringExpense);
+            await refreshRecurringExpenses();
+            // Generate any due expenses after update
+            await generateNow();
+            setModalVisible(false);
+            setEditingRecurringExpense(null);
+          } catch (err) {
+            console.error('Failed to update recurring expense:', err);
+            Alert.alert('Error', 'Failed to update recurring expense. Please try again.');
           }
         }}
       />
