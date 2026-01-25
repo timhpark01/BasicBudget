@@ -5,10 +5,13 @@ import WelcomeModal from '@/components/modals/WelcomeModal';
 import ExpenseMonthHeader from '@/components/expenses/ExpenseMonthHeader';
 import ExpenseStats from '@/components/expenses/ExpenseStats';
 import ExpenseList from '@/components/expenses/ExpenseList';
+import RecurringExpenseList from '@/components/recurring-expenses/RecurringExpenseList';
 import { useExpenseMonth } from '@/components/expenses/useExpenseMonth';
 import { useBudget } from '@/hooks/useBudget';
 import { useCategoryBudgets } from '@/hooks/useCategoryBudgets';
 import { useExpenses } from '@/hooks/useExpenses';
+import { useRecurringExpenses } from '@/hooks/useRecurringExpenses';
+import { useRecurringExpenseGeneration } from '@/hooks/useRecurringExpenseGeneration';
 import {
   deleteCategoryBudget as deleteCategoryBudgetDb,
   getCategoryBudgetsForMonth,
@@ -51,6 +54,9 @@ export default function BudgetsScreen() {
   const [budgetModalVisible, setBudgetModalVisible] = useState(false);
   const [welcomeModalVisible, setWelcomeModalVisible] = useState(false);
 
+  // Recurring expenses state
+  const [recurringCollapsed, setRecurringCollapsed] = useState(false);
+
   // Undo state
   const [deletedExpense, setDeletedExpense] = useState<Expense | null>(null);
   const [undoVisible, setUndoVisible] = useState(false);
@@ -78,6 +84,17 @@ export default function BudgetsScreen() {
     setCategoryBudget,
     deleteCategoryBudget,
   } = useCategoryBudgets(selectedMonth);
+
+  // Recurring expenses hooks
+  const {
+    recurringExpenses,
+    deleteRecurringExpense,
+    toggleActive,
+    refreshRecurringExpenses,
+  } = useRecurringExpenses();
+
+  // Auto-generate due recurring expenses
+  useRecurringExpenseGeneration(refreshExpenses);
 
   // State for all category budgets (for analytics)
   const [allCategoryBudgets, setAllCategoryBudgets] = useState<any[]>([]);
@@ -341,6 +358,46 @@ export default function BudgetsScreen() {
     }
   };
 
+  // Recurring expense handlers
+  const handleRecurringDelete = (id: string) => {
+    Alert.alert(
+      'Delete Recurring Expense',
+      'What would you like to do?',
+      [
+        {
+          text: 'Keep Generated Expenses',
+          onPress: async () => {
+            try {
+              await deleteRecurringExpense(id, false);
+              await refreshRecurringExpenses();
+            } catch (err) {
+              console.error('Failed to delete recurring expense:', err);
+              Alert.alert('Error', 'Failed to delete recurring expense. Please try again.');
+            }
+          },
+        },
+        {
+          text: 'Delete All Expenses',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await deleteRecurringExpense(id, true);
+              await refreshRecurringExpenses();
+              await refreshExpenses();
+            } catch (err) {
+              console.error('Failed to delete recurring expense and generated expenses:', err);
+              Alert.alert('Error', 'Failed to delete. Please try again.');
+            }
+          },
+        },
+        {
+          text: 'Cancel',
+          style: 'cancel',
+        },
+      ]
+    );
+  };
+
   const onRefresh = async () => {
     setRefreshing(true);
     try {
@@ -395,6 +452,37 @@ export default function BudgetsScreen() {
             onSetCategoryBudgetForMonth={handleSetCategoryBudgetForMonth}
             onDeleteCategoryBudgetForMonth={handleDeleteCategoryBudgetForMonth}
           />
+        </View>
+
+        {/* Recurring Expenses Section */}
+        <View style={styles.recurringSection}>
+          <TouchableOpacity
+            style={styles.recurringSectionHeader}
+            onPress={() => setRecurringCollapsed(!recurringCollapsed)}
+            activeOpacity={0.7}
+          >
+            <View style={styles.sectionHeaderLeft}>
+              <Ionicons
+                name={recurringCollapsed ? 'chevron-forward' : 'chevron-down'}
+                size={20}
+                color="#666"
+              />
+              <Text style={styles.sectionHeaderText}>
+                Recurring Expenses ({recurringExpenses.filter(r => r.isActive).length})
+              </Text>
+            </View>
+          </TouchableOpacity>
+
+          {!recurringCollapsed && (
+            <RecurringExpenseList
+              recurringExpenses={recurringExpenses}
+              onEdit={(recurring) => {
+                Alert.alert('Edit Recurring Expense', 'Editing recurring expenses is not yet supported. You can delete and recreate it, or toggle it off/on.');
+              }}
+              onDelete={handleRecurringDelete}
+              onToggleActive={toggleActive}
+            />
+          )}
         </View>
 
         {loading ? (
@@ -507,6 +595,29 @@ const styles = StyleSheet.create({
     paddingBottom: moderateScale(16),
     borderBottomWidth: 1,
     borderBottomColor: '#e0e0e0',
+  },
+  recurringSection: {
+    paddingHorizontal: moderateScale(20),
+    paddingTop: moderateScale(16),
+    paddingBottom: moderateScale(8),
+  },
+  recurringSectionHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: moderateScale(8),
+    paddingHorizontal: moderateScale(4),
+    marginBottom: moderateScale(8),
+  },
+  sectionHeaderLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  sectionHeaderText: {
+    fontSize: scaleFontSize(16),
+    fontWeight: '600',
+    color: '#333',
   },
   content: {
     flex: 1,

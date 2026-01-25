@@ -79,6 +79,28 @@ export const TABLE_SCHEMAS = {
       UNIQUE(month, category_id)
     )
   `,
+
+  recurring_expenses: `
+    CREATE TABLE IF NOT EXISTS recurring_expenses (
+      id TEXT PRIMARY KEY NOT NULL,
+      amount TEXT NOT NULL,
+      category_id TEXT NOT NULL,
+      category_name TEXT NOT NULL,
+      category_icon TEXT NOT NULL,
+      category_color TEXT NOT NULL,
+      note TEXT,
+      frequency TEXT NOT NULL,
+      day_of_week INTEGER,
+      day_of_month INTEGER,
+      month_of_year INTEGER,
+      start_date INTEGER NOT NULL,
+      end_date INTEGER,
+      last_generated_date INTEGER,
+      is_active INTEGER DEFAULT 1,
+      created_at INTEGER NOT NULL,
+      updated_at INTEGER NOT NULL
+    )
+  `,
 } as const;
 
 /**
@@ -107,6 +129,11 @@ export const TABLE_INDEXES = {
   category_budgets: [
     'CREATE INDEX IF NOT EXISTS idx_category_budgets_month ON category_budgets(month)',
     'CREATE INDEX IF NOT EXISTS idx_category_budgets_category ON category_budgets(category_id)',
+  ],
+
+  recurring_expenses: [
+    'CREATE INDEX IF NOT EXISTS idx_recurring_expenses_active ON recurring_expenses(is_active)',
+    'CREATE INDEX IF NOT EXISTS idx_recurring_expenses_frequency ON recurring_expenses(frequency)',
   ],
 
   schema_version: [],

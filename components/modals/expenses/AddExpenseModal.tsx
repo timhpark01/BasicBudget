@@ -1,5 +1,6 @@
 import { useCategories } from '@/hooks/useCategories';
-import { Category, Expense } from '@/types/database';
+import { useRecurringExpenses } from '@/hooks/useRecurringExpenses';
+import { Category, Expense, RecurrenceFrequency } from '@/types/database';
 import { Ionicons } from '@expo/vector-icons';
 import { useEffect, useState } from 'react';
 import {
@@ -8,6 +9,7 @@ import {
   Modal,
   ScrollView,
   StyleSheet,
+  Switch,
   Text,
   TextInput,
   TouchableOpacity,
@@ -52,6 +54,8 @@ export default function AddExpenseModal({
   const { allCategories, refreshCategories } = useCategories({
     onCategoryChanged,
   });
+  const { addRecurringExpense } = useRecurringExpenses();
+
   const [amount, setAmount] = useState('0');
   const [selectedCategory, setSelectedCategory] = useState<Category | null>(null);
   const [date, setDate] = useState(new Date());
@@ -59,6 +63,15 @@ export default function AddExpenseModal({
   const [loading, setLoading] = useState(false);
   const [inputMode, setInputMode] = useState<'calculator' | 'calendar'>('calculator');
   const [showCategoriesModal, setShowCategoriesModal] = useState(false);
+
+  // Recurring expense state
+  const [isRecurring, setIsRecurring] = useState(false);
+  const [frequency, setFrequency] = useState<RecurrenceFrequency>('monthly');
+  const [dayOfWeek, setDayOfWeek] = useState<number>(0); // 0 = Sunday
+  const [dayOfMonth, setDayOfMonth] = useState<number>(1);
+  const [monthOfYear, setMonthOfYear] = useState<number>(1); // 1 = January
+  const [hasEndDate, setHasEndDate] = useState(false);
+  const [endDate, setEndDate] = useState<Date>(new Date());
 
   // Pre-fill form when editing
   useEffect(() => {
@@ -72,12 +85,21 @@ export default function AddExpenseModal({
       setSelectedCategory(editExpense.category);
       setDate(editExpense.date);
       setNote(editExpense.note);
+      // For now, editing doesn't support recurring (only one-time expenses)
+      setIsRecurring(false);
     } else {
       // Reset form when adding new
       setAmount('0');
       setSelectedCategory(null);
       setDate(new Date());
       setNote('');
+      setIsRecurring(false);
+      setFrequency('monthly');
+      setDayOfWeek(0);
+      setDayOfMonth(1);
+      setMonthOfYear(1);
+      setHasEndDate(false);
+      setEndDate(new Date());
     }
     // Reset to calculator mode when modal opens
     setInputMode('calculator');
@@ -157,21 +179,40 @@ export default function AddExpenseModal({
     setLoading(true);
 
     try {
-      await onSave({
-        amount,
-        category: selectedCategory,
-        date,
-        note,
-      });
+      if (isRecurring) {
+        // Save as recurring expense
+        await addRecurringExpense({
+          amount,
+          category: selectedCategory,
+          note,
+          frequency,
+          dayOfWeek: frequency === 'weekly' ? dayOfWeek : undefined,
+          dayOfMonth: frequency === 'monthly' || frequency === 'yearly' ? dayOfMonth : undefined,
+          monthOfYear: frequency === 'yearly' ? monthOfYear : undefined,
+          startDate: date,
+          endDate: undefined, // No end date for now
+        });
+      } else {
+        // Save as one-time expense
+        await onSave({
+          amount,
+          category: selectedCategory,
+          date,
+          note,
+        });
+      }
 
       // Reset form only after successful save
       setAmount('0');
       setSelectedCategory(null);
       setNote('');
       setDate(new Date());
+      setIsRecurring(false);
+      onClose();
     } catch (err) {
-      // Error is handled by parent component
+      // Error is handled by parent component or shown here
       console.error('Save failed:', err);
+      Alert.alert('Error', 'Failed to save. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -217,6 +258,144 @@ export default function AddExpenseModal({
           showsVerticalScrollIndicator={false}
           contentContainerStyle={{ paddingBottom: bottomSpacing }}
         >
+          {/* Recurring Expense Toggle - Only show when adding new */}
+          {!editExpense && (
+            <View style={styles.recurringSection}>
+              <View style={styles.recurringToggleRow}>
+                <View style={styles.recurringLabelContainer}>
+                  <Ionicons name="repeat-outline" size={20} color="#355e3b" />
+                  <Text style={styles.recurringLabel}>Recurring Expense</Text>
+                </View>
+                <Switch
+                  value={isRecurring}
+                  onValueChange={setIsRecurring}
+                  trackColor={{ false: '#D1D1D6', true: '#355e3b' }}
+                  thumbColor="#FFFFFF"
+                  ios_backgroundColor="#D1D1D6"
+                />
+              </View>
+
+              {isRecurring && (
+                <View style={styles.recurringOptions}>
+                  {/* Frequency Selector */}
+                  <Text style={styles.fieldLabel}>Frequency</Text>
+                  <View style={styles.frequencyButtons}>
+                    {(['daily', 'weekly', 'monthly', 'yearly'] as RecurrenceFrequency[]).map((freq) => (
+                      <TouchableOpacity
+                        key={freq}
+                        style={[
+                          styles.frequencyButton,
+                          frequency === freq && styles.frequencyButtonActive,
+                        ]}
+                        onPress={() => setFrequency(freq)}
+                      >
+                        <Text
+                          style={[
+                            styles.frequencyButtonText,
+                            frequency === freq && styles.frequencyButtonTextActive,
+                          ]}
+                        >
+                          {freq.charAt(0).toUpperCase() + freq.slice(1)}
+                        </Text>
+                      </TouchableOpacity>
+                    ))}
+                  </View>
+
+                  {/* Weekly: Day of Week Picker */}
+                  {frequency === 'weekly' && (
+                    <View style={styles.pickerContainer}>
+                      <Text style={styles.fieldLabel}>Day of Week</Text>
+                      <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+                        <View style={styles.dayButtons}>
+                          {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((day, index) => (
+                            <TouchableOpacity
+                              key={day}
+                              style={[
+                                styles.dayButton,
+                                dayOfWeek === index && styles.dayButtonActive,
+                              ]}
+                              onPress={() => setDayOfWeek(index)}
+                            >
+                              <Text
+                                style={[
+                                  styles.dayButtonText,
+                                  dayOfWeek === index && styles.dayButtonTextActive,
+                                ]}
+                              >
+                                {day}
+                              </Text>
+                            </TouchableOpacity>
+                          ))}
+                        </View>
+                      </ScrollView>
+                    </View>
+                  )}
+
+                  {/* Monthly/Yearly: Day of Month Picker */}
+                  {(frequency === 'monthly' || frequency === 'yearly') && (
+                    <View style={styles.pickerContainer}>
+                      <Text style={styles.fieldLabel}>Day of Month</Text>
+                      <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+                        <View style={styles.dayButtons}>
+                          {Array.from({ length: 31 }, (_, i) => i + 1).map((day) => (
+                            <TouchableOpacity
+                              key={day}
+                              style={[
+                                styles.dayButton,
+                                dayOfMonth === day && styles.dayButtonActive,
+                              ]}
+                              onPress={() => setDayOfMonth(day)}
+                            >
+                              <Text
+                                style={[
+                                  styles.dayButtonText,
+                                  dayOfMonth === day && styles.dayButtonTextActive,
+                                ]}
+                              >
+                                {day}
+                              </Text>
+                            </TouchableOpacity>
+                          ))}
+                        </View>
+                      </ScrollView>
+                    </View>
+                  )}
+
+                  {/* Yearly: Month Picker */}
+                  {frequency === 'yearly' && (
+                    <View style={styles.pickerContainer}>
+                      <Text style={styles.fieldLabel}>Month</Text>
+                      <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+                        <View style={styles.dayButtons}>
+                          {['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'].map((month, index) => (
+                            <TouchableOpacity
+                              key={month}
+                              style={[
+                                styles.monthButton,
+                                monthOfYear === index + 1 && styles.dayButtonActive,
+                              ]}
+                              onPress={() => setMonthOfYear(index + 1)}
+                            >
+                              <Text
+                                style={[
+                                  styles.dayButtonText,
+                                  monthOfYear === index + 1 && styles.dayButtonTextActive,
+                                ]}
+                              >
+                                {month}
+                              </Text>
+                            </TouchableOpacity>
+                          ))}
+                        </View>
+                      </ScrollView>
+                    </View>
+                  )}
+
+                </View>
+              )}
+            </View>
+          )}
+
           <View style={styles.categoriesGrid}>
             {allCategories.map((category) => (
               <TouchableOpacity
@@ -352,6 +531,97 @@ const styles = StyleSheet.create({
   categoryBackground: {
     flex: 1,
     backgroundColor: '#f5f5f5',
+  },
+  recurringSection: {
+    backgroundColor: '#fff',
+    marginHorizontal: moderateScale(16),
+    marginTop: moderateScale(16),
+    marginBottom: moderateScale(12),
+    borderRadius: moderateScale(12),
+    padding: moderateScale(16),
+  },
+  recurringToggleRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  recurringLabelContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  recurringLabel: {
+    fontSize: scaleFontSize(16),
+    fontWeight: '600',
+    color: '#333',
+  },
+  recurringOptions: {
+    marginTop: moderateScale(16),
+    gap: moderateScale(16),
+  },
+  fieldLabel: {
+    fontSize: scaleFontSize(14),
+    fontWeight: '600',
+    color: '#666',
+    marginBottom: moderateScale(8),
+  },
+  frequencyButtons: {
+    flexDirection: 'row',
+    gap: moderateScale(8),
+  },
+  frequencyButton: {
+    flex: 1,
+    paddingVertical: moderateScale(12),
+    paddingHorizontal: moderateScale(16),
+    backgroundColor: '#f0f0f0',
+    borderRadius: moderateScale(8),
+    alignItems: 'center',
+  },
+  frequencyButtonActive: {
+    backgroundColor: '#355e3b',
+  },
+  frequencyButtonText: {
+    fontSize: scaleFontSize(10),
+    fontWeight: '600',
+    color: '#666',
+  },
+  frequencyButtonTextActive: {
+    color: '#fff',
+  },
+  pickerContainer: {
+    gap: moderateScale(8),
+  },
+  dayButtons: {
+    flexDirection: 'row',
+    gap: moderateScale(8),
+    paddingHorizontal: moderateScale(4),
+  },
+  dayButton: {
+    paddingVertical: moderateScale(10),
+    paddingHorizontal: moderateScale(14),
+    backgroundColor: '#f0f0f0',
+    borderRadius: moderateScale(8),
+    minWidth: scaleWidth(44),
+    alignItems: 'center',
+  },
+  monthButton: {
+    paddingVertical: moderateScale(10),
+    paddingHorizontal: moderateScale(12),
+    backgroundColor: '#f0f0f0',
+    borderRadius: moderateScale(8),
+    minWidth: scaleWidth(50),
+    alignItems: 'center',
+  },
+  dayButtonActive: {
+    backgroundColor: '#355e3b',
+  },
+  dayButtonText: {
+    fontSize: scaleFontSize(14),
+    fontWeight: '600',
+    color: '#666',
+  },
+  dayButtonTextActive: {
+    color: '#fff',
   },
   categoriesGrid: {
     flexDirection: 'row',

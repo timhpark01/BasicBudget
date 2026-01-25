@@ -19,6 +19,7 @@ function rowToExpense(row: ExpenseRow): Expense {
     },
     date: new Date(row.date),
     note: row.note || '',
+    recurringExpenseId: row.recurring_expense_id || undefined,
   };
 }
 
@@ -27,7 +28,8 @@ function rowToExpense(row: ExpenseRow): Expense {
  */
 export async function createExpense(
   db: SQLite.SQLiteDatabase,
-  expense: ExpenseInput
+  expense: ExpenseInput,
+  recurringExpenseId?: string
 ): Promise<Expense> {
   try {
     // Input validation (fail fast)
@@ -49,8 +51,8 @@ export async function createExpense(
     await db.runAsync(
       `INSERT INTO expenses (
         id, amount, category_id, category_name, category_icon, category_color,
-        date, note, created_at, updated_at
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        date, note, recurring_expense_id, created_at, updated_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         id,
         expense.amount,
@@ -60,6 +62,7 @@ export async function createExpense(
         expense.category.color,
         dateTimestamp,
         expense.note || null,
+        recurringExpenseId || null,
         timestamp,
         timestamp,
       ]
@@ -71,6 +74,7 @@ export async function createExpense(
       category: expense.category,
       date: expense.date,
       note: expense.note,
+      recurringExpenseId: recurringExpenseId,
     };
   } catch (error) {
     // If already a DatabaseError (validation), re-throw as-is
@@ -226,6 +230,7 @@ export async function updateExpense(
       category: updated.category,
       date: updated.date,
       note: updated.note,
+      recurringExpenseId: existing.recurringExpenseId,
     };
   } catch (error) {
     // If already a DatabaseError (validation), re-throw as-is

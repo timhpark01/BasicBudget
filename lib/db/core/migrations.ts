@@ -10,11 +10,11 @@ import { getTableSchema, getTableIndexes } from './schema';
 /**
  * Migration Criticality:
  *
- * CRITICAL migrations (v1-v3, v6-v7):
+ * CRITICAL migrations (v1-v3, v6-v8):
  * - Core functionality depends on these
  * - Must succeed for app to function properly
  * - Failure will block app startup
- * - Examples: category system, budget tracking
+ * - Examples: category system, budget tracking, recurring expenses
  *
  * OPTIONAL migrations (v4-v5):
  * - Advanced features that can gracefully degrade
@@ -22,7 +22,7 @@ import { getTableSchema, getTableIndexes } from './schema';
  * - User can still use core expense tracking
  * - Examples: net worth tracking enhancements
  */
-const CRITICAL_MIGRATIONS = ['v1', 'v2', 'v3', 'v6', 'v7'] as const;
+const CRITICAL_MIGRATIONS = ['v1', 'v2', 'v3', 'v6', 'v7', 'v8'] as const;
 const OPTIONAL_MIGRATIONS = ['v4', 'v5'] as const;
 
 /**
@@ -481,6 +481,123 @@ async function addAdditionalCategories(db: SQLite.SQLiteDatabase): Promise<void>
 }
 
 /**
+ * Create recurring_expenses table
+ * Uses centralized schema definition from schema.ts
+ */
+async function createRecurringExpensesTable(db: SQLite.SQLiteDatabase): Promise<void> {
+  try {
+    // Check if table already exists
+    const tableInfo = await db.getAllAsync<{ name: string }>(
+      'PRAGMA table_info(recurring_expenses)'
+    );
+
+    if (tableInfo.length > 0) {
+      console.log('✅ recurring_expenses table already exists');
+      return;
+    }
+
+    console.log('Creating recurring_expenses table...');
+
+    const tableSchema = getTableSchema('recurring_expenses');
+    const indexes = getTableIndexes('recurring_expenses');
+    await db.execAsync(`${tableSchema};\n${indexes.join(';\n')};`);
+
+    console.log('✅ recurring_expenses table created successfully');
+  } catch (error) {
+    console.error('❌ Failed to create recurring_expenses table:', error);
+    throw error;
+  }
+}
+
+/**
+ * Add recurring_expense_id column to expenses table
+ * Uses table recreation strategy since SQLite doesn't support ALTER COLUMN
+ */
+async function addRecurringExpenseIdColumn(db: SQLite.SQLiteDatabase): Promise<void> {
+  try {
+    // Check if table exists and get its structure
+    const tableInfo = await db.getAllAsync<{ name: string }>(
+      'PRAGMA table_info(expenses)'
+    );
+
+    // If table doesn't exist, skip (setupDatabase will create it)
+    if (tableInfo.length === 0) {
+      console.log('✅ Expenses table does not exist yet, will be created by setupDatabase');
+      return;
+    }
+
+    const hasRecurringExpenseIdColumn = tableInfo.some(col => col.name === 'recurring_expense_id');
+
+    if (hasRecurringExpenseIdColumn) {
+      console.log('✅ recurring_expense_id column already exists');
+      return;
+    }
+
+    console.log('Adding recurring_expense_id column to existing expenses table...');
+
+    // Get existing data
+    const existingExpenses = await db.getAllAsync(
+      'SELECT * FROM expenses ORDER BY created_at DESC'
+    );
+
+    // Create new table with recurring_expense_id column
+    await db.execAsync(`
+      DROP TABLE IF EXISTS expenses_temp;
+
+      CREATE TABLE expenses_temp (
+        id TEXT PRIMARY KEY NOT NULL,
+        amount TEXT NOT NULL,
+        category_id TEXT NOT NULL,
+        category_name TEXT NOT NULL,
+        category_icon TEXT NOT NULL,
+        category_color TEXT NOT NULL,
+        date INTEGER NOT NULL,
+        note TEXT,
+        recurring_expense_id TEXT,
+        created_at INTEGER NOT NULL,
+        updated_at INTEGER NOT NULL
+      );
+    `);
+
+    // Copy existing data (recurring_expense_id will be NULL for existing expenses)
+    for (const expense of existingExpenses) {
+      const exp = expense as any; // Type assertion for database row
+      await db.runAsync(
+        `INSERT INTO expenses_temp
+         (id, amount, category_id, category_name, category_icon, category_color, date, note, recurring_expense_id, created_at, updated_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, NULL, ?, ?)`,
+        [
+          exp.id,
+          exp.amount,
+          exp.category_id,
+          exp.category_name,
+          exp.category_icon,
+          exp.category_color,
+          exp.date,
+          exp.note,
+          exp.created_at,
+          exp.updated_at
+        ]
+      );
+    }
+
+    // Replace old table with new one
+    const indexes = getTableIndexes('expenses');
+    await db.execAsync(`
+      DROP TABLE expenses;
+      ALTER TABLE expenses_temp RENAME TO expenses;
+
+      ${indexes.join(';\n')};
+    `);
+
+    console.log(`✅ recurring_expense_id column added, ${existingExpenses.length} existing expenses migrated`);
+  } catch (error) {
+    console.error('❌ Failed to add recurring_expense_id column:', error);
+    throw error;
+  }
+}
+
+/**
  * Initialize a new database with default data
  * This function is ONLY for new installations, not migrations
  *
@@ -642,6 +759,23 @@ export async function runMigrations(db: SQLite.SQLiteDatabase, fromVersion: numb
       }
     } else {
       console.log('✅ v7 migrations already completed (version >= 7)');
+    }
+
+    // V8 Migration: Recurring expenses (CRITICAL)
+    if (fromVersion < 8) {
+      console.log('🔄 Running v8 database migrations (recurring expenses)...');
+      try {
+        await createRecurringExpensesTable(db);
+        await addRecurringExpenseIdColumn(db);
+        console.log('✅ v8 migrations completed successfully');
+      } catch (error) {
+        // v8 is CRITICAL - recurring expenses are core functionality
+        // Failure will prevent app from starting
+        console.error('❌ v8 migration FAILED (CRITICAL):', error);
+        throw new Error(`v8 migration failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      }
+    } else {
+      console.log('✅ v8 migrations already completed (version >= 8)');
     }
 
     console.log('✅ All migrations completed successfully');

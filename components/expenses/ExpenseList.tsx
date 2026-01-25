@@ -181,9 +181,19 @@ export default function ExpenseList({
                         />
                       </View>
                       <View style={styles.expenseDetails}>
-                        <Text style={styles.expenseCategoryText}>
-                          {expense.category.name}
-                        </Text>
+                        <View style={styles.categoryNameRow}>
+                          <Text style={styles.expenseCategoryText}>
+                            {expense.category.name}
+                          </Text>
+                          {expense.recurringExpenseId && (
+                            <Ionicons
+                              name="repeat-outline"
+                              size={14}
+                              color="#666"
+                              style={styles.recurringIcon}
+                            />
+                          )}
+                        </View>
                         {expense.note ? (
                           <Text style={styles.expenseNoteText}>{expense.note}</Text>
                         ) : null}
@@ -271,6 +281,14 @@ const styles = StyleSheet.create({
   },
   expenseDetails: {
     flex: 1,
+  },
+  categoryNameRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  recurringIcon: {
+    marginLeft: 2,
   },
   expenseCategoryText: {
     fontSize: 15,
