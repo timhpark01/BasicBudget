@@ -9,6 +9,7 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Expense } from '@/types/database';
 import { getDatabase } from '@/lib/db/core/database';
 import { getExpensesByCategory } from '@/lib/db/models/expenses';
@@ -50,6 +51,7 @@ export default function CategoryAnalyticsModal({
   onSetCategoryBudget,
   onDeleteCategoryBudget,
 }: CategoryAnalyticsModalProps) {
+  const insets = useSafeAreaInsets();
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [loading, setLoading] = useState(true);
   const [budgetModalVisible, setBudgetModalVisible] = useState(false);
@@ -244,14 +246,13 @@ export default function CategoryAnalyticsModal({
   return (
     <Modal
       visible={visible}
-      animationType="fade"
-      transparent={true}
+      animationType="slide"
+      transparent={false}
       onRequestClose={onClose}
     >
-      <View style={styles.overlay}>
-        <View style={styles.modal}>
-          {/* Header */}
-          <View style={styles.header}>
+      <View style={styles.container}>
+        {/* Header */}
+        <View style={[styles.header, { paddingTop: insets.top + 16 }]}>
             <View style={styles.categoryInfo}>
               <View
                 style={[
@@ -520,7 +521,6 @@ export default function CategoryAnalyticsModal({
               </View>
             </ScrollView>
           )}
-        </View>
       </View>
 
       {/* Category Budget Modal */}
@@ -544,23 +544,17 @@ export default function CategoryAnalyticsModal({
 }
 
 const styles = StyleSheet.create({
-  overlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-  },
-  modal: {
+  container: {
     flex: 1,
     backgroundColor: '#fff',
-    marginTop: 40,
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
   },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    padding: 16,
-    paddingBottom: 12,
+    paddingHorizontal: 16,
+    paddingBottom: 16,
+    backgroundColor: '#fff',
     borderBottomWidth: 1,
     borderBottomColor: '#e0e0e0',
   },

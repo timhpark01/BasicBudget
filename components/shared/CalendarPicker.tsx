@@ -1,6 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
-import { useEffect, useMemo, useState } from 'react';
-import { Pressable, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { Pressable, StyleSheet, Text, TouchableOpacity, View, TouchableWithoutFeedback, PanResponder } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 interface CalendarPickerProps {
   currentDate: Date;
@@ -19,6 +20,7 @@ export default function CalendarPicker({
   onConfirm,
   onCancel,
 }: CalendarPickerProps) {
+  const insets = useSafeAreaInsets();
   const [currentMonth, setCurrentMonth] = useState<Date>(new Date(currentDate));
   const [tempSelectedDate, setTempSelectedDate] = useState<Date>(currentDate);
 
@@ -27,6 +29,23 @@ export default function CalendarPicker({
     setCurrentMonth(new Date(currentDate));
     setTempSelectedDate(currentDate);
   }, [currentDate]);
+
+  // Pan responder for swipe-down gesture
+  const panResponder = useRef(
+    PanResponder.create({
+      onStartShouldSetPanResponder: () => true,
+      onMoveShouldSetPanResponder: (_, gestureState) => {
+        // Only activate if swiping down (dy > 10)
+        return Math.abs(gestureState.dy) > 10 && gestureState.dy > 0;
+      },
+      onPanResponderRelease: (_, gestureState) => {
+        // Detect swipe down: moved down at least 50px with decent velocity
+        if (gestureState.dy > 50 && gestureState.vy > 0.5) {
+          handleConfirm();
+        }
+      },
+    })
+  ).current;
 
   // Date comparison utilities
   const isSameDay = (d1: Date, d2: Date): boolean => {
@@ -143,7 +162,11 @@ export default function CalendarPicker({
   };
 
   return (
-    <View style={styles.container}>
+    <TouchableWithoutFeedback onPress={handleConfirm}>
+      <View style={styles.overlay}>
+        <TouchableWithoutFeedback onPress={(e) => e.stopPropagation()}>
+          <View style={styles.modalContainer} {...panResponder.panHandlers}>
+            <View style={styles.container}>
       {/* Header with month/year and navigation arrows */}
       <View style={styles.header}>
         <TouchableOpacity
@@ -214,7 +237,7 @@ export default function CalendarPicker({
       </View>
 
       {/* Action buttons */}
-      <View style={styles.actionButtonsContainer}>
+      <View style={[styles.actionButtonsContainer, { paddingBottom: Math.max(insets.bottom, 16) }]}>
         <TouchableOpacity
           style={[styles.actionButton, styles.cancelButton]}
           onPress={handleCancel}
@@ -231,13 +254,34 @@ export default function CalendarPicker({
           <Text style={styles.confirmButtonText}>Confirm</Text>
         </TouchableOpacity>
       </View>
-    </View>
+            </View>
+          </View>
+        </TouchableWithoutFeedback>
+      </View>
+    </TouchableWithoutFeedback>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
+  overlay: {
     flex: 1,
+    backgroundColor: 'transparent',
+    justifyContent: 'flex-end',
+  },
+  modalContainer: {
+    width: '100%',
+    backgroundColor: '#fff',
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    overflow: 'hidden',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: -2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 8,
+  },
+  container: {
+    paddingVertical: 16,
   },
   header: {
     flexDirection: 'row',
@@ -278,7 +322,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     flexWrap: 'wrap',
     paddingHorizontal: 20,
-    flex: 1,
+    marginVertical: 8,
   },
   dateCell: {
     width: `${100 / 7}%`,
@@ -326,7 +370,6 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingHorizontal: 20,
     paddingTop: 16,
-    paddingBottom: 8,
   },
   actionButton: {
     flex: 1,

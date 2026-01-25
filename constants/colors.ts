@@ -1,20 +1,55 @@
-// Preset colors for custom category color picker
+// Preset colors for custom category color picker (arranged in rainbow order)
 export const PRESET_COLORS = [
+  // Reds
+  '#C0392B', // Dark Red
+  '#DC143C', // Crimson
   '#FF6B6B', // Red
-  '#4ECDC4', // Teal
-  '#45B7D1', // Light Blue
-  '#F7B731', // Yellow
-  '#5F27CD', // Purple
-  '#00D2D3', // Cyan
+
+
+  // Oranges
+  '#FF8C00', // Dark Orange
+  '#FF6347', // Tomato
   '#FEA47F', // Peach
+
+  // Yellows
+  '#FFC300', // Bright Yellow
+  '#F7B731', // Yellow
+  '#FFD700', // Gold
+
+  // Greens
+  '#90EE90', // Light Green
   '#1DD1A1', // Green
+  '#2ECC71', // Emerald
+  '#355e3b', // Hunter Green (app accent)
+
+  // Teals/Cyans
+  '#1ABC9C', // Turquoise
+  '#4ECDC4', // Teal
+  '#00D2D3', // Cyan
+
+  // Blues
+  '#48DBFB', // Sky Blue
+  '#45B7D1', // Light Blue
+  '#3498DB', // Dodger Blue
+  '#2874A6', // Navy Blue
+
+  // Purples
+  '#9B59B6', // Amethyst
+  '#5F27CD', // Purple
+  '#6C3483', // Dark Purple
+
+  // Pinks
   '#FF9FF3', // Pink
   '#F368E0', // Magenta
-  '#48DBFB', // Sky Blue
-  '#A3A3A3', // Gray
-  '#355e3b', // Hunter Green (app accent)
-  '#8B4513', // Brown
   '#FF1493', // Deep Pink
+  '#E91E63', // Rose Pink
+
+  // Browns
+  '#8B4513', // Brown
+  '#A0522D', // Sienna
+
+  // Grays
+  '#A3A3A3', // Gray
 ];
 
 // Icon options for custom category icon picker

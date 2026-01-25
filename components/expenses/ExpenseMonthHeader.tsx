@@ -1,18 +1,23 @@
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import MonthYearDropdownPicker from '@/components/shared/MonthYearDropdownPicker';
 
 interface ExpenseMonthHeaderProps {
+  selectedMonth: string;
   monthLabel: string;
   onPreviousMonth: () => void;
   onNextMonth: () => void;
+  onMonthChange: (month: string) => void;
   onEditBudget: () => void;
   hasBudget: boolean;
 }
 
 export default function ExpenseMonthHeader({
+  selectedMonth,
   monthLabel,
   onPreviousMonth,
   onNextMonth,
+  onMonthChange,
   onEditBudget,
   hasBudget,
 }: ExpenseMonthHeaderProps) {
@@ -26,7 +31,11 @@ export default function ExpenseMonthHeader({
         >
           <Ionicons name="chevron-back" size={24} color="#333" />
         </TouchableOpacity>
-        <Text style={styles.monthTitle}>{monthLabel}</Text>
+        <MonthYearDropdownPicker
+          selectedMonth={selectedMonth}
+          monthLabel={monthLabel}
+          onMonthChange={onMonthChange}
+        />
         <TouchableOpacity
           style={styles.monthArrow}
           onPress={onNextMonth}

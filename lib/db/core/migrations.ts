@@ -10,7 +10,7 @@ import { getTableSchema, getTableIndexes } from './schema';
 /**
  * Migration Criticality:
  *
- * CRITICAL migrations (v1-v3):
+ * CRITICAL migrations (v1-v3, v6-v7):
  * - Core functionality depends on these
  * - Must succeed for app to function properly
  * - Failure will block app startup
@@ -22,7 +22,7 @@ import { getTableSchema, getTableIndexes } from './schema';
  * - User can still use core expense tracking
  * - Examples: net worth tracking enhancements
  */
-const CRITICAL_MIGRATIONS = ['v1', 'v2', 'v3'] as const;
+const CRITICAL_MIGRATIONS = ['v1', 'v2', 'v3', 'v6', 'v7'] as const;
 const OPTIONAL_MIGRATIONS = ['v4', 'v5'] as const;
 
 /**
@@ -283,6 +283,88 @@ async function convertNetWorthToDynamicItems(db: SQLite.SQLiteDatabase): Promise
 }
 
 /**
+ * Fix Unlabeled category icon and color to match standard
+ * Ensures all users (new and existing) have correct icon and color
+ */
+async function fixUnlabeledIconAndColor(db: SQLite.SQLiteDatabase): Promise<void> {
+  try {
+    console.log('🔄 Fixing Unlabeled category icon and color...');
+
+    const now = Date.now();
+    const correctIcon = 'help-circle-outline';
+    const correctColor = '#DC143C'; // Crimson
+
+    // Use exclusive transaction for atomic multi-table updates
+    await db.withExclusiveTransactionAsync(async () => {
+      // Update the category icon and color in custom_categories table
+      const catResult = await db.runAsync(
+        `UPDATE custom_categories SET icon = ?, color = ?, updated_at = ? WHERE id = '6'`,
+        [correctIcon, correctColor, now]
+      );
+      console.log(`📝 Updated ${catResult.changes} category record(s)`);
+
+      // Update all expenses that use category_id '6' to have correct icon and color
+      const expResult = await db.runAsync(
+        `UPDATE expenses SET category_icon = ?, category_color = ?, updated_at = ? WHERE category_id = '6'`,
+        [correctIcon, correctColor, now]
+      );
+      console.log(`📝 Updated ${expResult.changes} expense record(s)`);
+    });
+
+    console.log('✅ Successfully fixed Unlabeled category icon and color');
+  } catch (error) {
+    console.error('❌ Failed to fix Unlabeled icon and color:', error);
+    throw error;
+  }
+}
+
+/**
+ * Rename "Other" category to "Unlabeled"
+ * Updates both custom_categories table and all expenses using this category
+ */
+async function renameOtherToUnlabeled(db: SQLite.SQLiteDatabase): Promise<void> {
+  try {
+    console.log('🔄 Renaming "Other" category to "Unlabeled"...');
+
+    // First check what we have
+    const beforeCat = await db.getFirstAsync<{ id: string; name: string }>(
+      `SELECT id, name FROM custom_categories WHERE id = '6'`
+    );
+    console.log('📊 Category before migration:', beforeCat);
+
+    const now = Date.now();
+
+    // Use exclusive transaction for atomic multi-table updates
+    await db.withExclusiveTransactionAsync(async () => {
+      // Update the category name in custom_categories table
+      const catResult = await db.runAsync(
+        `UPDATE custom_categories SET name = ?, updated_at = ? WHERE id = '6' AND name = 'Other'`,
+        ['Unlabeled', now]
+      );
+      console.log(`📝 Updated ${catResult.changes} category record(s)`);
+
+      // Update all expenses that use the "Other" category
+      const expResult = await db.runAsync(
+        `UPDATE expenses SET category_name = ?, updated_at = ? WHERE category_id = '6' AND category_name = 'Other'`,
+        ['Unlabeled', now]
+      );
+      console.log(`📝 Updated ${expResult.changes} expense record(s)`);
+    });
+
+    // Verify the change
+    const afterCat = await db.getFirstAsync<{ id: string; name: string }>(
+      `SELECT id, name FROM custom_categories WHERE id = '6'`
+    );
+    console.log('📊 Category after migration:', afterCat);
+
+    console.log('✅ Successfully renamed "Other" to "Unlabeled"');
+  } catch (error) {
+    console.error('❌ Failed to rename Other to Unlabeled:', error);
+    throw error;
+  }
+}
+
+/**
  * Convert net_worth_entries from month (YYYY-MM) to full date (YYYY-MM-DD)
  */
 async function migrateNetWorthToFullDates(db: SQLite.SQLiteDatabase): Promise<void> {
@@ -528,6 +610,38 @@ export async function runMigrations(db: SQLite.SQLiteDatabase, fromVersion: numb
       }
     } else {
       console.log('✅ v5 migrations already completed (version >= 5)');
+    }
+
+    // V6 Migration: Rename "Other" to "Unlabeled" (CRITICAL)
+    if (fromVersion < 6) {
+      console.log('🔄 Running v6 database migrations (rename Other to Unlabeled)...');
+      try {
+        await renameOtherToUnlabeled(db);
+        console.log('✅ v6 migrations completed successfully');
+      } catch (error) {
+        // v6 is CRITICAL - category naming is important for UX
+        // Failure will prevent app from starting
+        console.error('❌ v6 migration FAILED (CRITICAL):', error);
+        throw new Error(`v6 migration failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      }
+    } else {
+      console.log('✅ v6 migrations already completed (version >= 6)');
+    }
+
+    // V7 Migration: Fix Unlabeled category icon and color (CRITICAL)
+    if (fromVersion < 7) {
+      console.log('🔄 Running v7 database migrations (fix Unlabeled icon and color)...');
+      try {
+        await fixUnlabeledIconAndColor(db);
+        console.log('✅ v7 migrations completed successfully');
+      } catch (error) {
+        // v7 is CRITICAL - ensures consistent UX for protected category
+        // Failure will prevent app from starting
+        console.error('❌ v7 migration FAILED (CRITICAL):', error);
+        throw new Error(`v7 migration failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      }
+    } else {
+      console.log('✅ v7 migrations already completed (version >= 7)');
     }
 
     console.log('✅ All migrations completed successfully');

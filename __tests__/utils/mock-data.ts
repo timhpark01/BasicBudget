@@ -15,7 +15,8 @@ export const MOCK_CATEGORIES = CATEGORIES;
 export const MOCK_FOOD_CATEGORY: Category = CATEGORIES[0]; // Food
 export const MOCK_TRANSPORT_CATEGORY: Category = CATEGORIES[1]; // Transport
 export const MOCK_SHOPPING_CATEGORY: Category = CATEGORIES[2]; // Shopping
-export const MOCK_OTHER_CATEGORY: Category = CATEGORIES[11]; // Other
+export const MOCK_UNLABELED_CATEGORY: Category = CATEGORIES[5]; // Unlabeled (ID '6', crimson question mark)
+export const MOCK_OTHER_CATEGORY: Category = CATEGORIES[5]; // Deprecated: use MOCK_UNLABELED_CATEGORY
 
 export const MOCK_CUSTOM_CATEGORY: CustomCategory = {
   id: 'custom_1234567890_abc123',

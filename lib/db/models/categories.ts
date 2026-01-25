@@ -313,7 +313,7 @@ export async function updateCustomCategoryWithCascade(
 
 /**
  * Soft delete a custom category (set is_active = 0)
- * Reassigns all expenses from this category to the default "Other" category
+ * Reassigns all expenses from this category to the default "Unlabeled" category
  * Uses atomic transaction to ensure both operations succeed or fail together
  */
 export async function deleteCustomCategory(
@@ -330,9 +330,9 @@ export async function deleteCustomCategory(
         [now, id]
       );
 
-      // Step 2: Reassign expenses to default "Other" category
-      // Default category details (typically category ID "12" for Other)
-      const defaultCategory = { id: '12', name: 'Other', icon: 'help-circle', color: '#666666' };
+      // Step 2: Reassign expenses to default "Unlabeled" category
+      // Default category details (ID "6" for Unlabeled)
+      const defaultCategory = { id: '6', name: 'Unlabeled', icon: 'help-circle-outline', color: '#DC143C' };
       await db.runAsync(
         `UPDATE expenses
          SET category_id = ?, category_name = ?, category_icon = ?, category_color = ?, updated_at = ?

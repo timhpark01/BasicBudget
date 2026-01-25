@@ -18,6 +18,7 @@ import { Expense } from '@/types/database';
 import SpendingCalendar from '@/components/charts/SpendingCalendar';
 import SpendingLineChart from '@/components/charts/SpendingLineChart';
 import CategoryPieChart from '@/components/charts/CategoryPieChart';
+import MonthYearDropdownPicker from '@/components/shared/MonthYearDropdownPicker';
 import { moderateScale, scaleFontSize } from '@/lib/utils/responsive';
 
 export default function ChartsScreen() {
@@ -146,7 +147,11 @@ export default function ChartsScreen() {
               >
                 <Ionicons name="chevron-back" size={24} color="#333" />
               </TouchableOpacity>
-              <Text style={styles.monthTitle}>{monthLabel}</Text>
+              <MonthYearDropdownPicker
+                selectedMonth={selectedMonth}
+                monthLabel={monthLabel}
+                onMonthChange={setSelectedMonth}
+              />
               <TouchableOpacity
                 style={styles.monthArrow}
                 onPress={goToNextMonth}

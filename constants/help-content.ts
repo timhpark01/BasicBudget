@@ -72,7 +72,7 @@ export const FAQ_ITEMS: FAQItem[] = [
   },
   {
     question: 'What happens if I delete a category I\'ve used?',
-    answer: 'If you try to delete a category that has expenses, you\'ll be asked to reassign those expenses to another category (like "Other") before deletion.',
+    answer: 'If you try to delete a category that has expenses, you\'ll be asked to reassign those expenses to another category (like "Unlabeled") before deletion.',
   },
   {
     question: 'Does this app require internet?',

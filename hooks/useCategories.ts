@@ -20,7 +20,7 @@ export interface UseCategoriesReturn {
   error: Error | null;
   addCategory: (category: CustomCategoryInput) => Promise<void>;
   updateCategory: (id: string, category: Partial<CustomCategoryInput>) => Promise<void>;
-  deleteCategory: (id: string) => Promise<boolean>;
+  deleteCategory: (id: string, force?: boolean) => Promise<boolean>;
   reorderCategories: (categoryIds: string[]) => Promise<void>;
   refreshCategories: () => Promise<void>;
 }
@@ -104,10 +104,15 @@ export function useCategories(
     async (id: string, category: Partial<CustomCategoryInput>): Promise<void> => {
       if (!db) throw new Error('Database not initialized');
 
-      // Protect "Other" category from being renamed
+      // Protect "Unlabeled" category from being renamed or having icon/color changed
       const categoryToUpdate = allCategories.find((c) => c.id === id);
-      if (categoryToUpdate?.name === 'Other' && category.name && category.name !== 'Other') {
-        throw new Error('Cannot rename the "Other" category.');
+      if (id === '6' || categoryToUpdate?.name === 'Unlabeled') {
+        if (category.name && category.name !== 'Unlabeled') {
+          throw new Error('Cannot rename the "Unlabeled" category.');
+        }
+        if (category.icon !== undefined || category.color !== undefined) {
+          throw new Error('Cannot change the icon or color of the "Unlabeled" category.');
+        }
       }
 
       // Check for duplicate name if name is being updated
@@ -141,26 +146,29 @@ export function useCategories(
 
   // Delete a category
   // Returns true if deleted, false if user needs to reassign expenses first
+  // If force=true, deletes regardless of expenses (with automatic reassignment)
   const deleteCategory = useCallback(
-    async (id: string): Promise<boolean> => {
+    async (id: string, force: boolean = false): Promise<boolean> => {
       if (!db) throw new Error('Database not initialized');
 
-      // Protect "Other" category from deletion (used for reassignment)
+      // Protect "Unlabeled" category from deletion (used for reassignment)
       const categoryToDelete = allCategories.find((c) => c.id === id);
-      if (categoryToDelete?.name === 'Other') {
-        throw new Error('Cannot delete the "Other" category.');
+      if (id === '6' || categoryToDelete?.name === 'Unlabeled') {
+        throw new Error('Cannot delete the "Unlabeled" category.');
       }
 
       try {
-        // Check if any expenses use this category
-        const expenseCount = await getExpenseCountByCategory(db, id);
+        // Check if any expenses use this category (unless forced)
+        if (!force) {
+          const expenseCount = await getExpenseCountByCategory(db, id);
 
-        if (expenseCount > 0) {
-          // Return false to indicate expenses need to be reassigned
-          return false;
+          if (expenseCount > 0) {
+            // Return false to indicate expenses need to be reassigned
+            return false;
+          }
         }
 
-        // No expenses, safe to delete
+        // Delete (with automatic reassignment if needed)
         await deleteCustomCategory(db, id);
         setCustomCategories((prev) => prev.filter((c) => c.id !== id));
         setError(null);
@@ -179,14 +187,14 @@ export function useCategories(
       if (!db) throw new Error('Database not initialized');
 
       try {
-        // Find "Other" category as the default reassignment target
-        const otherCategory = allCategories.find((c) => c.name === 'Other');
-        if (!otherCategory) {
-          throw new Error('Other category not found');
+        // Find "Unlabeled" category as the default reassignment target
+        const unlabeledCategory = allCategories.find((c) => c.name === 'Unlabeled');
+        if (!unlabeledCategory) {
+          throw new Error('Unlabeled category not found');
         }
 
-        // Reassign all expenses to "Other"
-        await reassignExpensesToCategory(db, fromCategoryId, otherCategory);
+        // Reassign all expenses to "Unlabeled"
+        await reassignExpensesToCategory(db, fromCategoryId, unlabeledCategory);
 
         // Now delete the category
         await deleteCustomCategory(db, fromCategoryId);

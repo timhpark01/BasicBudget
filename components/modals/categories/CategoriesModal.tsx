@@ -138,15 +138,27 @@ export default function CategoriesModal({ visible, onClose }: CategoriesModalPro
                 // Expenses exist, ask to reassign
                 Alert.alert(
                   'Category In Use',
-                  `Some expenses use this category. They will be reassigned to "Other" if you delete it.`,
+                  `Some expenses use this category. They will be reassigned to "Unlabeled" if you delete it.`,
                   [
                     { text: 'Cancel', style: 'cancel' },
                     {
                       text: 'Reassign & Delete',
                       style: 'destructive',
                       onPress: async () => {
-                        // Handled by hook
-                        await deleteCategory(categoryId);
+                        // Force deletion with automatic reassignment
+                        try {
+                          await deleteCategory(categoryId, true);
+                          Toast.show({
+                            type: 'success',
+                            text1: 'Category deleted',
+                            text2: `${category.name} removed and expenses reassigned`,
+                            position: 'top',
+                            visibilityTime: 3000,
+                            autoHide: true,
+                          });
+                        } catch (err: any) {
+                          Alert.alert('Error', err.message || 'Failed to delete category.');
+                        }
                       },
                     },
                   ]
@@ -186,7 +198,8 @@ export default function CategoriesModal({ visible, onClose }: CategoriesModalPro
   };
 
   const renderCategoryItem = ({ item, drag, isActive }: RenderItemParams<Category>) => {
-    const isOtherCategory = item.name === 'Other';
+    // Protected category: Unlabeled (ID '6')
+    const isProtected = item.id === '6' || item.name === 'Unlabeled';
 
     return (
       <ScaleDecorator>
@@ -218,7 +231,7 @@ export default function CategoriesModal({ visible, onClose }: CategoriesModalPro
             />
           </View>
           <Text style={styles.categoryName}>{item.name}</Text>
-          {isOtherCategory ? (
+          {isProtected ? (
             <View style={styles.protectedBadge}>
               <Text style={styles.protectedBadgeText}>Protected</Text>
             </View>
@@ -320,15 +333,15 @@ export default function CategoriesModal({ visible, onClose }: CategoriesModalPro
               )}
             </View>
 
+            <ColorPicker
+              selectedColor={selectedColor}
+              onSelectColor={setSelectedColor}
+            />
+
             <CategoryIconPicker
               selectedIcon={selectedIcon}
               onSelectIcon={setSelectedIcon}
               color={selectedColor}
-            />
-
-            <ColorPicker
-              selectedColor={selectedColor}
-              onSelectColor={setSelectedColor}
             />
 
             {mode === 'add' && (

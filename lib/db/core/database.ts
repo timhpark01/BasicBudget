@@ -3,7 +3,7 @@ import { runMigrations, initializeNewDatabase } from './migrations';
 import { generateCompleteSchema } from './schema';
 
 const DATABASE_NAME = 'budget.db';
-export const CURRENT_SCHEMA_VERSION = 5; // Update this when schema changes
+export const CURRENT_SCHEMA_VERSION = 7; // Update this when schema changes
 
 let databaseInstance: SQLite.SQLiteDatabase | null = null;
 let initializationPromise: Promise<SQLite.SQLiteDatabase> | null = null;
@@ -87,11 +87,11 @@ export async function initDatabase(): Promise<SQLite.SQLiteDatabase> {
     const hasExistingData = await isExistingDatabase(db);
     const currentVersion = await getSchemaVersion(db);
 
-    console.log(`📊 Database state: ${hasExistingData ? 'existing' : 'new'}, version: ${currentVersion}`);
+    console.log(`📊 Database state: ${hasExistingData ? 'existing' : 'new'}, version: ${currentVersion}, target: ${CURRENT_SCHEMA_VERSION}`);
 
     if (hasExistingData && currentVersion < CURRENT_SCHEMA_VERSION) {
       // EXISTING DATABASE - Run migrations FIRST, then ensure schema is complete
-      console.log(`🔄 Existing database detected (version ${currentVersion}), running migrations...`);
+      console.log(`🔄 Existing database detected (version ${currentVersion} < ${CURRENT_SCHEMA_VERSION}), running migrations...`);
 
       try {
         // Run migrations to transform old structure (pass current version)

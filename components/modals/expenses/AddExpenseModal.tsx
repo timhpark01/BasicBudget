@@ -206,12 +206,8 @@ export default function AddExpenseModal({
             <Text style={styles.headerTitle}>
               {editExpense ? 'Edit Expense' : 'Add Expense'}
             </Text>
-            <TouchableOpacity onPress={handleSave} disabled={loading}>
-              {loading ? (
-                <ActivityIndicator size="small" color="#355e3b" />
-              ) : (
-                <Ionicons name="checkmark" size={28} color="#355e3b" />
-              )}
+            <TouchableOpacity onPress={() => setShowCategoriesModal(true)}>
+              <Ionicons name="create-outline" size={28} color="#355e3b" />
             </TouchableOpacity>
           </View>
 
@@ -249,7 +245,13 @@ export default function AddExpenseModal({
                     }
                   />
                 </View>
-                <Text style={styles.categoryName}>{category.name}</Text>
+                <Text
+                  style={styles.categoryName}
+                  numberOfLines={1}
+                  ellipsizeMode="tail"
+                >
+                  {category.name}
+                </Text>
               </TouchableOpacity>
             ))}
           </View>

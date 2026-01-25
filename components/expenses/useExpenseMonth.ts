@@ -42,11 +42,17 @@ export function useExpenseMonth() {
     setSelectedMonth(`${newYear}-${newMonth}`);
   };
 
+  // Direct month setter (for dropdown picker)
+  const setMonth = (month: string) => {
+    setSelectedMonth(month);
+  };
+
   return {
     selectedMonth,
     monthLabel,
     currentMonth,
     goToPreviousMonth,
     goToNextMonth,
+    setMonth,
   };
 }

@@ -43,7 +43,7 @@ export default function BudgetsScreen() {
   const { width } = useWindowDimensions();
 
   // Month navigation
-  const { selectedMonth, monthLabel, goToPreviousMonth, goToNextMonth } = useExpenseMonth();
+  const { selectedMonth, monthLabel, goToPreviousMonth, goToNextMonth, setMonth } = useExpenseMonth();
 
   // Modal state
   const [modalVisible, setModalVisible] = useState(false);
@@ -373,9 +373,11 @@ export default function BudgetsScreen() {
       >
         <View style={styles.header}>
           <ExpenseMonthHeader
+            selectedMonth={selectedMonth}
             monthLabel={monthLabel}
             onPreviousMonth={goToPreviousMonth}
             onNextMonth={goToNextMonth}
+            onMonthChange={setMonth}
             onEditBudget={() => setBudgetModalVisible(true)}
             hasBudget={!!budget}
           />
