@@ -169,7 +169,7 @@ export default function AddExpenseModal({
 
   // Calculate responsive heights
   const calculatorHeight = scaleHeight(320); // Height of calculator
-  const bottomSpacing = calculatorHeight + moderateScale(20);
+  const bottomSpacing = calculatorHeight + moderateScale(100); // Extra padding to ensure last row is visible
 
   return (
     <>
@@ -312,7 +312,7 @@ export default function AddExpenseModal({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: '#fff',
   },
   header: {
     flexDirection: 'row',
@@ -331,6 +331,7 @@ const styles = StyleSheet.create({
   },
   categoryBackground: {
     flex: 1,
+    backgroundColor: '#f5f5f5',
   },
   categoriesGrid: {
     flexDirection: 'row',

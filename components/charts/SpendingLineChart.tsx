@@ -90,6 +90,11 @@ export default function SpendingLineChart({
     return labels;
   }, [daysInMonth]);
 
+  // Get current day of month
+  const currentDay = useMemo(() => {
+    return new Date().getDate();
+  }, []);
+
   if (daysInMonth === 0) {
     return (
       <View style={styles.container}>
@@ -214,6 +219,18 @@ export default function SpendingLineChart({
               />
             );
           })}
+
+          {/* Current date marker on spending line */}
+          {currentDay <= cumulativeSpending.length && cumulativeSpending.length > 0 && (
+            <Circle
+              cx={getPoint(currentDay, cumulativeSpending[currentDay - 1]).x}
+              cy={getPoint(currentDay, cumulativeSpending[currentDay - 1]).y}
+              r="6"
+              fill="#2196F3"
+              stroke="#fff"
+              strokeWidth="2"
+            />
+          )}
         </Svg>
       </View>
 
@@ -235,6 +252,10 @@ export default function SpendingLineChart({
             </View>
           </>
         )}
+        <View style={styles.legendItem}>
+          <View style={[styles.legendColor, { backgroundColor: '#2196F3' }]} />
+          <Text style={styles.legendText}>Today</Text>
+        </View>
       </View>
     </View>
   );
