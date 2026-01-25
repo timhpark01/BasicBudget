@@ -162,7 +162,7 @@ export default function CalendarPicker({
   };
 
   return (
-    <TouchableWithoutFeedback onPress={handleCancel}>
+    <TouchableWithoutFeedback onPress={handleConfirm}>
       <View style={styles.overlay}>
         <TouchableWithoutFeedback onPress={(e) => e.stopPropagation()}>
           <View style={styles.modalContainer} {...panResponder.panHandlers}>
@@ -264,14 +264,18 @@ export default function CalendarPicker({
 
 const styles = StyleSheet.create({
   overlay: {
-    flex: 1,
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
     backgroundColor: 'rgba(0, 0, 0, 0.5)',
     justifyContent: 'center',
     alignItems: 'center',
+    paddingHorizontal: 20,
   },
   modalContainer: {
-    width: '90%',
-    maxWidth: 400,
+    width: '100%',
     backgroundColor: '#fff',
     borderRadius: 20,
     overflow: 'hidden',
@@ -288,7 +292,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: 20,
+    paddingHorizontal: 16,
     paddingVertical: 16,
     height: 56,
   },
@@ -305,7 +309,7 @@ const styles = StyleSheet.create({
   },
   dayLabelsContainer: {
     flexDirection: 'row',
-    paddingHorizontal: 20,
+    paddingHorizontal: 16,
     height: 32,
     alignItems: 'center',
   },
@@ -313,6 +317,7 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
+    minWidth: 0,
   },
   dayLabelText: {
     fontSize: 12,
@@ -322,23 +327,24 @@ const styles = StyleSheet.create({
   dateGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    paddingHorizontal: 20,
+    paddingHorizontal: 16,
     marginVertical: 8,
   },
   dateCell: {
-    width: `${100 / 7}%`,
+    flexBasis: `${100 / 7}%`,
     aspectRatio: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    padding: 4,
+    minWidth: 0,
   },
   dateCellPressed: {
     opacity: 0.7,
   },
   dateCellInner: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+    width: '85%',
+    aspectRatio: 1,
+    maxWidth: 44,
+    borderRadius: 100,
     justifyContent: 'center',
     alignItems: 'center',
     backgroundColor: 'transparent',
@@ -369,7 +375,7 @@ const styles = StyleSheet.create({
   actionButtonsContainer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    paddingHorizontal: 20,
+    paddingHorizontal: 16,
     paddingTop: 16,
   },
   actionButton: {

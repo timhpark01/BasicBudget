@@ -38,6 +38,16 @@ interface AddExpenseModalProps {
     note: string;
   }) => void | Promise<void>;
   onCategoryChanged?: (categoryId: string) => Promise<void>;
+  onSaveRecurring?: (expense: {
+    amount: string;
+    category: Category;
+    note: string;
+    frequency: RecurrenceFrequency;
+    dayOfWeek?: number;
+    dayOfMonth?: number;
+    monthOfYear?: number;
+    startDate: Date;
+  }) => void | Promise<void>;
 }
 
 export default function AddExpenseModal({
@@ -46,6 +56,7 @@ export default function AddExpenseModal({
   editExpense,
   onSave,
   onCategoryChanged,
+  onSaveRecurring,
 }: AddExpenseModalProps) {
   // Responsive sizing
   const insets = useSafeAreaInsets();
@@ -54,7 +65,6 @@ export default function AddExpenseModal({
   const { allCategories, refreshCategories } = useCategories({
     onCategoryChanged,
   });
-  const { addRecurringExpense } = useRecurringExpenses();
 
   const [amount, setAmount] = useState('0');
   const [selectedCategory, setSelectedCategory] = useState<Category | null>(null);
@@ -181,7 +191,11 @@ export default function AddExpenseModal({
     try {
       if (isRecurring) {
         // Save as recurring expense
-        await addRecurringExpense({
+        if (!onSaveRecurring) {
+          Alert.alert('Error', 'Recurring expenses are not supported in this context.');
+          return;
+        }
+        await onSaveRecurring({
           amount,
           category: selectedCategory,
           note,
@@ -190,7 +204,6 @@ export default function AddExpenseModal({
           dayOfMonth: frequency === 'monthly' || frequency === 'yearly' ? dayOfMonth : undefined,
           monthOfYear: frequency === 'yearly' ? monthOfYear : undefined,
           startDate: date,
-          endDate: undefined, // No end date for now
         });
       } else {
         // Save as one-time expense
@@ -436,63 +449,64 @@ export default function AddExpenseModal({
           </View>
         </ScrollView>
 
-        {/* Input Area - Calculator or Calendar */}
+        {/* Input Area - Calculator */}
         <View style={styles.calculatorContainer}>
-          {inputMode === 'calculator' ? (
-            <>
-              {/* Date and Note Fields */}
-              <View style={styles.detailsContainer}>
-                <View style={styles.dateRow}>
-                  <TouchableOpacity
-                    style={styles.dateButton}
-                    onPress={() => setInputMode('calendar')}
-                  >
-                    <Ionicons name="calendar-outline" size={20} color="#666" />
-                    <Text style={styles.dateText}>{formatDate(date)}</Text>
-                  </TouchableOpacity>
+          {/* Date and Note Fields */}
+          <View style={styles.detailsContainer}>
+            <View style={styles.dateRow}>
+              <TouchableOpacity
+                style={styles.dateButton}
+                onPress={() => setInputMode('calendar')}
+              >
+                <Ionicons name="calendar-outline" size={20} color="#666" />
+                <Text style={styles.dateText}>
+                  {isRecurring && !editExpense ? `Starts: ${formatDate(date)}` : formatDate(date)}
+                </Text>
+              </TouchableOpacity>
 
-                  <TouchableOpacity
-                    style={styles.submitButton}
-                    onPress={handleSave}
-                    disabled={loading}
-                  >
-                    {loading ? (
-                      <ActivityIndicator size="small" color="#fff" />
-                    ) : (
-                      <Ionicons name="checkmark" size={24} color="#fff" />
-                    )}
-                  </TouchableOpacity>
-                </View>
+              <TouchableOpacity
+                style={styles.submitButton}
+                onPress={handleSave}
+                disabled={loading}
+              >
+                {loading ? (
+                  <ActivityIndicator size="small" color="#fff" />
+                ) : (
+                  <Ionicons name="checkmark" size={24} color="#fff" />
+                )}
+              </TouchableOpacity>
+            </View>
 
-                <TextInput
-                  style={styles.noteInput}
-                  placeholder="Add a note (optional)"
-                  value={note}
-                  onChangeText={setNote}
-                  placeholderTextColor="#999"
-                />
-              </View>
-
-              {/* Calculator Keypad */}
-              <CalculatorKeypad
-                amount={amount}
-                onNumberPress={handleNumberPress}
-                onDecimalPress={handleDecimalPress}
-                onBackspace={handleBackspace}
-                onClear={handleClear}
-              />
-            </>
-          ) : (
-            <CalendarPicker
-              currentDate={date}
-              onConfirm={(selectedDate) => {
-                setDate(selectedDate);
-                setInputMode('calculator');
-              }}
-              onCancel={() => setInputMode('calculator')}
+            <TextInput
+              style={styles.noteInput}
+              placeholder="Add a note (optional)"
+              value={note}
+              onChangeText={setNote}
+              placeholderTextColor="#999"
             />
-          )}
+          </View>
+
+          {/* Calculator Keypad */}
+          <CalculatorKeypad
+            amount={amount}
+            onNumberPress={handleNumberPress}
+            onDecimalPress={handleDecimalPress}
+            onBackspace={handleBackspace}
+            onClear={handleClear}
+          />
         </View>
+
+        {/* Calendar Picker Overlay */}
+        {inputMode === 'calendar' && (
+          <CalendarPicker
+            currentDate={date}
+            onConfirm={(selectedDate) => {
+              setDate(selectedDate);
+              setInputMode('calculator');
+            }}
+            onCancel={() => setInputMode('calculator')}
+          />
+        )}
       </View>
       </Modal>
 

@@ -642,6 +642,7 @@ export async function initializeNewDatabase(db: SQLite.SQLiteDatabase): Promise<
  */
 export async function runMigrations(db: SQLite.SQLiteDatabase, fromVersion: number): Promise<void> {
   console.log(`🔄 Starting migration runner from version ${fromVersion}...`);
+  console.log(`📋 Migrations to run: v${fromVersion + 1} through v8`);
 
   try {
     // V1 Migration: Categories with position (CRITICAL)
@@ -764,14 +765,22 @@ export async function runMigrations(db: SQLite.SQLiteDatabase, fromVersion: numb
     // V8 Migration: Recurring expenses (CRITICAL)
     if (fromVersion < 8) {
       console.log('🔄 Running v8 database migrations (recurring expenses)...');
+      console.log('  → Creating recurring_expenses table...');
+      console.log('  → Adding recurring_expense_id column to expenses table...');
       try {
         await createRecurringExpensesTable(db);
+        console.log('  ✅ recurring_expenses table created');
         await addRecurringExpenseIdColumn(db);
+        console.log('  ✅ recurring_expense_id column added');
         console.log('✅ v8 migrations completed successfully');
       } catch (error) {
         // v8 is CRITICAL - recurring expenses are core functionality
         // Failure will prevent app from starting
         console.error('❌ v8 migration FAILED (CRITICAL):', error);
+        if (error instanceof Error) {
+          console.error('Error details:', error.message);
+          console.error('Stack trace:', error.stack);
+        }
         throw new Error(`v8 migration failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
       }
     } else {

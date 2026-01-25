@@ -88,6 +88,7 @@ export default function BudgetsScreen() {
   // Recurring expenses hooks
   const {
     recurringExpenses,
+    addRecurringExpense,
     deleteRecurringExpense,
     toggleActive,
     refreshRecurringExpenses,
@@ -565,6 +566,16 @@ export default function BudgetsScreen() {
         }}
         onCategoryChanged={async (categoryId) => {
           await refreshExpenses();
+        }}
+        onSaveRecurring={async (recurringExpense) => {
+          try {
+            await addRecurringExpense(recurringExpense);
+            await refreshRecurringExpenses();
+            setModalVisible(false);
+          } catch (err) {
+            console.error('Failed to save recurring expense:', err);
+            Alert.alert('Error', 'Failed to save recurring expense. Please try again.');
+          }
         }}
       />
 

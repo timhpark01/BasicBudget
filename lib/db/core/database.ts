@@ -25,6 +25,40 @@ async function isExistingDatabase(db: SQLite.SQLiteDatabase): Promise<boolean> {
 }
 
 /**
+ * Verify that the database schema matches the reported version
+ * Returns true if migration is needed (schema doesn't match version)
+ */
+async function verifySchemaIntegrity(db: SQLite.SQLiteDatabase, reportedVersion: number): Promise<boolean> {
+  try {
+    // Check for v8 schema: recurring_expense_id column should exist
+    if (reportedVersion >= 8) {
+      const expensesColumns = await db.getAllAsync<{ name: string }>(
+        'PRAGMA table_info(expenses)'
+      );
+      const hasRecurringColumn = expensesColumns.some(col => col.name === 'recurring_expense_id');
+      if (!hasRecurringColumn) {
+        console.log('❌ Schema mismatch: version is 8+ but recurring_expense_id column missing');
+        return true; // Needs migration
+      }
+
+      // Check if recurring_expenses table exists
+      const recurringTableExists = await db.getFirstAsync<{ count: number }>(
+        "SELECT COUNT(*) as count FROM sqlite_master WHERE type='table' AND name='recurring_expenses'"
+      );
+      if ((recurringTableExists?.count ?? 0) === 0) {
+        console.log('❌ Schema mismatch: version is 8+ but recurring_expenses table missing');
+        return true; // Needs migration
+      }
+    }
+
+    return false; // Schema is OK
+  } catch (error) {
+    console.error('Error verifying schema integrity:', error);
+    return true; // If we can't verify, assume migration is needed
+  }
+}
+
+/**
  * Get current schema version from database
  */
 async function getSchemaVersion(db: SQLite.SQLiteDatabase): Promise<number> {
@@ -89,13 +123,24 @@ export async function initDatabase(): Promise<SQLite.SQLiteDatabase> {
 
     console.log(`📊 Database state: ${hasExistingData ? 'existing' : 'new'}, version: ${currentVersion}, target: ${CURRENT_SCHEMA_VERSION}`);
 
-    if (hasExistingData && currentVersion < CURRENT_SCHEMA_VERSION) {
+    // Force migration verification - check if schema actually matches version
+    let forceMigration = false;
+    if (hasExistingData && currentVersion > 0 && currentVersion >= CURRENT_SCHEMA_VERSION) {
+      const needsMigration = await verifySchemaIntegrity(db, currentVersion);
+      if (needsMigration) {
+        console.log(`⚠️  Schema integrity check failed! Forcing migration from version ${currentVersion - 1}`);
+        forceMigration = true;
+      }
+    }
+
+    if (hasExistingData && (currentVersion < CURRENT_SCHEMA_VERSION || forceMigration)) {
       // EXISTING DATABASE - Run migrations FIRST, then ensure schema is complete
-      console.log(`🔄 Existing database detected (version ${currentVersion} < ${CURRENT_SCHEMA_VERSION}), running migrations...`);
+      const migrationFromVersion = forceMigration ? currentVersion - 1 : currentVersion;
+      console.log(`🔄 Existing database detected (version ${migrationFromVersion} → ${CURRENT_SCHEMA_VERSION}), running migrations...`);
 
       try {
         // Run migrations to transform old structure (pass current version)
-        await runMigrations(db, currentVersion);
+        await runMigrations(db, migrationFromVersion);
 
         // After migrations, ensure all tables exist (in case new tables were added)
         await setupDatabase(db);
@@ -153,12 +198,41 @@ async function setupDatabase(db: SQLite.SQLiteDatabase): Promise<void> {
 }
 
 /**
+ * Force database re-initialization (useful for development/debugging)
+ */
+export async function resetDatabaseInstance(): Promise<void> {
+  console.log('🔄 Forcing database re-initialization...');
+  databaseInstance = null;
+  initializationPromise = null;
+  isInitializing = false;
+}
+
+/**
  * Get or create database instance (singleton pattern with proper async handling)
  */
 export async function getDatabase(): Promise<SQLite.SQLiteDatabase> {
-  // If already initialized, return immediately
+  // If already initialized, verify it's still valid
   if (databaseInstance) {
-    return databaseInstance;
+    // In development, occasionally verify schema integrity
+    if (__DEV__) {
+      try {
+        const currentVersion = await getSchemaVersion(databaseInstance);
+        if (currentVersion < CURRENT_SCHEMA_VERSION) {
+          console.log(`⚠️  Database version mismatch detected! Current: ${currentVersion}, Expected: ${CURRENT_SCHEMA_VERSION}`);
+          console.log('🔄 Forcing re-initialization...');
+          databaseInstance = null;
+          // Fall through to re-initialize
+        } else {
+          return databaseInstance;
+        }
+      } catch (error) {
+        console.error('Error checking schema version, forcing re-init:', error);
+        databaseInstance = null;
+        // Fall through to re-initialize
+      }
+    } else {
+      return databaseInstance;
+    }
   }
 
   // Wait for any in-progress initialization
