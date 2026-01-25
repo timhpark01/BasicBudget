@@ -12,6 +12,7 @@ import {
   Keyboard,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { formatNumberWithCommas, sanitizeDecimalInput } from '@/lib/utils/number-formatter';
 
 interface CategoryBudgetModalProps {
   visible: boolean;
@@ -41,6 +42,7 @@ export default function CategoryBudgetModal({
   allCategoryBudgets = [],
 }: CategoryBudgetModalProps) {
   const [budgetAmount, setBudgetAmount] = useState('');
+  const [displayAmount, setDisplayAmount] = useState('');
   const [saving, setSaving] = useState(false);
   const [isFocused, setIsFocused] = useState(false);
   const inputRef = useRef<TextInput>(null);
@@ -65,6 +67,7 @@ export default function CategoryBudgetModal({
       }
 
       setBudgetAmount(initialBudget);
+      setDisplayAmount(initialBudget ? formatNumberWithCommas(initialBudget) : '');
       setIsFocused(false);
       // Animate in
       Animated.spring(scaleAnim, {
@@ -81,6 +84,20 @@ export default function CategoryBudgetModal({
       scaleAnim.setValue(0);
     }
   }, [visible, currentBudget, categoryId, currentMonth, allCategoryBudgets]);
+
+  const handleAmountChange = (text: string) => {
+    // Remove all commas and non-numeric characters except decimal point
+    const rawValue = text.replace(/[^\d.]/g, '');
+
+    // Sanitize to ensure no more than 2 decimal places
+    const sanitizedValue = sanitizeDecimalInput(rawValue, 2);
+
+    // Update the raw value for saving
+    setBudgetAmount(sanitizedValue);
+
+    // Update the display value with commas
+    setDisplayAmount(formatNumberWithCommas(sanitizedValue));
+  };
 
   const handleSave = async () => {
     if (!budgetAmount.trim()) {
@@ -184,8 +201,8 @@ export default function CategoryBudgetModal({
                   <TextInput
                     ref={inputRef}
                     style={styles.input}
-                    value={budgetAmount}
-                    onChangeText={setBudgetAmount}
+                    value={displayAmount}
+                    onChangeText={handleAmountChange}
                     keyboardType="decimal-pad"
                     placeholder="0.00"
                     placeholderTextColor="#ccc"

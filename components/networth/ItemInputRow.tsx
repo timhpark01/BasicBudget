@@ -4,6 +4,7 @@ import { Text } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { NetWorthItem } from '@/lib/db/models/net-worth';
 import { ActiveFieldType } from './types';
+import { formatNumberWithCommas } from '@/lib/utils/number-formatter';
 
 interface ItemInputRowProps {
   item: NetWorthItem;
@@ -35,7 +36,7 @@ export default function ItemInputRow({
       >
         <Text style={styles.dollarSign}>$</Text>
         <Text style={styles.amountInputText}>
-          {item.amount || '0.00'}
+          {formatNumberWithCommas(item.amount || '0.00')}
         </Text>
       </TouchableOpacity>
       <TouchableOpacity onPress={() => onDelete(item.id)} style={styles.deleteButton}>

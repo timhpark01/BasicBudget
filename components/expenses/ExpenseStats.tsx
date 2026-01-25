@@ -1,6 +1,7 @@
 import { StyleSheet, Text, View } from 'react-native';
 import BudgetProgressBar from '@/components/shared/BudgetProgressBar';
 import { Expense, CategoryBudget } from '@/types/database';
+import { formatCurrency } from '@/lib/utils/number-formatter';
 
 interface ExpenseStatsProps {
   totalAmount: number;
@@ -33,7 +34,7 @@ export default function ExpenseStats({
     <>
       <View style={styles.totalContainer}>
         <Text style={styles.totalLabel}>Total Expenses</Text>
-        <Text style={styles.totalAmount}>${totalAmount.toFixed(2)}</Text>
+        <Text style={styles.totalAmount}>{formatCurrency(totalAmount)}</Text>
       </View>
 
       {/* Budget Progress Bar */}

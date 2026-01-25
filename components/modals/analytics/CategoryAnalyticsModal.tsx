@@ -13,6 +13,7 @@ import { Expense } from '@/types/database';
 import { getDatabase } from '@/lib/db/core/database';
 import { getExpensesByCategory } from '@/lib/db/models/expenses';
 import CategoryBudgetModal from '@/components/modals/budget/CategoryBudgetModal';
+import { formatCurrency } from '@/lib/utils/number-formatter';
 
 interface CategoryAnalyticsModalProps {
   visible: boolean;
@@ -296,7 +297,7 @@ export default function CategoryAnalyticsModal({
                 <View style={styles.statsGrid}>
                   <StatCard
                     label="Total Spent"
-                    value={`$${analytics.totalExpenses.toFixed(2)}`}
+                    value={formatCurrency(analytics.totalExpenses)}
                     icon="cash-outline"
                   />
                   <StatCard
@@ -313,25 +314,25 @@ export default function CategoryAnalyticsModal({
                 <View style={styles.statsGrid}>
                   <StatCard
                     label="Average"
-                    value={`$${analytics.averageAmount.toFixed(2)}`}
+                    value={formatCurrency(analytics.averageAmount)}
                     subtext="per transaction"
                     icon="analytics-outline"
                   />
                   <StatCard
                     label="Median"
-                    value={`$${analytics.medianAmount.toFixed(2)}`}
+                    value={formatCurrency(analytics.medianAmount)}
                     subtext="middle value"
                     icon="remove-outline"
                   />
                   <StatCard
                     label="Std Deviation"
-                    value={`$${analytics.stdDev.toFixed(2)}`}
+                    value={formatCurrency(analytics.stdDev)}
                     subtext="variability"
                     icon="stats-chart-outline"
                   />
                   <StatCard
                     label="Range"
-                    value={`$${(analytics.maxAmount - analytics.minAmount).toFixed(2)}`}
+                    value={formatCurrency(analytics.maxAmount - analytics.minAmount)}
                     subtext="max - min"
                     icon="swap-vertical-outline"
                   />
@@ -344,13 +345,13 @@ export default function CategoryAnalyticsModal({
                 <View style={styles.statsGrid}>
                   <StatCard
                     label="Minimum"
-                    value={`$${analytics.minAmount.toFixed(2)}`}
+                    value={formatCurrency(analytics.minAmount)}
                     subtext="lowest transaction"
                     icon="trending-down-outline"
                   />
                   <StatCard
                     label="Maximum"
-                    value={`$${analytics.maxAmount.toFixed(2)}`}
+                    value={formatCurrency(analytics.maxAmount)}
                     subtext="highest transaction"
                     icon="trending-up-outline"
                   />
@@ -419,11 +420,11 @@ export default function CategoryAnalyticsModal({
                                 styles.monthlyTotal,
                                 isOverBudget && styles.overBudgetText
                               ]}>
-                                ${monthData.total.toFixed(2)}
-                                {budgetNum && ` / $${budgetNum.toFixed(2)}`}
+                                {formatCurrency(monthData.total)}
+                                {budgetNum && ` / ${formatCurrency(budgetNum)}`}
                               </Text>
                               <Text style={styles.monthlyAvg}>
-                                ${monthData.avgPerDay.toFixed(2)}/day
+                                {formatCurrency(monthData.avgPerDay)}/day
                               </Text>
                             </View>
                           </View>
@@ -455,7 +456,7 @@ export default function CategoryAnalyticsModal({
                     ) : (
                       <Text style={styles.insightText}>
                         Your spending in this category is relatively consistent at around
-                        ${analytics.averageAmount.toFixed(2)} per transaction.
+                        {formatCurrency(analytics.averageAmount)} per transaction.
                       </Text>
                     )}
                   </View>
@@ -486,7 +487,7 @@ export default function CategoryAnalyticsModal({
                           />
                           <View style={styles.insightContent}>
                             <Text style={styles.insightText}>
-                              Based on your budget of ${budgetNum.toFixed(2)} and average spending of ${analytics.averageAmount.toFixed(2)} per transaction, you can make approximately{' '}
+                              Based on your budget of {formatCurrency(budgetNum)} and average spending of {formatCurrency(analytics.averageAmount)} per transaction, you can make approximately{' '}
                               <Text style={styles.insightHighlight}>{estimatedTransactions}</Text> more
                               {estimatedTransactions === 1 ? ' transaction' : ' transactions'} this month.
                             </Text>
@@ -505,7 +506,7 @@ export default function CategoryAnalyticsModal({
                           />
                           <View style={styles.insightContent}>
                             <Text style={styles.insightText}>
-                              You've exceeded your budget by ${Math.abs(remainingBudget).toFixed(2)}, which is approximately{' '}
+                              You've exceeded your budget by {formatCurrency(Math.abs(remainingBudget))}, which is approximately{' '}
                               <Text style={styles.insightHighlight}>{overageTransactions}</Text>
                               {overageTransactions === 1 ? ' transaction' : ' transactions'} worth based on your average.
                             </Text>

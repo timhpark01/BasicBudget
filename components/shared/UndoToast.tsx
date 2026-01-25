@@ -72,7 +72,7 @@ export default function UndoToast({ visible, message, onUndo, onDismiss }: UndoT
       style={[
         styles.container,
         {
-          bottom: insets.bottom, // Directly above nav bar
+          bottom: insets.bottom + 110, // Above nav bar with gap
           transform: [{ translateY }],
         },
       ]}
@@ -91,7 +91,7 @@ const styles = StyleSheet.create({
   container: {
     position: 'absolute',
     left: 20,
-    right: 20,
+    right: 90, // Avoid overlapping with + button
     backgroundColor: '#000000CC',
     borderRadius: 12,
     paddingHorizontal: 16,

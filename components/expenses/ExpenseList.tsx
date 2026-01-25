@@ -9,6 +9,7 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import Swipeable from 'react-native-gesture-handler/Swipeable';
 import { Expense } from '@/types/database';
+import { formatCurrency } from '@/lib/utils/number-formatter';
 
 interface ExpenseListProps {
   groupedExpenses: [string, Expense[]][];
@@ -142,7 +143,7 @@ export default function ExpenseList({
                 styles.dateTotalText,
                 exceedsIdeal && styles.dateTotalTextOver
               ]}>
-                ${dayTotal.toFixed(2)}
+                {formatCurrency(dayTotal)}
               </Text>
             </TouchableOpacity>
 
@@ -188,7 +189,7 @@ export default function ExpenseList({
                         ) : null}
                       </View>
                       <Text style={styles.expenseAmount}>
-                        ${parseFloat(expense.amount).toFixed(2)}
+                        {formatCurrency(expense.amount)}
                       </Text>
                     </TouchableOpacity>
                   </Swipeable>

@@ -2,6 +2,7 @@ import { useMemo } from 'react';
 import { StyleSheet, Text, View, useWindowDimensions } from 'react-native';
 import Svg, { Polyline, Line, Circle, G, Text as SvgText } from 'react-native-svg';
 import { moderateScale, scaleFontSize } from '@/lib/utils/responsive';
+import { formatNumberWithCommas } from '@/lib/utils/number-formatter';
 
 interface SpendingLineChartProps {
   daysInMonth: number;
@@ -132,8 +133,8 @@ export default function SpendingLineChart({
               textAnchor="end"
             >
               {label.value >= 1000
-                ? `$${(label.value / 1000).toFixed(1)}k`
-                : `$${label.value.toFixed(0)}`}
+                ? `$${formatNumberWithCommas((label.value / 1000).toFixed(1))}k`
+                : `$${formatNumberWithCommas(label.value.toFixed(0))}`}
             </SvgText>
             </G>
           ))}

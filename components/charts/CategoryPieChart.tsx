@@ -4,6 +4,7 @@ import Svg, { Path, G, Circle } from 'react-native-svg';
 import { Ionicons } from '@expo/vector-icons';
 import { Expense } from '@/types/database';
 import { moderateScale, scaleFontSize } from '@/lib/utils/responsive';
+import { formatCurrency, formatNumberWithCommas } from '@/lib/utils/number-formatter';
 
 interface CategoryPieChartProps {
   expenses: Expense[];
@@ -131,7 +132,7 @@ export default function CategoryPieChart({ expenses }: CategoryPieChartProps) {
           {/* Center text overlay */}
           <View style={styles.centerTextContainer}>
             <Text style={styles.centerAmount}>
-              ${categoryData.total.toFixed(0)}
+              ${formatNumberWithCommas(categoryData.total.toFixed(0))}
             </Text>
             <Text style={styles.centerLabel}>Total</Text>
           </View>
@@ -158,7 +159,7 @@ export default function CategoryPieChart({ expenses }: CategoryPieChartProps) {
               <Text style={styles.legendText}>{cat.categoryName}</Text>
             </View>
             <View style={styles.legendRight}>
-              <Text style={styles.legendAmount}>${cat.total.toFixed(2)}</Text>
+              <Text style={styles.legendAmount}>{formatCurrency(cat.total)}</Text>
               <Text style={[styles.legendPercentage, { marginLeft: 12 }]}>
                 {cat.percentage.toFixed(1)}%
               </Text>

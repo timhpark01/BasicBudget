@@ -1,5 +1,6 @@
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { formatNumberWithCommas } from '@/lib/utils/number-formatter';
 
 interface CalculatorKeypadProps {
   amount: string;
@@ -23,7 +24,7 @@ export default function CalculatorKeypad({
       {/* Amount Display */}
       <View style={styles.amountDisplay}>
         <Text style={styles.currencySymbol}>$</Text>
-        <Text style={styles.amountText}>{amount}</Text>
+        <Text style={styles.amountText}>{formatNumberWithCommas(amount)}</Text>
       </View>
 
       {/* Calculator Keypad */}

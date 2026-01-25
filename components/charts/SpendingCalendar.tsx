@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react';
 import { StyleSheet, Text, View, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Expense } from '@/types/database';
+import { formatCurrency } from '@/lib/utils/number-formatter';
 
 interface SpendingCalendarProps {
   month: string; // YYYY-MM format
@@ -188,7 +189,7 @@ export default function SpendingCalendar({ month, expenses, budgetAmount }: Spen
                       isSelected && styles.amountTextSelected,
                     ]}
                   >
-                    ${day.total.toFixed(2)}
+                    {formatCurrency(day.total)}
                   </Text>
                 )}
               </TouchableOpacity>
@@ -240,7 +241,7 @@ export default function SpendingCalendar({ month, expenses, budgetAmount }: Spen
                   )}
                 </View>
                 <Text style={styles.transactionAmount}>
-                  ${parseFloat(expense.amount).toFixed(2)}
+                  {formatCurrency(expense.amount)}
                 </Text>
               </View>
             ))}

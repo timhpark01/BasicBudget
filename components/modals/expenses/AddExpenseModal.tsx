@@ -20,6 +20,10 @@ import CalculatorKeypad from '@/components/shared/CalculatorKeypad';
 import CalendarPicker from '@/components/shared/CalendarPicker';
 import CategoriesModal from '@/components/modals/categories/CategoriesModal';
 import { moderateScale, scaleFontSize, scaleWidth, scaleHeight } from '@/lib/utils/responsive';
+import { canAddDecimalDigit } from '@/lib/utils/number-formatter';
+
+// Maximum amount to prevent UI overflow (10 million)
+const MAX_AMOUNT = 9999999999999.99;
 
 interface AddExpenseModalProps {
   visible: boolean;
@@ -80,11 +84,25 @@ export default function AddExpenseModal({
   }, [editExpense, visible, refreshCategories]);
 
   const handleNumberPress = (num: string) => {
-    if (amount === '0') {
-      setAmount(num);
-    } else {
-      setAmount(amount + num);
+    // Check if adding this digit would exceed 2 decimal places
+    if (!canAddDecimalDigit(amount)) {
+      return;
     }
+
+    let newAmount: string;
+    if (amount === '0') {
+      newAmount = num;
+    } else {
+      newAmount = amount + num;
+    }
+
+    // Check if the new amount would exceed the maximum
+    const newAmountNum = parseFloat(newAmount);
+    if (!isNaN(newAmountNum) && newAmountNum > MAX_AMOUNT) {
+      return; // Don't add the digit if it exceeds the max
+    }
+
+    setAmount(newAmount);
   };
 
   const handleDecimalPress = () => {

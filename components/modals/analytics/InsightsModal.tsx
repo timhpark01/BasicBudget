@@ -13,6 +13,7 @@ import { Expense } from '@/types/database';
 import { getAllExpenses } from '@/lib/db/models/expenses';
 import { getDatabase } from '@/lib/db/core/database';
 import CalendarPicker from '@/components/shared/CalendarPicker';
+import { formatCurrency } from '@/lib/utils/number-formatter';
 
 interface InsightsModalProps {
   visible: boolean;
@@ -177,7 +178,7 @@ export default function InsightsModal({ visible, onClose }: InsightsModalProps) 
         icon: 'trending-up',
         color: '#DC3545',
         title: 'Top Spending Category',
-        description: `${topCategory.categoryName} accounts for ${topCategory.percentage.toFixed(1)}% of your spending ($${topCategory.total.toFixed(2)}).`,
+        description: `${topCategory.categoryName} accounts for ${topCategory.percentage.toFixed(1)}% of your spending (${formatCurrency(topCategory.total)}).`,
       });
     }
 
@@ -192,7 +193,7 @@ export default function InsightsModal({ visible, onClose }: InsightsModalProps) 
         icon: 'calendar',
         color: '#FF9800',
         title: 'Weekend Spending Pattern',
-        description: `You spend significantly more on weekends ($${weekendTotal.toFixed(2)}). Consider planning weekend activities in advance.`,
+        description: `You spend significantly more on weekends (${formatCurrency(weekendTotal)}). Consider planning weekend activities in advance.`,
       });
     }
 
@@ -202,7 +203,7 @@ export default function InsightsModal({ visible, onClose }: InsightsModalProps) 
         icon: 'alert-circle',
         color: '#DC3545',
         title: `${highestSpendingDay.day} Spending Alert`,
-        description: `${highestSpendingDay.day} is your highest spending day with $${highestSpendingDay.total.toFixed(2)} spent.`,
+        description: `${highestSpendingDay.day} is your highest spending day with ${formatCurrency(highestSpendingDay.total)} spent.`,
       });
     }
 
@@ -214,7 +215,7 @@ export default function InsightsModal({ visible, onClose }: InsightsModalProps) 
         icon: 'receipt',
         color: '#FF9800',
         title: 'Frequent Small Purchases',
-        description: `${smallPurchases.length} purchases under $20 add up to $${smallTotal.toFixed(2)}. These can impact your budget significantly.`,
+        description: `${smallPurchases.length} purchases under $20 add up to ${formatCurrency(smallTotal)}. These can impact your budget significantly.`,
       });
     }
 
@@ -240,7 +241,7 @@ export default function InsightsModal({ visible, onClose }: InsightsModalProps) 
       icon: 'calculator',
       color: '#355e3b',
       title: 'Average Daily Spending',
-      description: `You're spending an average of $${avgDailySpending.toFixed(2)} per day in the selected timeframe.`,
+      description: `You're spending an average of ${formatCurrency(avgDailySpending)} per day in the selected timeframe.`,
     });
 
     return results;
@@ -379,7 +380,7 @@ export default function InsightsModal({ visible, onClose }: InsightsModalProps) 
           {/* Total Spending Summary */}
           <View style={styles.summaryCard}>
             <Text style={styles.summaryLabel}>Total Spending</Text>
-            <Text style={styles.summaryAmount}>${totalSpending.toFixed(2)}</Text>
+            <Text style={styles.summaryAmount}>{formatCurrency(totalSpending)}</Text>
             <Text style={styles.summarySubtext}>
               {filteredExpenses.length} transactions
             </Text>
@@ -420,7 +421,7 @@ export default function InsightsModal({ visible, onClose }: InsightsModalProps) 
                       </View>
                     </View>
                     <View style={styles.categoryAmounts}>
-                      <Text style={styles.categoryTotal}>${cat.total.toFixed(2)}</Text>
+                      <Text style={styles.categoryTotal}>{formatCurrency(cat.total)}</Text>
                       <Text style={styles.categoryPercentage}>{cat.percentage.toFixed(1)}%</Text>
                     </View>
                   </View>
@@ -434,7 +435,7 @@ export default function InsightsModal({ visible, onClose }: InsightsModalProps) 
                     />
                   </View>
                   <Text style={styles.categoryAverage}>
-                    Avg: ${cat.average.toFixed(2)} per transaction
+                    Avg: {formatCurrency(cat.average)} per transaction
                   </Text>
                 </View>
               ))}
@@ -459,13 +460,13 @@ export default function InsightsModal({ visible, onClose }: InsightsModalProps) 
                   <View style={styles.budgetAmounts}>
                     <View>
                       <Text style={styles.budgetLabel}>Monthly Average</Text>
-                      <Text style={styles.budgetAmount}>${cat.monthlyAverage.toFixed(2)}</Text>
+                      <Text style={styles.budgetAmount}>{formatCurrency(cat.monthlyAverage)}</Text>
                     </View>
                     <Ionicons name="arrow-forward" size={20} color="#999" />
                     <View>
                       <Text style={styles.budgetLabel}>Suggested Budget</Text>
                       <Text style={[styles.budgetAmount, styles.suggestedAmount]}>
-                        ${cat.suggestedBudget.toFixed(2)}
+                        {formatCurrency(cat.suggestedBudget)}
                       </Text>
                     </View>
                   </View>
@@ -486,7 +487,7 @@ export default function InsightsModal({ visible, onClose }: InsightsModalProps) 
                   <View key={day.day} style={styles.dayCard}>
                     <View style={styles.dayHeader}>
                       <Text style={styles.dayName}>{day.day}</Text>
-                      <Text style={styles.dayTotal}>${day.total.toFixed(2)}</Text>
+                      <Text style={styles.dayTotal}>{formatCurrency(day.total)}</Text>
                     </View>
                     <View style={styles.dayBarContainer}>
                       <View

@@ -9,6 +9,7 @@ import {
   calculateRetirementAssets,
   parseDate,
 } from '@/lib/db/models/net-worth';
+import { formatNumberWithCommas } from '@/lib/utils/number-formatter';
 
 interface NetWorthChartProps {
   entries: NetWorthEntryCompat[];
@@ -150,7 +151,7 @@ export default function NetWorthChart({ entries }: NetWorthChartProps) {
               fontWeight="500"
               textAnchor="end"
             >
-              {Math.round(value / 1000)}
+              {formatNumberWithCommas(Math.round(value / 1000).toString())}
             </SvgText>
           );
         })}

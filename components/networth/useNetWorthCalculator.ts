@@ -3,6 +3,10 @@ import * as Crypto from 'expo-crypto';
 import { NetWorthItem } from '@/lib/db/models/net-worth';
 import { NetWorthEntryCompat } from '@/hooks/useNetWorth';
 import { ActiveField, ActiveFieldType } from './types';
+import { canAddDecimalDigit } from '@/lib/utils/number-formatter';
+
+// Maximum amount to prevent UI overflow (10 million)
+const MAX_AMOUNT = 9999999999999.99;
 
 interface UseNetWorthCalculatorProps {
   selectedEntry: NetWorthEntryCompat | undefined;
@@ -161,11 +165,25 @@ export function useNetWorthCalculator({
   };
 
   const handleCalculatorNumberPress = (num: string) => {
-    if (calculatorAmount === '0') {
-      setCalculatorAmount(num);
-    } else {
-      setCalculatorAmount(calculatorAmount + num);
+    // Check if adding this digit would exceed 2 decimal places
+    if (!canAddDecimalDigit(calculatorAmount)) {
+      return;
     }
+
+    let newAmount: string;
+    if (calculatorAmount === '0') {
+      newAmount = num;
+    } else {
+      newAmount = calculatorAmount + num;
+    }
+
+    // Check if the new amount would exceed the maximum
+    const newAmountNum = parseFloat(newAmount);
+    if (!isNaN(newAmountNum) && newAmountNum > MAX_AMOUNT) {
+      return; // Don't add the digit if it exceeds the max
+    }
+
+    setCalculatorAmount(newAmount);
   };
 
   const handleCalculatorDecimalPress = () => {

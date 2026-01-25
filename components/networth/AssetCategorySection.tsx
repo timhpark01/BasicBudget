@@ -4,6 +4,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { NetWorthItem } from '@/lib/db/models/net-worth';
 import { ActiveFieldType } from './types';
 import ItemInputRow from './ItemInputRow';
+import { formatCurrency } from '@/lib/utils/number-formatter';
 
 interface AssetCategorySectionProps {
   title: string;
@@ -55,7 +56,7 @@ export default function AssetCategorySection({
         <View style={styles.subtotalRow}>
           <Text style={styles.subtotalLabel}>{title} Assets</Text>
           <Text style={styles.subtotalValue}>
-            ${subtotal.toLocaleString()}
+            {formatCurrency(subtotal)}
           </Text>
         </View>
       )}

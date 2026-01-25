@@ -6,6 +6,7 @@ import { ActiveField } from './types';
 import AssetCategorySection from './AssetCategorySection';
 import ItemInputRow from './ItemInputRow';
 import CalculatorKeypad from '@/components/shared/CalculatorKeypad';
+import { formatCurrency } from '@/lib/utils/number-formatter';
 
 interface NetWorthEntryFormProps {
   // Date display
@@ -174,7 +175,7 @@ export default function NetWorthEntryForm({
             <View style={styles.totalRow}>
               <Text style={styles.totalLabel}>Total Assets</Text>
               <Text style={styles.totalValue}>
-                ${formTotalAssets.toLocaleString()}
+                {formatCurrency(formTotalAssets)}
               </Text>
             </View>
           </View>
@@ -203,7 +204,7 @@ export default function NetWorthEntryForm({
               <View style={styles.totalRow}>
                 <Text style={styles.totalLabel}>Total Liabilities</Text>
                 <Text style={styles.totalValue}>
-                  ${formLiabilities.toLocaleString()}
+                  {formatCurrency(formLiabilities)}
                 </Text>
               </View>
             )}
@@ -213,7 +214,7 @@ export default function NetWorthEntryForm({
           <View style={styles.netWorthCard}>
             <Text style={styles.netWorthLabel}>Net Worth</Text>
             <Text style={[styles.netWorthValue, formNetWorth < 0 && styles.negativeValue]}>
-              ${formNetWorth.toLocaleString()}
+              {formatCurrency(formNetWorth)}
             </Text>
           </View>
 

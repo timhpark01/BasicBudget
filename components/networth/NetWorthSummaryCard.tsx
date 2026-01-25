@@ -8,6 +8,7 @@ import {
   calculateRetirementNetWorth,
   calculateTotalLiabilities,
 } from '@/lib/db/models/net-worth';
+import { formatCurrency } from '@/lib/utils/number-formatter';
 
 interface NetWorthSummaryCardProps {
   entry: NetWorthEntryCompat;
@@ -18,7 +19,7 @@ export default function NetWorthSummaryCard({ entry }: NetWorthSummaryCardProps)
     <View style={styles.summaryCard}>
       <Text style={styles.summaryLabel}>Current Net Worth</Text>
       <Text style={styles.summaryAmount}>
-        ${calculateNetWorth(entry).toLocaleString()}
+        {formatCurrency(calculateNetWorth(entry))}
       </Text>
       <View style={styles.summaryBreakdown}>
         <View style={styles.summaryCategory}>
@@ -28,7 +29,7 @@ export default function NetWorthSummaryCard({ entry }: NetWorthSummaryCardProps)
             styles.summaryCompactValue,
             calculateLiquidNetWorth(entry) >= 0 ? styles.positiveValue : styles.negativeValue
           ]}>
-            ${Math.abs(calculateLiquidNetWorth(entry)).toLocaleString()}
+            {formatCurrency(Math.abs(calculateLiquidNetWorth(entry)))}
           </Text>
         </View>
 
@@ -39,7 +40,7 @@ export default function NetWorthSummaryCard({ entry }: NetWorthSummaryCardProps)
             styles.summaryCompactValue,
             calculateIlliquidNetWorth(entry) >= 0 ? styles.positiveValue : styles.negativeValue
           ]}>
-            ${Math.abs(calculateIlliquidNetWorth(entry)).toLocaleString()}
+            {formatCurrency(Math.abs(calculateIlliquidNetWorth(entry)))}
           </Text>
         </View>
 
@@ -50,7 +51,7 @@ export default function NetWorthSummaryCard({ entry }: NetWorthSummaryCardProps)
             styles.summaryCompactValue,
             calculateRetirementNetWorth(entry) >= 0 ? styles.positiveValue : styles.negativeValue
           ]}>
-            ${Math.abs(calculateRetirementNetWorth(entry)).toLocaleString()}
+            {formatCurrency(Math.abs(calculateRetirementNetWorth(entry)))}
           </Text>
         </View>
 
@@ -58,7 +59,7 @@ export default function NetWorthSummaryCard({ entry }: NetWorthSummaryCardProps)
           <View style={[styles.categoryIndicator, { backgroundColor: '#DC3545' }]} />
           <Text style={styles.summaryCategoryTitle}>Liabilities</Text>
           <Text style={[styles.summaryCompactValue, styles.negativeValue]}>
-            ${calculateTotalLiabilities(entry).toLocaleString()}
+            {formatCurrency(calculateTotalLiabilities(entry))}
           </Text>
         </View>
       </View>

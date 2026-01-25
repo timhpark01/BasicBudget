@@ -4,6 +4,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { Expense, CategoryBudget } from '@/types/database';
 import CategoryBudgetModal from '@/components/modals/budget/CategoryBudgetModal';
 import CategoryAnalyticsModal from '@/components/modals/analytics/CategoryAnalyticsModal';
+import { formatCurrency } from '@/lib/utils/number-formatter';
 
 interface BudgetProgressBarProps {
   totalExpenses: number;
@@ -162,7 +163,7 @@ export default function BudgetProgressBar({
           <Text style={styles.label}>Remaining Spending</Text>
           <View style={styles.headerRight}>
             <Text style={[styles.amount, isOverBudget && styles.amountOver]}>
-              ${(Math.max(0, budgetAmount - totalExpenses)).toFixed(2)} of ${budgetAmount.toFixed(2)}
+              {formatCurrency(Math.max(0, budgetAmount - totalExpenses))} of {formatCurrency(budgetAmount)}
             </Text>
             <Ionicons
               name={isExpanded ? 'chevron-up' : 'chevron-down'}
@@ -219,7 +220,7 @@ export default function BudgetProgressBar({
       {/* Status message */}
       {isOverBudget && (
         <Text style={styles.overBudgetText}>
-          ${(totalExpenses - budgetAmount).toFixed(2)} over budget
+          {formatCurrency(totalExpenses - budgetAmount)} over budget
         </Text>
       )}
 
@@ -236,14 +237,14 @@ export default function BudgetProgressBar({
                   styles.dailySpendingValue,
                   avgSpendingPerDay > idealSpendingPerDay && styles.dailySpendingOverBudget
                 ]}>
-                  ${avgSpendingPerDay.toFixed(2)}
+                  {formatCurrency(avgSpendingPerDay)}
                 </Text>
               </View>
               <View style={styles.dailySpendingDivider} />
               <View style={styles.dailySpendingItem}>
                 <Text style={styles.dailySpendingLabel}>Ideal per day</Text>
                 <Text style={styles.dailySpendingValue}>
-                  ${idealSpendingPerDay.toFixed(2)}
+                  {formatCurrency(idealSpendingPerDay)}
                 </Text>
               </View>
               <View style={styles.dailySpendingDivider} />
@@ -255,7 +256,7 @@ export default function BudgetProgressBar({
                   styles.dailySpendingValue,
                   daysRemaining === 0 && styles.dailySpendingMuted
                 ]}>
-                  {daysRemaining > 0 ? `$${avgPerRemainingDay.toFixed(2)}` : '-'}
+                  {daysRemaining > 0 ? formatCurrency(avgPerRemainingDay) : '-'}
                 </Text>
               </View>
             </View>
@@ -309,7 +310,7 @@ export default function BudgetProgressBar({
                           <Text style={styles.categoryName}>{category.name}</Text>
                           {categoryBudget && (
                             <Text style={styles.categoryBudgetText}>
-                              ${category.amount.toFixed(2)} of ${categoryBudget.toFixed(2)}
+                              {formatCurrency(category.amount)} of {formatCurrency(categoryBudget)}
                             </Text>
                           )}
                         </View>
@@ -317,7 +318,7 @@ export default function BudgetProgressBar({
                       <View style={styles.categoryRight}>
                         {!categoryBudget && (
                           <Text style={styles.categoryAmount}>
-                            ${category.amount.toFixed(2)}
+                            {formatCurrency(category.amount)}
                           </Text>
                         )}
                         <Ionicons

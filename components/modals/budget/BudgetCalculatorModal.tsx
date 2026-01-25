@@ -11,6 +11,10 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import CalculatorKeypad from '@/components/shared/CalculatorKeypad';
+import { formatCurrency, canAddDecimalDigit } from '@/lib/utils/number-formatter';
+
+// Maximum amount to prevent UI overflow (10 million)
+const MAX_AMOUNT = 9999999999999.99;
 
 interface BudgetCalculatorModalProps {
   visible: boolean;
@@ -132,11 +136,26 @@ export default function BudgetCalculatorModal({ visible, onClose }: BudgetCalcul
   // Calculator keypad handlers
   const handleNumberPress = (num: string) => {
     const currentAmount = getCurrentAmount();
-    if (currentAmount === '0') {
-      updateFocusedAmount(num);
-    } else {
-      updateFocusedAmount(currentAmount + num);
+
+    // Check if adding this digit would exceed 2 decimal places
+    if (!canAddDecimalDigit(currentAmount)) {
+      return;
     }
+
+    let newAmount: string;
+    if (currentAmount === '0') {
+      newAmount = num;
+    } else {
+      newAmount = currentAmount + num;
+    }
+
+    // Check if the new amount would exceed the maximum
+    const newAmountNum = parseFloat(newAmount);
+    if (!isNaN(newAmountNum) && newAmountNum > MAX_AMOUNT) {
+      return; // Don't add the digit if it exceeds the max
+    }
+
+    updateFocusedAmount(newAmount);
   };
 
   const handleDecimalPress = () => {
@@ -312,14 +331,14 @@ export default function BudgetCalculatorModal({ visible, onClose }: BudgetCalcul
             <View style={styles.summaryRow}>
               <Text style={styles.summaryLabel}>Total Monthly Income</Text>
               <Text style={styles.summaryIncome}>
-                ${totalIncome.toFixed(2)}
+                {formatCurrency(totalIncome)}
               </Text>
             </View>
 
             <View style={styles.summaryRow}>
               <Text style={styles.summaryLabel}>Total Fixed Expenses</Text>
               <Text style={styles.summaryExpense}>
-                -${totalExpenses.toFixed(2)}
+                -{formatCurrency(totalExpenses)}
               </Text>
             </View>
 
@@ -333,7 +352,7 @@ export default function BudgetCalculatorModal({ visible, onClose }: BudgetCalcul
                   disposableIncome < 0 && styles.summaryNegative,
                 ]}
               >
-                ${disposableIncome.toFixed(2)}
+                {formatCurrency(disposableIncome)}
               </Text>
             </View>
 

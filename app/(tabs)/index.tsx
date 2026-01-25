@@ -14,6 +14,7 @@ import {
   getCategoryBudgetsForMonth,
   setCategoryBudget as setCategoryBudgetDb,
 } from '@/lib/db/models/category-budgets';
+import { getAllBudgets } from '@/lib/db/models/budgets';
 import { getDatabase } from '@/lib/db/core/database';
 import { isFirstLaunch, markFirstLaunchComplete } from '@/lib/storage/first-launch';
 import { Expense } from '@/types/database';
@@ -23,6 +24,7 @@ import { useEffect, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
+  RefreshControl,
   ScrollView,
   StyleSheet,
   Text,
@@ -33,6 +35,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { moderateScale, scaleFontSize, scaleWidth } from '@/lib/utils/responsive';
+import { formatCurrency } from '@/lib/utils/number-formatter';
 
 export default function BudgetsScreen() {
   // Responsive sizing
@@ -51,6 +54,9 @@ export default function BudgetsScreen() {
   // Undo state
   const [deletedExpense, setDeletedExpense] = useState<Expense | null>(null);
   const [undoVisible, setUndoVisible] = useState(false);
+
+  // Refresh state
+  const [refreshing, setRefreshing] = useState(false);
 
   // Use database hooks
   const {
@@ -76,6 +82,9 @@ export default function BudgetsScreen() {
   // State for all category budgets (for analytics)
   const [allCategoryBudgets, setAllCategoryBudgets] = useState<any[]>([]);
 
+  // State for previous month's budget (for auto-populating future months)
+  const [previousBudget, setPreviousBudget] = useState<string | null>(null);
+
   // Load all category budgets for analytics
   useEffect(() => {
     async function loadAllCategoryBudgets() {
@@ -100,6 +109,32 @@ export default function BudgetsScreen() {
     }
     loadAllCategoryBudgets();
   }, [expenses, categoryBudgets]);
+
+  // Load previous budget for auto-populating future months
+  useEffect(() => {
+    async function loadPreviousBudget() {
+      try {
+        const db = await getDatabase();
+        const allBudgets = await getAllBudgets(db);
+
+        // Filter budgets from months before the selected month
+        const previousBudgets = allBudgets
+          .filter((b) => b.month < selectedMonth)
+          .sort((a, b) => b.month.localeCompare(a.month));
+
+        // Use the most recent budget if found
+        if (previousBudgets.length > 0) {
+          setPreviousBudget(previousBudgets[0].budgetAmount);
+        } else {
+          setPreviousBudget(null);
+        }
+      } catch (error) {
+        console.error('Failed to load previous budget:', error);
+        setPreviousBudget(null);
+      }
+    }
+    loadPreviousBudget();
+  }, [selectedMonth, budget]);
 
   // Handler to set category budget for any month
   const handleSetCategoryBudgetForMonth = async (
@@ -204,7 +239,7 @@ export default function BudgetsScreen() {
   const handleExpenseLongPress = (expense: Expense) => {
     Alert.alert(
       'Expense Options',
-      `${expense.category.name} - $${parseFloat(expense.amount).toFixed(2)}`,
+      `${expense.category.name} - ${formatCurrency(expense.amount)}`,
       [
         {
           text: 'Edit',
@@ -306,9 +341,20 @@ export default function BudgetsScreen() {
     }
   };
 
+  const onRefresh = async () => {
+    setRefreshing(true);
+    try {
+      await refreshExpenses();
+    } catch (err) {
+      console.error('Failed to refresh expenses:', err);
+    } finally {
+      setRefreshing(false);
+    }
+  };
+
   const fabSize = scaleWidth(56);
   const fabIconSize = scaleWidth(28);
-  const fabBottom = undoVisible ? moderateScale(140) : moderateScale(100);
+  const fabBottom = moderateScale(100); // Fixed position, no longer moves
   const fabRight = moderateScale(20);
 
   return (
@@ -316,6 +362,14 @@ export default function BudgetsScreen() {
       <ScrollView
         style={styles.scrollView}
         contentContainerStyle={{ paddingBottom: fabSize + moderateScale(120) }}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            colors={['#355e3b']}
+            tintColor="#355e3b"
+          />
+        }
       >
         <View style={styles.header}>
           <ExpenseMonthHeader
@@ -428,6 +482,7 @@ export default function BudgetsScreen() {
         visible={budgetModalVisible}
         onClose={() => setBudgetModalVisible(false)}
         currentBudget={budget?.budgetAmount}
+        previousBudget={previousBudget}
         monthLabel={monthLabel}
         onSave={handleSaveBudget}
       />

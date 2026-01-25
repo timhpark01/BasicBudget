@@ -10,11 +10,16 @@ import {
   View,
 } from 'react-native';
 import CalculatorKeypad from '@/components/shared/CalculatorKeypad';
+import { canAddDecimalDigit } from '@/lib/utils/number-formatter';
+
+// Maximum budget amount to prevent UI overflow (10 million)
+const MAX_BUDGET = 9999999999999.99;
 
 interface BudgetModalProps {
   visible: boolean;
   onClose: () => void;
   currentBudget?: string | null;
+  previousBudget?: string | null; // Most recent budget from previous months
   monthLabel: string; // Display label like "December 2025"
   onSave: (budgetAmount: string) => void | Promise<void>;
 }
@@ -23,27 +28,46 @@ export default function BudgetModal({
   visible,
   onClose,
   currentBudget,
+  previousBudget,
   monthLabel,
   onSave,
 }: BudgetModalProps) {
   const [amount, setAmount] = useState('0');
   const [loading, setLoading] = useState(false);
 
-  // Pre-fill form when editing existing budget
+  // Pre-fill form when editing existing budget or use previous budget
   useEffect(() => {
     if (currentBudget) {
+      // Use current budget if it exists
       setAmount(currentBudget);
+    } else if (previousBudget) {
+      // Auto-populate with most recent previous budget
+      setAmount(previousBudget);
     } else {
       setAmount('0');
     }
-  }, [currentBudget, visible]);
+  }, [currentBudget, previousBudget, visible]);
 
   const handleNumberPress = (num: string) => {
-    if (amount === '0') {
-      setAmount(num);
-    } else {
-      setAmount(amount + num);
+    // Check if adding this digit would exceed 2 decimal places
+    if (!canAddDecimalDigit(amount)) {
+      return;
     }
+
+    let newAmount: string;
+    if (amount === '0') {
+      newAmount = num;
+    } else {
+      newAmount = amount + num;
+    }
+
+    // Check if the new amount would exceed the maximum budget
+    const newAmountNum = parseFloat(newAmount);
+    if (!isNaN(newAmountNum) && newAmountNum > MAX_BUDGET) {
+      return; // Don't add the digit if it exceeds the max
+    }
+
+    setAmount(newAmount);
   };
 
   const handleDecimalPress = () => {
