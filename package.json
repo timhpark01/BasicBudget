@@ -16,7 +16,8 @@
     "test": "jest",
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage",
-    "test:coverage-html": "jest --coverage --coverageReporters=html"
+    "test:coverage-html": "jest --coverage --coverageReporters=html",
+    "test:schema": "jest __tests__/schema-validation.test.ts"
   },
   "dependencies": {
     "@expo/metro-runtime": "~6.1.2",

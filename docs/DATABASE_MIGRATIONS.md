@@ -220,17 +220,63 @@ When adding new migrations:
    # Verify data is NOT deleted
    ```
 
+4. **Run schema validation tests:**
+   ```bash
+   # Verify schema.ts and migrations.ts produce identical schemas
+   npm run test:schema
+   ```
+
+### Schema Validation Tests
+
+**Purpose:** Ensures `schema.ts` (new user path) and `migrations.ts` (existing user path) produce identical database structures.
+
+**Location:** `__tests__/schema-validation.test.ts`
+
+**What it tests:**
+- Fresh database schema matches fully-migrated database schema
+- All columns exist in both paths (names, types, constraints)
+- All indexes match between fresh and migrated databases
+- Column order is identical
+- Schema version tracking works correctly
+
+**When to run:**
+- Before committing any schema changes
+- After adding new migrations
+- As part of CI/CD pipeline
+- When suspecting schema drift
+
+**Run tests:**
+```bash
+# Run only schema validation tests
+npm run test:schema
+
+# Run all database tests
+npm test __tests__/database-migration.test.ts __tests__/schema-validation.test.ts
+
+# Run all tests with coverage
+npm run test:coverage
+```
+
+**Common issues caught:**
+- Missing columns in schema.ts that migrations add
+- Extra columns in schema.ts not added by migrations
+- Index mismatches between paths
+- Column type inconsistencies
+- Column order differences
+
 ### Migration Checklist
 
 When creating a new migration:
 
-- [ ] Increment `CURRENT_SCHEMA_VERSION` in `lib/database.ts`
-- [ ] Add new migration to `lib/migrations.ts`
-- [ ] Add migration key constants
-- [ ] Implement check/mark functions
-- [ ] Add to `runMigrations()` with try/catch
+- [ ] Increment `CURRENT_SCHEMA_VERSION` in `lib/db/core/database.ts`
+- [ ] Add new migration function to `lib/db/core/migrations.ts`
+- [ ] Add migration to appropriate criticality list (CRITICAL or OPTIONAL)
+- [ ] Add migration runner logic in `runMigrations()` with try/catch
+- [ ] **Update `lib/db/core/schema.ts` to match migration output**
+- [ ] Add to `CURRENT_MIGRATIONS` constant (if applicable)
 - [ ] Test with existing database
 - [ ] Test with fresh database
+- [ ] **Run schema validation tests: `npm run test:schema`**
 - [ ] Update this documentation
 
 ## Best Practices

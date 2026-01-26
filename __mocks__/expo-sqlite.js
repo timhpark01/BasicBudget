@@ -7,6 +7,8 @@ class MockSQLiteDatabase {
   constructor(databaseName) {
     this.databaseName = databaseName;
     this.tables = {};
+    this.tableSchemas = {}; // Store table structure information
+    this.indexes = {}; // Store index information
     this.isOpen = true;
   }
 
@@ -66,11 +68,19 @@ class MockSQLiteDatabase {
 
     // Handle CREATE TABLE
     if (normalizedSQL.startsWith('CREATE TABLE')) {
-      const match = sql.match(/CREATE TABLE IF NOT EXISTS (\w+)/i);
-      if (match) {
-        const tableName = match[1];
+      const tableMatch = sql.match(/CREATE TABLE (?:IF NOT EXISTS )?(\w+)/i);
+      if (tableMatch) {
+        const tableName = tableMatch[1];
         if (!this.tables[tableName]) {
           this.tables[tableName] = [];
+        }
+
+        // Parse column definitions
+        const columnsMatch = sql.match(/\(([\s\S]*)\)/);
+        if (columnsMatch) {
+          const columnDefs = columnsMatch[1];
+          const columns = this._parseColumnDefinitions(columnDefs);
+          this.tableSchemas[tableName] = columns;
         }
       }
       return { rows: [], changes: 0, lastInsertRowId: 0 };
@@ -78,22 +88,46 @@ class MockSQLiteDatabase {
 
     // Handle CREATE INDEX
     if (normalizedSQL.startsWith('CREATE INDEX')) {
+      const indexMatch = sql.match(/CREATE INDEX (?:IF NOT EXISTS )?(\w+) ON (\w+)/i);
+      if (indexMatch) {
+        const indexName = indexMatch[1];
+        const tableName = indexMatch[2];
+        if (!this.indexes[tableName]) {
+          this.indexes[tableName] = [];
+        }
+        this.indexes[tableName].push({
+          name: indexName,
+          sql: sql.trim()
+        });
+      }
       return { rows: [], changes: 0, lastInsertRowId: 0 };
     }
 
     // Handle INSERT
-    if (normalizedSQL.startsWith('INSERT INTO')) {
-      const match = sql.match(/INSERT INTO (\w+)/i);
+    if (normalizedSQL.startsWith('INSERT')) {
+      const match = sql.match(/INSERT (?:OR REPLACE |OR IGNORE )?INTO (\w+)/i);
       if (match) {
         const tableName = match[1];
         if (!this.tables[tableName]) {
           this.tables[tableName] = [];
         }
 
-        // Create a row object from args
+        // Parse column names from INSERT statement
+        const columnsMatch = sql.match(/\(([^)]+)\)\s+VALUES/i);
+        const columnNames = columnsMatch
+          ? columnsMatch[1].split(',').map(c => c.trim())
+          : [];
+
+        // Create a row object from column names and args
         const row = {};
-        // Simple placeholder replacement for common patterns
-        if (sql.includes('VALUES')) {
+        if (columnNames.length > 0 && args.length > 0) {
+          columnNames.forEach((colName, i) => {
+            if (i < args.length) {
+              row[colName] = args[i];
+            }
+          });
+        } else {
+          // Fallback to generic column names
           const placeholders = (sql.match(/\?/g) || []).length;
           for (let i = 0; i < placeholders && i < args.length; i++) {
             row[`col${i}`] = args[i];
@@ -115,6 +149,15 @@ class MockSQLiteDatabase {
       if (match) {
         const tableName = match[1];
         const rows = this.tables[tableName] || [];
+
+        // Handle WHERE clauses for simple ID lookups
+        const whereMatch = sql.match(/WHERE\s+id\s*=\s*(\d+)/i);
+        if (whereMatch) {
+          const id = whereMatch[1];
+          const filtered = rows.filter(row => row.id === id || row.id === parseInt(id));
+          return { rows: [...filtered], changes: 0, lastInsertRowId: 0 };
+        }
+
         return { rows: [...rows], changes: 0, lastInsertRowId: 0 };
       }
       return { rows: [], changes: 0, lastInsertRowId: 0 };
@@ -143,8 +186,71 @@ class MockSQLiteDatabase {
       return { rows: [], changes: 0, lastInsertRowId: 0 };
     }
 
+    // Handle DROP TABLE
+    if (normalizedSQL.startsWith('DROP TABLE')) {
+      const match = sql.match(/DROP TABLE (?:IF EXISTS )?(\w+)/i);
+      if (match) {
+        const tableName = match[1];
+        delete this.tables[tableName];
+        delete this.tableSchemas[tableName];
+        delete this.indexes[tableName];
+        return { rows: [], changes: 0, lastInsertRowId: 0 };
+      }
+      return { rows: [], changes: 0, lastInsertRowId: 0 };
+    }
+
+    // Handle ALTER TABLE
+    if (normalizedSQL.startsWith('ALTER TABLE')) {
+      const renameMatch = sql.match(/ALTER TABLE (\w+) RENAME TO (\w+)/i);
+      if (renameMatch) {
+        const oldName = renameMatch[1];
+        const newName = renameMatch[2];
+        if (this.tables[oldName]) {
+          this.tables[newName] = this.tables[oldName];
+          delete this.tables[oldName];
+        }
+        if (this.tableSchemas[oldName]) {
+          this.tableSchemas[newName] = this.tableSchemas[oldName];
+          delete this.tableSchemas[oldName];
+        }
+        if (this.indexes[oldName]) {
+          this.indexes[newName] = this.indexes[oldName];
+          delete this.indexes[oldName];
+        }
+        return { rows: [], changes: 0, lastInsertRowId: 0 };
+      }
+      return { rows: [], changes: 0, lastInsertRowId: 0 };
+    }
+
     // Handle PRAGMA
     if (normalizedSQL.startsWith('PRAGMA')) {
+      // PRAGMA table_info(table_name)
+      const tableInfoMatch = sql.match(/PRAGMA table_info\((\w+)\)/i);
+      if (tableInfoMatch) {
+        const tableName = tableInfoMatch[1];
+        const schema = this.tableSchemas[tableName] || [];
+        return { rows: schema, changes: 0, lastInsertRowId: 0 };
+      }
+      return { rows: [], changes: 0, lastInsertRowId: 0 };
+    }
+
+    // Handle SELECT from sqlite_master (for index queries)
+    if (normalizedSQL.includes('SQLITE_MASTER')) {
+      const tableMatch = sql.match(/tbl_name\s*=\s*['"]?(\w+)['"]?/i);
+      if (tableMatch) {
+        const tableName = tableMatch[1];
+        const indexes = this.indexes[tableName] || [];
+        return { rows: indexes, changes: 0, lastInsertRowId: 0 };
+      }
+
+      // Count tables query
+      const countMatch = sql.match(/SELECT COUNT\(\*\) as count FROM sqlite_master WHERE type='table' AND name='(\w+)'/i);
+      if (countMatch) {
+        const tableName = countMatch[1];
+        const exists = this.tables[tableName] !== undefined;
+        return { rows: [{ count: exists ? 1 : 0 }], changes: 0, lastInsertRowId: 0 };
+      }
+
       return { rows: [], changes: 0, lastInsertRowId: 0 };
     }
 
@@ -168,6 +274,68 @@ class MockSQLiteDatabase {
   // Helper method to clear all tables
   __clearAllTables() {
     this.tables = {};
+    this.tableSchemas = {};
+    this.indexes = {};
+  }
+
+  // Parse column definitions from CREATE TABLE statement
+  _parseColumnDefinitions(columnDefsStr) {
+    const columns = [];
+    // Split by comma, but respect parentheses for CHECK constraints
+    const parts = columnDefsStr.split(/,(?![^()]*\))/);
+
+    let cid = 0;
+    for (const part of parts) {
+      const trimmed = part.trim();
+
+      // Skip empty parts
+      if (!trimmed) continue;
+
+      // Skip CHECK constraints and other table-level constraints
+      if (trimmed.match(/^(CHECK|UNIQUE|FOREIGN KEY|PRIMARY KEY)\s*\(/i)) {
+        continue;
+      }
+
+      // Parse column definition: name TYPE [constraints]
+      // Allow for optional constraints
+      const colMatch = trimmed.match(/^(\w+)\s+([A-Z]+)(.*)$/i);
+      if (colMatch) {
+        const name = colMatch[1];
+        const type = colMatch[2].toUpperCase();
+        const constraints = colMatch[3] ? colMatch[3].trim() : '';
+
+        // Parse constraints
+        const isPrimary = /PRIMARY KEY/i.test(constraints) ? 1 : 0;
+        const isNotNull = /NOT NULL/i.test(constraints) ? 1 : 0;
+
+        // Parse default value
+        let dflt_value = null;
+        const defaultMatch = constraints.match(/DEFAULT\s+(['"]?[^,\s]+['"]?|'[^']*'|"[^"]*")/i);
+        if (defaultMatch) {
+          dflt_value = defaultMatch[1].replace(/^['"]|['"]$/g, '');
+        }
+
+        columns.push({
+          cid: cid++,
+          name,
+          type,
+          notnull: isNotNull,
+          dflt_value,
+          pk: isPrimary
+        });
+      }
+    }
+
+    return columns;
+  }
+
+  // Support for transactions
+  async withTransactionAsync(callback) {
+    return await callback();
+  }
+
+  async withExclusiveTransactionAsync(callback) {
+    return await callback();
   }
 }
 
@@ -216,5 +384,5 @@ const SQLiteMock = {
   }
 };
 
-export default SQLiteMock;
-export { MockSQLiteDatabase };
+module.exports = SQLiteMock;
+module.exports.default = SQLiteMock;

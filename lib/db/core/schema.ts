@@ -20,6 +20,7 @@ export const TABLE_SCHEMAS = {
       category_color TEXT NOT NULL,
       date INTEGER NOT NULL,
       note TEXT,
+      recurring_expense_id TEXT,
       created_at INTEGER NOT NULL,
       updated_at INTEGER NOT NULL
     )
@@ -111,6 +112,7 @@ export const TABLE_INDEXES = {
   expenses: [
     'CREATE INDEX IF NOT EXISTS idx_expenses_date ON expenses(date)',
     'CREATE INDEX IF NOT EXISTS idx_expenses_category ON expenses(category_id)',
+    'CREATE INDEX IF NOT EXISTS idx_expenses_recurring ON expenses(recurring_expense_id)',
   ],
 
   budgets: [

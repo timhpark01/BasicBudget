@@ -5,6 +5,9 @@ jest.mock('expo-crypto', () => ({
   randomUUID: jest.fn(() => `mock-uuid-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`)
 }));
 
+// Mock expo-sqlite for database operations
+jest.mock('expo-sqlite');
+
 // Suppress verbose console output during tests
 const originalWarn = console.warn;
 const originalError = console.error;
