@@ -67,11 +67,7 @@ export default function AboutModal({ visible, onClose }: AboutModalProps) {
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>Credits & Attributions</Text>
             <Text style={styles.sectionText}>
-              <Text style={styles.bold}>Developer:</Text> BasicBudget Team
-            </Text>
-            <Text style={styles.sectionText}>
-              <Text style={styles.bold}>Icons:</Text> Ionicons by Ionic
-              Framework
+              <Text style={styles.bold}>Developer:</Text> Timothy Park
             </Text>
             <Text style={styles.sectionText}>
               <Text style={styles.bold}>Built with:</Text>
@@ -80,7 +76,8 @@ export default function AboutModal({ visible, onClose }: AboutModalProps) {
               • React Native & Expo{'\n'}
               • TypeScript{'\n'}
               • SQLite (expo-sqlite){'\n'}
-              • React Navigation
+              • React Navigation{'\n'}
+              • Shoutout Claude Code
             </Text>
           </View>
 
