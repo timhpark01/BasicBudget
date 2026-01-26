@@ -10,7 +10,7 @@ import { getTableSchema, getTableIndexes } from './schema';
 /**
  * Migration Criticality:
  *
- * CRITICAL migrations (v1-v3, v6-v8):
+ * CRITICAL migrations (v1-v3, v6-v9):
  * - Core functionality depends on these
  * - Must succeed for app to function properly
  * - Failure will block app startup
@@ -22,7 +22,7 @@ import { getTableSchema, getTableIndexes } from './schema';
  * - User can still use core expense tracking
  * - Examples: net worth tracking enhancements
  */
-const CRITICAL_MIGRATIONS = ['v1', 'v2', 'v3', 'v6', 'v7', 'v8'] as const;
+const CRITICAL_MIGRATIONS = ['v1', 'v2', 'v3', 'v6', 'v7', 'v8', 'v9'] as const;
 const OPTIONAL_MIGRATIONS = ['v4', 'v5'] as const;
 
 /**
@@ -319,12 +319,13 @@ async function fixUnlabeledIconAndColor(db: SQLite.SQLiteDatabase): Promise<void
 }
 
 /**
- * Rename "Other" category to "Unlabeled"
+ * Rename category id='6' to "Unlabeled"
  * Updates both custom_categories table and all expenses using this category
+ * Handles all possible old names (Other, Health, etc.) from different app versions
  */
 async function renameOtherToUnlabeled(db: SQLite.SQLiteDatabase): Promise<void> {
   try {
-    console.log('🔄 Renaming "Other" category to "Unlabeled"...');
+    console.log('🔄 Ensuring category id=6 is named "Unlabeled"...');
 
     // First check what we have
     const beforeCat = await db.getFirstAsync<{ id: string; name: string }>(
@@ -336,16 +337,18 @@ async function renameOtherToUnlabeled(db: SQLite.SQLiteDatabase): Promise<void> 
 
     // Use exclusive transaction for atomic multi-table updates
     await db.withExclusiveTransactionAsync(async () => {
-      // Update the category name in custom_categories table
+      // Update id='6' to "Unlabeled" regardless of current name
+      // This handles all app versions (Health, Other, or already Unlabeled)
       const catResult = await db.runAsync(
-        `UPDATE custom_categories SET name = ?, updated_at = ? WHERE id = '6' AND name = 'Other'`,
+        `UPDATE custom_categories SET name = ?, updated_at = ? WHERE id = '6'`,
         ['Unlabeled', now]
       );
       console.log(`📝 Updated ${catResult.changes} category record(s)`);
 
-      // Update all expenses that use the "Other" category
+      // Update all expenses with category_id='6' to show "Unlabeled"
+      // This fixes expenses that may have old names (Health, Other, etc.)
       const expResult = await db.runAsync(
-        `UPDATE expenses SET category_name = ?, updated_at = ? WHERE category_id = '6' AND category_name = 'Other'`,
+        `UPDATE expenses SET category_name = ?, updated_at = ? WHERE category_id = '6'`,
         ['Unlabeled', now]
       );
       console.log(`📝 Updated ${expResult.changes} expense record(s)`);
@@ -357,9 +360,9 @@ async function renameOtherToUnlabeled(db: SQLite.SQLiteDatabase): Promise<void> 
     );
     console.log('📊 Category after migration:', afterCat);
 
-    console.log('✅ Successfully renamed "Other" to "Unlabeled"');
+    console.log('✅ Successfully ensured id=6 is "Unlabeled"');
   } catch (error) {
-    console.error('❌ Failed to rename Other to Unlabeled:', error);
+    console.error('❌ Failed to rename category id=6 to Unlabeled:', error);
     throw error;
   }
 }
@@ -510,6 +513,58 @@ async function createRecurringExpensesTable(db: SQLite.SQLiteDatabase): Promise<
 }
 
 /**
+ * Fix Unlabeled category name for users affected by buggy v6 migration
+ * Some users had id='6' as 'Health' instead of 'Other', causing v6 migration to fail silently
+ * This migration ensures id='6' is always named "Unlabeled" regardless of current state
+ */
+async function fixUnlabeledCategoryName(db: SQLite.SQLiteDatabase): Promise<void> {
+  try {
+    console.log('🔄 Fixing Unlabeled category name (repair for buggy v6 migration)...');
+
+    // Check current state
+    const currentCat = await db.getFirstAsync<{ id: string; name: string }>(
+      `SELECT id, name FROM custom_categories WHERE id = '6'`
+    );
+
+    if (!currentCat) {
+      console.log('⚠️  Category id=6 not found, skipping');
+      return;
+    }
+
+    console.log(`📊 Current state: id='6', name='${currentCat.name}'`);
+
+    if (currentCat.name === 'Unlabeled') {
+      console.log('✅ Already correct, no fix needed');
+      return;
+    }
+
+    const now = Date.now();
+
+    // Use exclusive transaction for atomic multi-table updates
+    await db.withExclusiveTransactionAsync(async () => {
+      // Fix the category name
+      const catResult = await db.runAsync(
+        `UPDATE custom_categories SET name = ?, updated_at = ? WHERE id = '6'`,
+        ['Unlabeled', now]
+      );
+      console.log(`📝 Fixed ${catResult.changes} category record(s)`);
+
+      // Fix all expenses with this category
+      const expResult = await db.runAsync(
+        `UPDATE expenses SET category_name = ?, updated_at = ? WHERE category_id = '6'`,
+        ['Unlabeled', now]
+      );
+      console.log(`📝 Fixed ${expResult.changes} expense record(s)`);
+    });
+
+    console.log(`✅ Successfully fixed category name: '${currentCat.name}' → 'Unlabeled'`);
+  } catch (error) {
+    console.error('❌ Failed to fix Unlabeled category name:', error);
+    throw error;
+  }
+}
+
+/**
  * Add recurring_expense_id column to expenses table
  * Uses table recreation strategy since SQLite doesn't support ALTER COLUMN
  */
@@ -638,11 +693,11 @@ export async function initializeNewDatabase(db: SQLite.SQLiteDatabase): Promise<
  * Uses database schema_version as single source of truth (no AsyncStorage)
  *
  * @param db - SQLite database instance
- * @param fromVersion - Current schema version (0-5), determines which migrations to run
+ * @param fromVersion - Current schema version (0-9), determines which migrations to run
  */
 export async function runMigrations(db: SQLite.SQLiteDatabase, fromVersion: number): Promise<void> {
   console.log(`🔄 Starting migration runner from version ${fromVersion}...`);
-  console.log(`📋 Migrations to run: v${fromVersion + 1} through v8`);
+  console.log(`📋 Migrations to run: v${fromVersion + 1} through v9`);
 
   try {
     // V1 Migration: Categories with position (CRITICAL)
@@ -785,6 +840,22 @@ export async function runMigrations(db: SQLite.SQLiteDatabase, fromVersion: numb
       }
     } else {
       console.log('✅ v8 migrations already completed (version >= 8)');
+    }
+
+    // V9 Migration: Fix Unlabeled category name (CRITICAL)
+    if (fromVersion < 9) {
+      console.log('🔄 Running v9 database migrations (fix Unlabeled category name)...');
+      try {
+        await fixUnlabeledCategoryName(db);
+        console.log('✅ v9 migrations completed successfully');
+      } catch (error) {
+        // v9 is CRITICAL - fixes data corruption from buggy v6 migration
+        // Failure will prevent app from starting
+        console.error('❌ v9 migration FAILED (CRITICAL):', error);
+        throw new Error(`v9 migration failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      }
+    } else {
+      console.log('✅ v9 migrations already completed (version >= 9)');
     }
 
     console.log('✅ All migrations completed successfully');

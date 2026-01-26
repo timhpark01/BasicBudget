@@ -289,4 +289,217 @@ describe('Database Migration System', () => {
       expect(healthCheck.schemaVersion).toBe(CURRENT_SCHEMA_VERSION);
     });
   });
+
+  describe('Unlabeled Category Migration Fix (v6 and v9)', () => {
+    async function createDatabaseWithCategoryId6(
+      categoryName: string,
+      schemaVersion: number
+    ): Promise<SQLite.SQLiteDatabase> {
+      const db = await SQLite.openDatabaseAsync(TEST_DB_NAME);
+      const now = Date.now();
+
+      await db.execAsync(`
+        CREATE TABLE expenses (
+          id TEXT PRIMARY KEY NOT NULL,
+          amount TEXT NOT NULL,
+          category_id TEXT NOT NULL,
+          category_name TEXT NOT NULL,
+          category_icon TEXT NOT NULL,
+          category_color TEXT NOT NULL,
+          date INTEGER NOT NULL,
+          note TEXT,
+          created_at INTEGER NOT NULL,
+          updated_at INTEGER NOT NULL
+        );
+
+        CREATE TABLE custom_categories (
+          id TEXT PRIMARY KEY NOT NULL,
+          name TEXT NOT NULL,
+          icon TEXT NOT NULL,
+          color TEXT NOT NULL,
+          position INTEGER NOT NULL,
+          is_active INTEGER DEFAULT 1,
+          created_at INTEGER NOT NULL,
+          updated_at INTEGER NOT NULL
+        );
+
+        CREATE TABLE schema_version (
+          id INTEGER PRIMARY KEY CHECK (id = 1),
+          version INTEGER NOT NULL,
+          updated_at INTEGER NOT NULL
+        );
+
+        -- Insert category id='6' with the specified name
+        INSERT INTO custom_categories (id, name, icon, color, position, is_active, created_at, updated_at)
+        VALUES ('6', '${categoryName}', 'medical', '#00D2D3', 5, 1, ${now}, ${now});
+
+        -- Add some expenses with category id='6'
+        INSERT INTO expenses (id, amount, category_id, category_name, category_icon, category_color, date, note, created_at, updated_at)
+        VALUES
+          ('exp-1', '50.00', '6', '${categoryName}', 'medical', '#00D2D3', ${now}, 'Test expense 1', ${now}, ${now}),
+          ('exp-2', '75.00', '6', '${categoryName}', 'medical', '#00D2D3', ${now}, 'Test expense 2', ${now}, ${now});
+
+        -- Set schema version
+        INSERT INTO schema_version (id, version, updated_at)
+        VALUES (1, ${schemaVersion}, ${now});
+      `);
+
+      return db;
+    }
+
+    it('should rename id=6 from "Health" to "Unlabeled" in migration v6', async () => {
+      // Create database with id='6' as 'Health' (old app version), at schema v5
+      await createDatabaseWithCategoryId6('Health', 5);
+
+      // Run migration by initializing database
+      const db = await initDatabase();
+
+      // Verify category was renamed
+      const category = await db.getFirstAsync<{ id: string; name: string }>(
+        'SELECT id, name FROM custom_categories WHERE id = ?',
+        ['6']
+      );
+
+      expect(category?.name).toBe('Unlabeled');
+    });
+
+    it('should rename id=6 from "Other" to "Unlabeled" in migration v6', async () => {
+      // Create database with id='6' as 'Other', at schema v5
+      await createDatabaseWithCategoryId6('Other', 5);
+
+      // Run migration
+      const db = await initDatabase();
+
+      // Verify category was renamed
+      const category = await db.getFirstAsync<{ id: string; name: string }>(
+        'SELECT id, name FROM custom_categories WHERE id = ?',
+        ['6']
+      );
+
+      expect(category?.name).toBe('Unlabeled');
+    });
+
+    it('should update all expenses with id=6 to show "Unlabeled" name in migration v6', async () => {
+      // Create database with id='6' as 'Health'
+      await createDatabaseWithCategoryId6('Health', 5);
+
+      // Run migration
+      const db = await initDatabase();
+
+      // Verify all expenses were updated
+      const expenses = await db.getAllAsync<{ category_name: string }>(
+        'SELECT category_name FROM expenses WHERE category_id = ?',
+        ['6']
+      );
+
+      expect(expenses.length).toBe(2);
+      expenses.forEach(exp => {
+        expect(exp.category_name).toBe('Unlabeled');
+      });
+    });
+
+    it('should fix corrupted id=6 name in migration v9', async () => {
+      // Simulate corrupted data: id='6' has wrong name but correct icon/color
+      // This happens when buggy v6 migration ran (schema v8)
+      await createDatabaseWithCategoryId6('Health', 8);
+
+      // Run migration v9
+      const db = await initDatabase();
+
+      // Verify it was fixed
+      const category = await db.getFirstAsync<{ id: string; name: string }>(
+        'SELECT id, name FROM custom_categories WHERE id = ?',
+        ['6']
+      );
+
+      expect(category?.name).toBe('Unlabeled');
+
+      // Verify expenses were also fixed
+      const expenses = await db.getAllAsync<{ category_name: string }>(
+        'SELECT category_name FROM expenses WHERE category_id = ?',
+        ['6']
+      );
+
+      expenses.forEach(exp => {
+        expect(exp.category_name).toBe('Unlabeled');
+      });
+    });
+
+    it('should skip v9 migration if id=6 is already "Unlabeled"', async () => {
+      // Create database where id='6' is already correct
+      await createDatabaseWithCategoryId6('Unlabeled', 8);
+
+      // Run migration v9
+      const db = await initDatabase();
+
+      // Should still be Unlabeled (no error)
+      const category = await db.getFirstAsync<{ id: string; name: string }>(
+        'SELECT id, name FROM custom_categories WHERE id = ?',
+        ['6']
+      );
+
+      expect(category?.name).toBe('Unlabeled');
+    });
+
+    it('should handle category deletion after fix', async () => {
+      // Create database with fixed Unlabeled category
+      const db = await initDatabase();
+
+      // Get the Unlabeled category
+      const unlabeled = await db.getFirstAsync<{ id: string; name: string }>(
+        'SELECT id, name FROM custom_categories WHERE id = ?',
+        ['6']
+      );
+
+      expect(unlabeled?.id).toBe('6');
+      expect(unlabeled?.name).toBe('Unlabeled');
+
+      // Create a test category with an expense
+      const now = Date.now();
+      await db.runAsync(
+        `INSERT INTO custom_categories (id, name, icon, color, position, is_active, created_at, updated_at)
+         VALUES (?, ?, ?, ?, ?, 1, ?, ?)`,
+        ['test-cat', 'TestCategory', 'star', '#FF0000', 10, now, now]
+      );
+
+      await db.runAsync(
+        `INSERT INTO expenses (id, amount, category_id, category_name, category_icon, category_color, date, note, created_at, updated_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        ['test-exp', '100.00', 'test-cat', 'TestCategory', 'star', '#FF0000', now, 'Test', now, now]
+      );
+
+      // Delete the test category (should reassign to Unlabeled)
+      await db.withExclusiveTransactionAsync(async () => {
+        // Soft delete the category
+        await db.runAsync(
+          'UPDATE custom_categories SET is_active = 0, updated_at = ? WHERE id = ?',
+          [now, 'test-cat']
+        );
+
+        // Reassign expenses to Unlabeled (id='6')
+        const defaultCategory = { id: '6', name: 'Unlabeled', icon: 'help-circle-outline', color: '#DC143C' };
+        await db.runAsync(
+          `UPDATE expenses SET category_id = ?, category_name = ?, category_icon = ?, category_color = ?, updated_at = ? WHERE category_id = ?`,
+          [defaultCategory.id, defaultCategory.name, defaultCategory.icon, defaultCategory.color, now, 'test-cat']
+        );
+      });
+
+      // Verify expense was reassigned to Unlabeled
+      const expense = await db.getFirstAsync<{ category_id: string; category_name: string }>(
+        'SELECT category_id, category_name FROM expenses WHERE id = ?',
+        ['test-exp']
+      );
+
+      expect(expense?.category_id).toBe('6');
+      expect(expense?.category_name).toBe('Unlabeled');
+
+      // Verify Unlabeled category still exists and is correct
+      const unlabeledAfter = await db.getFirstAsync<{ id: string; name: string }>(
+        'SELECT id, name FROM custom_categories WHERE id = ?',
+        ['6']
+      );
+
+      expect(unlabeledAfter?.name).toBe('Unlabeled');
+    });
+  });
 });

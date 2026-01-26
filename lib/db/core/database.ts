@@ -3,7 +3,7 @@ import { runMigrations, initializeNewDatabase } from './migrations';
 import { generateCompleteSchema } from './schema';
 
 const DATABASE_NAME = 'budget.db';
-export const CURRENT_SCHEMA_VERSION = 8; // Update this when schema changes
+export const CURRENT_SCHEMA_VERSION = 9; // Update this when schema changes
 
 let databaseInstance: SQLite.SQLiteDatabase | null = null;
 let initializationPromise: Promise<SQLite.SQLiteDatabase> | null = null;
