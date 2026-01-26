@@ -18,6 +18,7 @@ import AdvancedSettingsModal from '@/components/modals/settings/AdvancedSettings
 import BudgetCalculatorModal from '@/components/modals/budget/BudgetCalculatorModal';
 import InsightsModal from '@/components/modals/analytics/InsightsModal';
 import ExportCSVModal from '@/components/modals/analytics/ExportCSVModal';
+import ImportCSVModal from '@/components/modals/analytics/ImportCSVModal';
 import HelpModal from '@/components/modals/HelpModal';
 import AboutModal from '@/components/modals/settings/AboutModal';
 
@@ -33,6 +34,7 @@ export default function MoreScreen() {
   const [budgetCalculatorModalVisible, setBudgetCalculatorModalVisible] = useState(false);
   const [insightsModalVisible, setInsightsModalVisible] = useState(false);
   const [exportCSVModalVisible, setExportCSVModalVisible] = useState(false);
+  const [importCSVModalVisible, setImportCSVModalVisible] = useState(false);
   const [helpModalVisible, setHelpModalVisible] = useState(false);
   const [aboutModalVisible, setAboutModalVisible] = useState(false);
 
@@ -118,6 +120,16 @@ export default function MoreScreen() {
             <Text style={styles.menuText}>Export CSV</Text>
             <Ionicons name="chevron-forward" size={24} color="#999" />
           </TouchableOpacity>
+
+          <TouchableOpacity
+            style={styles.menuItem}
+            onPress={() => setImportCSVModalVisible(true)}
+            activeOpacity={0.7}
+          >
+            <Ionicons name="cloud-upload-outline" size={24} color="#333" />
+            <Text style={styles.menuText}>Import CSV</Text>
+            <Ionicons name="chevron-forward" size={24} color="#999" />
+          </TouchableOpacity>
         </View>
 
         <View style={styles.section}>
@@ -178,6 +190,11 @@ export default function MoreScreen() {
       <ExportCSVModal
         visible={exportCSVModalVisible}
         onClose={() => setExportCSVModalVisible(false)}
+      />
+
+      <ImportCSVModal
+        visible={importCSVModalVisible}
+        onClose={() => setImportCSVModalVisible(false)}
       />
 
       <HelpModal

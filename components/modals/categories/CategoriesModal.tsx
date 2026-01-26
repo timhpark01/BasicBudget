@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Modal,
   View,
@@ -41,7 +41,15 @@ export default function CategoriesModal({ visible, onClose }: CategoriesModalPro
     updateCategory,
     deleteCategory,
     reorderCategories,
+    refreshCategories,
   } = useCategories();
+
+  // Refresh categories from DB whenever the modal becomes visible
+  useEffect(() => {
+    if (visible) {
+      refreshCategories();
+    }
+  }, [visible, refreshCategories]);
 
   const [mode, setMode] = useState<Mode>('list');
   const [editingId, setEditingId] = useState<string | null>(null);

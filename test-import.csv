@@ -1,0 +1,42 @@
+Date,Category,Description,Amount
+2026-01-15,Groceries,Weekly shopping at Whole Foods,125.50
+2026-01-14,Dining,Lunch at restaurant,25.00
+2026-01-13,Transport,Uber to work,15.75
+2026-01-12,Entertainment,Movie tickets and popcorn,45.00
+2026-01-11,Bills,Electric bill payment,89.99
+2026-01-10,Groceries,Milk and bread,12.30
+2026-01-09,Dining,Coffee and bagel,$5.50
+2026-01-08,Entertainment,Concert tickets,$120.00
+2026-01-07,Transport,Gas station,"$50.25"
+2026-01-06,Groceries,"Groceries with comma, in description",35.75
+2026-01-05,BadDate1,Should fail date validation,10.00
+01-04-2026,Dining,Wrong date format,20.00
+2026-13-01,Transport,Invalid month,15.00
+2026-01-32,Groceries,Invalid day,25.00
+2026-01-03,Dining,Valid transaction,18.50
+2026-01-02,Groceries,,30.00
+2026-01-01,Transport,New Year ride,22.75
+2025-12-31,Entertainment,New Year party,150.00
+2025-12-30,Dining,Dinner with friends,75.50
+2025-12-29,InvalidAmount,Zero amount,0
+2025-12-28,InvalidAmount,Negative amount,-50.00
+2025-12-27,InvalidAmount,Not a number,ABC
+2025-12-26,InvalidAmount,Too large,99999999999999.99
+2025-12-25,Groceries,Christmas shopping,200.00
+2025-12-24,,Missing category,45.00
+2025-12-23,Dining,,35.00
+,Groceries,Missing date,25.00
+2025-12-22,Transport,Missing amount,
+2025-12-21,Groceries,Duplicate test 1,50.00
+2025-12-21,Groceries,Duplicate test 2,50.00
+2027-01-15,Entertainment,Future date (1+ year),100.00
+2026-06-15,Bills,Future date (valid),80.00
+2026-01-15,Groceries,Weekly shopping at Whole Foods,125.50
+2025-12-20,Dining,"Description with ""quotes""",42.00
+2025-12-19,Transport,"Multi-line
+description test",30.00
+2025-12-18,Entertainment,Amount with commas,"1,234.56"
+2025-12-17,Groceries,$Symbol in description,25.00
+2025-12-16,UnmappedCategory1,First unknown category,60.00
+2025-12-15,UnmappedCategory2,Second unknown category,70.00
+2025-12-14,UnmappedCategory3,Third unknown category,80.00
