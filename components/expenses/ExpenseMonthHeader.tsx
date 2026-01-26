@@ -69,16 +69,11 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
+    flex: 1,
+    minWidth: 0,
   },
   monthArrow: {
     padding: 4,
-  },
-  monthTitle: {
-    fontSize: 20,
-    fontWeight: '700',
-    color: '#333',
-    minWidth: 160,
-    textAlign: 'center',
   },
   editBudgetButton: {
     flexDirection: 'row',

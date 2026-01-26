@@ -101,7 +101,7 @@ export default function MonthYearDropdownPicker({
         onPress={() => setIsDropdownVisible(true)}
         activeOpacity={0.7}
       >
-        <Text style={styles.monthLabel}>{monthLabel}</Text>
+        <Text style={styles.monthLabel} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.75}>{monthLabel}</Text>
         <Ionicons name="chevron-down" size={18} color="#333" />
       </TouchableOpacity>
 
@@ -194,12 +194,16 @@ const styles = StyleSheet.create({
   container: {
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'center',
     gap: 6,
+    flex: 1,
+    minWidth: 0,
   },
   monthLabel: {
     fontSize: 20,
     fontWeight: '700',
     color: '#333',
+    flexShrink: 1,
   },
   modalOverlay: {
     flex: 1,

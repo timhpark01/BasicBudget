@@ -34,7 +34,7 @@ export default function ExpenseStats({
     <>
       <View style={styles.totalContainer}>
         <Text style={styles.totalLabel}>Total Expenses</Text>
-        <Text style={styles.totalAmount}>{formatCurrency(totalAmount)}</Text>
+        <Text style={styles.totalAmount} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7}>{formatCurrency(totalAmount)}</Text>
       </View>
 
       {/* Budget Progress Bar */}
@@ -73,5 +73,6 @@ const styles = StyleSheet.create({
     fontSize: 30,
     fontWeight: 'bold',
     color: '#333',
+    flexShrink: 1,
   },
 });
