@@ -156,7 +156,7 @@ export default function CategoryPieChart({ expenses }: CategoryPieChartProps) {
                 color={cat.categoryColor}
                 style={styles.legendIcon}
               />
-              <Text style={styles.legendText}>{cat.categoryName}</Text>
+              <Text style={styles.legendText} numberOfLines={1} ellipsizeMode="tail">{cat.categoryName}</Text>
             </View>
             <View style={styles.legendRight}>
               <Text style={styles.legendAmount}>{formatCurrency(cat.total)}</Text>

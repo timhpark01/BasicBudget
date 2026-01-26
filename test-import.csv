@@ -2,11 +2,11 @@ Date,Category,Description,Amount
 2026-01-15,Groceries,Weekly shopping at Whole Foods,125.50
 2026-01-14,Dining,Lunch at restaurant,25.00
 2026-01-13,Transport,Uber to work,15.75
-2026-01-12,Entertainment,Movie tickets and popcorn,45.00
-2026-01-11,Bills,Electric bill payment,89.99
-2026-01-10,Groceries,Milk and bread,12.30
-2026-01-09,Dining,Coffee and bagel,$5.50
-2026-01-08,Entertainment,Concert tickets,$120.00
+01/12/2026,Entertainment,Movie tickets (US date format),45.00
+01/11/2026,Bills,Electric bill (US date format),89.99
+11/01/2026,Groceries,Milk and bread (DD/MM/YYYY),12.30
+10-01-2026,Dining,Coffee and bagel (DD-MM-YYYY),$5.50
+2026/01/08,Entertainment,Concert tickets (YYYY/MM/DD),$120.00
 2026-01-07,Transport,Gas station,"$50.25"
 2026-01-06,Groceries,"Groceries with comma, in description",35.75
 2026-01-05,BadDate1,Should fail date validation,10.00

@@ -9,6 +9,7 @@ import {
   updateCustomCategoryWithCascade,
   deleteCustomCategory,
   getExpenseCountByCategory,
+  getActiveRecurringExpenseCountByCategory,
   reassignExpensesToCategory,
   reorderCategories as reorderCategoriesDb,
 } from '@/lib/db/models/categories';
@@ -165,6 +166,14 @@ export function useCategories(
       }
 
       try {
+        // Block deletion if active recurring expenses use this category
+        const recurringCount = await getActiveRecurringExpenseCountByCategory(db, id);
+        if (recurringCount > 0) {
+          throw new Error(
+            `Cannot delete this category because ${recurringCount} recurring expense${recurringCount > 1 ? 's' : ''} use${recurringCount === 1 ? 's' : ''} it. Remove or update the recurring expense${recurringCount > 1 ? 's' : ''} first.`
+          );
+        }
+
         // Check if any expenses use this category (unless forced)
         if (!force) {
           const expenseCount = await getExpenseCountByCategory(db, id);

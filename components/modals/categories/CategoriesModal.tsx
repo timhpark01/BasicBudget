@@ -182,7 +182,11 @@ export default function CategoriesModal({ visible, onClose }: CategoriesModalPro
                 });
               }
             } catch (err: any) {
-              Alert.alert('Error', err.message || 'Failed to delete category.');
+              const isRecurring = err.message?.includes('recurring expense');
+              Alert.alert(
+                isRecurring ? 'Cannot Delete Category' : 'Error',
+                err.message || 'Failed to delete category.'
+              );
             }
           },
         },
@@ -239,7 +243,7 @@ export default function CategoriesModal({ visible, onClose }: CategoriesModalPro
               color={item.color}
             />
           </View>
-          <Text style={styles.categoryName}>{item.name}</Text>
+          <Text style={styles.categoryName} numberOfLines={1} ellipsizeMode="tail">{item.name}</Text>
           {isProtected ? (
             <View style={styles.protectedBadge}>
               <Text style={styles.protectedBadgeText}>Protected</Text>

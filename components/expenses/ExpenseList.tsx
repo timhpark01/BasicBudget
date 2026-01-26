@@ -182,7 +182,7 @@ export default function ExpenseList({
                       </View>
                       <View style={styles.expenseDetails}>
                         <View style={styles.categoryNameRow}>
-                          <Text style={styles.expenseCategoryText}>
+                          <Text style={styles.expenseCategoryText} numberOfLines={1} ellipsizeMode="tail">
                             {expense.category.name}
                           </Text>
                           {expense.recurringExpenseId && (

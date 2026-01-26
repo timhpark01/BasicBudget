@@ -28,23 +28,96 @@ interface CSVRow {
 }
 
 /**
- * Validates a date string in YYYY-MM-DD format
+ * Attempts to parse a date string in multiple common formats
+ */
+function parseDateString(dateStr: string): Date | null {
+  const trimmed = dateStr.trim();
+
+  // Try YYYY-MM-DD format (ISO standard)
+  const isoRegex = /^(\d{4})-(\d{1,2})-(\d{1,2})$/;
+  const isoMatch = trimmed.match(isoRegex);
+  if (isoMatch) {
+    const year = parseInt(isoMatch[1], 10);
+    const month = parseInt(isoMatch[2], 10) - 1; // JS months are 0-indexed
+    const day = parseInt(isoMatch[3], 10);
+    const date = new Date(year, month, day);
+    if (!isNaN(date.getTime()) && date.getMonth() === month && date.getDate() === day) {
+      return date;
+    }
+  }
+
+  // Try MM/DD/YYYY format (US format)
+  const usRegex = /^(\d{1,2})\/(\d{1,2})\/(\d{4})$/;
+  const usMatch = trimmed.match(usRegex);
+  if (usMatch) {
+    const month = parseInt(usMatch[1], 10) - 1; // JS months are 0-indexed
+    const day = parseInt(usMatch[2], 10);
+    const year = parseInt(usMatch[3], 10);
+    const date = new Date(year, month, day);
+    if (!isNaN(date.getTime()) && date.getMonth() === month && date.getDate() === day) {
+      return date;
+    }
+  }
+
+  // Try DD/MM/YYYY format (European format)
+  const euRegex = /^(\d{1,2})\/(\d{1,2})\/(\d{4})$/;
+  const euMatch = trimmed.match(euRegex);
+  if (euMatch) {
+    const day = parseInt(euMatch[1], 10);
+    const month = parseInt(euMatch[2], 10) - 1; // JS months are 0-indexed
+    const year = parseInt(euMatch[3], 10);
+    // Check if day > 12 to distinguish from US format
+    if (day > 12 || month > 11) {
+      const date = new Date(year, month, day);
+      if (!isNaN(date.getTime()) && date.getMonth() === month && date.getDate() === day) {
+        return date;
+      }
+    }
+  }
+
+  // Try DD-MM-YYYY format (dash variant)
+  const euDashRegex = /^(\d{1,2})-(\d{1,2})-(\d{4})$/;
+  const euDashMatch = trimmed.match(euDashRegex);
+  if (euDashMatch) {
+    const day = parseInt(euDashMatch[1], 10);
+    const month = parseInt(euDashMatch[2], 10) - 1; // JS months are 0-indexed
+    const year = parseInt(euDashMatch[3], 10);
+    const date = new Date(year, month, day);
+    if (!isNaN(date.getTime()) && date.getMonth() === month && date.getDate() === day) {
+      return date;
+    }
+  }
+
+  // Try YYYY/MM/DD format (slash variant)
+  const isoSlashRegex = /^(\d{4})\/(\d{1,2})\/(\d{1,2})$/;
+  const isoSlashMatch = trimmed.match(isoSlashRegex);
+  if (isoSlashMatch) {
+    const year = parseInt(isoSlashMatch[1], 10);
+    const month = parseInt(isoSlashMatch[2], 10) - 1; // JS months are 0-indexed
+    const day = parseInt(isoSlashMatch[3], 10);
+    const date = new Date(year, month, day);
+    if (!isNaN(date.getTime()) && date.getMonth() === month && date.getDate() === day) {
+      return date;
+    }
+  }
+
+  return null;
+}
+
+/**
+ * Validates a date string in multiple common formats
+ * Accepts: YYYY-MM-DD, MM/DD/YYYY, DD/MM/YYYY, DD-MM-YYYY, YYYY/MM/DD
  */
 function validateDateField(dateStr: string | undefined): { valid: boolean; value?: Date; error?: string } {
   if (!dateStr || dateStr.trim().length === 0) {
     return { valid: false, error: 'Date is required' };
   }
 
-  // Check format: YYYY-MM-DD
-  const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
-  if (!dateRegex.test(dateStr.trim())) {
-    return { valid: false, error: 'Date must be in YYYY-MM-DD format' };
-  }
+  // Try parsing the date in multiple formats
+  const date = parseDateString(dateStr);
 
-  // Parse and validate
-  const date = new Date(dateStr.trim() + 'T00:00:00');
-  if (isNaN(date.getTime())) {
-    return { valid: false, error: 'Invalid date' };
+  if (!date) {
+    return { valid: false, error: 'Invalid date format. Accepted formats: YYYY-MM-DD, MM/DD/YYYY, DD/MM/YYYY' };
   }
 
   // Allow dates up to 1 year in the future

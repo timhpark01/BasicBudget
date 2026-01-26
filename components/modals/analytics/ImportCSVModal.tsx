@@ -371,6 +371,27 @@ export default function ImportCSVModal({ visible, onClose }: ImportCSVModalProps
         <View style={styles.exampleBox}>
           <Text style={styles.exampleText}>2026-01-15,Groceries,Weekly shopping,125.50</Text>
         </View>
+
+        <View style={styles.warningBox}>
+          <Ionicons name="information-circle" size={20} color="#2196F3" style={styles.warningIcon} />
+          <View style={styles.warningTextContainer}>
+            <Text style={styles.warningText}>
+              <Text style={styles.warningBold}>Accepted Date Formats:</Text>
+            </Text>
+            <Text style={styles.warningText}>
+              • YYYY-MM-DD (e.g., 2026-01-15)
+            </Text>
+            <Text style={styles.warningText}>
+              • MM/DD/YYYY (e.g., 01/15/2026)
+            </Text>
+            <Text style={styles.warningText}>
+              • DD/MM/YYYY (e.g., 15/01/2026)
+            </Text>
+            <Text style={styles.warningText}>
+              • DD-MM-YYYY (e.g., 15-01-2026)
+            </Text>
+          </View>
+        </View>
       </View>
     </View>
   );
@@ -699,10 +720,12 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 16,
+    paddingHorizontal: 20,
     paddingVertical: 16,
+    paddingTop: 60,
+    backgroundColor: '#fff',
     borderBottomWidth: 1,
-    borderBottomColor: '#f0f0f0',
+    borderBottomColor: '#e0e0e0',
   },
   headerTitle: {
     fontSize: 20,
@@ -774,6 +797,33 @@ const styles = StyleSheet.create({
   exampleText: {
     fontFamily: 'monospace',
     fontSize: 12,
+    color: '#333',
+  },
+  warningBox: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    backgroundColor: '#E3F2FD',
+    padding: 12,
+    borderRadius: 8,
+    marginTop: 12,
+    borderLeftWidth: 4,
+    borderLeftColor: '#2196F3',
+  },
+  warningIcon: {
+    marginTop: 2,
+  },
+  warningTextContainer: {
+    flex: 1,
+    marginLeft: 8,
+  },
+  warningText: {
+    fontSize: 13,
+    color: '#666',
+    lineHeight: 20,
+    marginBottom: 4,
+  },
+  warningBold: {
+    fontWeight: '600',
     color: '#333',
   },
   scrollView: {

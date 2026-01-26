@@ -67,16 +67,30 @@ After importing `test-import.csv`, you should see:
 
 ---
 
-### ❌ Invalid Date Formats (Lines 11-14)
+### ✅ Multiple Date Format Support (Lines 2-10)
 
-- Line 11: `2026-01-05,BadDate1,Should fail date validation,10.00` ❌ (invalid date: "2026-01-05" is valid, but "BadDate1" might cause issues - actually this should be valid)
-- Line 12: `01-04-2026,Dining,Wrong date format,20.00` ❌ (wrong format: MM-DD-YYYY instead of YYYY-MM-DD)
+**Supported formats:**
+- Line 2: `2026-01-15,Groceries,...` (YYYY-MM-DD format)
+- Line 5: `01/12/2026,Entertainment,...` (MM/DD/YYYY - US format)
+- Line 6: `01/11/2026,Bills,...` (MM/DD/YYYY - US format)
+- Line 7: `11/01/2026,Groceries,...` (DD/MM/YYYY - European format, day > 12)
+- Line 8: `10-01-2026,Dining,...` (DD-MM-YYYY - dash variant)
+- Line 9: `2026/01/08,Entertainment,...` (YYYY/MM/DD - slash variant)
+
+**Expected:**
+- All these dates should parse correctly
+- Show in "Valid" tab with proper date display
+- Dates converted to proper JavaScript Date objects
+
+### ❌ Invalid Date Formats (Lines 12-14)
+
+- Line 12: `01-04-2026,Dining,Wrong date format,20.00` ❌ (ambiguous format not supported)
 - Line 13: `2026-13-01,Transport,Invalid month,15.00` ❌ (month 13 doesn't exist)
 - Line 14: `2026-01-32,Groceries,Invalid day,25.00` ❌ (day 32 doesn't exist in January)
 
 **Expected:**
 - These rows appear in "Invalid" tab
-- Each shows error: "Date must be in YYYY-MM-DD format" or "Invalid date"
+- Each shows error: "Invalid date format" or "Invalid date"
 
 ---
 

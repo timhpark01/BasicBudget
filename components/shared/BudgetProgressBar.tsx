@@ -307,7 +307,7 @@ export default function BudgetProgressBar({
                           />
                         </View>
                         <View style={styles.categoryInfo}>
-                          <Text style={styles.categoryName}>{category.name}</Text>
+                          <Text style={styles.categoryName} numberOfLines={1} ellipsizeMode="tail">{category.name}</Text>
                           {categoryBudget && (
                             <Text style={styles.categoryBudgetText}>
                               {formatCurrency(category.amount)} of {formatCurrency(categoryBudget)}

@@ -360,6 +360,36 @@ export async function deleteCustomCategory(
 }
 
 /**
+ * Get count of active recurring expenses using a specific category
+ */
+export async function getActiveRecurringExpenseCountByCategory(
+  db: SQLite.SQLiteDatabase,
+  categoryId: string
+): Promise<number> {
+  try {
+    const result = await db.getFirstAsync<{ count: number }>(
+      'SELECT COUNT(*) as count FROM recurring_expenses WHERE category_id = ? AND is_active = 1',
+      [categoryId]
+    );
+    return result?.count || 0;
+  } catch (error) {
+    if (error instanceof DatabaseError) {
+      throw error;
+    }
+
+    const sqliteError = error as { code?: number; message?: string };
+    const userMessage = mapSQLiteErrorToUserMessage(sqliteError);
+
+    throw new DatabaseError(
+      userMessage,
+      sqliteError.code,
+      'get_recurring_expense_count',
+      error as Error
+    );
+  }
+}
+
+/**
  * Get count of expenses using a specific category
  */
 export async function getExpenseCountByCategory(
