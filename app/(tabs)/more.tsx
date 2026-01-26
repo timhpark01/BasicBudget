@@ -17,6 +17,7 @@ import CategoriesModal from '@/components/modals/categories/CategoriesModal';
 import AdvancedSettingsModal from '@/components/modals/settings/AdvancedSettingsModal';
 import BudgetCalculatorModal from '@/components/modals/budget/BudgetCalculatorModal';
 import InsightsModal from '@/components/modals/analytics/InsightsModal';
+import ExportCSVModal from '@/components/modals/analytics/ExportCSVModal';
 import HelpModal from '@/components/modals/HelpModal';
 import AboutModal from '@/components/modals/settings/AboutModal';
 
@@ -31,6 +32,7 @@ export default function MoreScreen() {
   const [advancedSettingsModalVisible, setAdvancedSettingsModalVisible] = useState(false);
   const [budgetCalculatorModalVisible, setBudgetCalculatorModalVisible] = useState(false);
   const [insightsModalVisible, setInsightsModalVisible] = useState(false);
+  const [exportCSVModalVisible, setExportCSVModalVisible] = useState(false);
   const [helpModalVisible, setHelpModalVisible] = useState(false);
   const [aboutModalVisible, setAboutModalVisible] = useState(false);
 
@@ -106,6 +108,16 @@ export default function MoreScreen() {
             <Text style={styles.menuText}>Insights</Text>
             <Ionicons name="chevron-forward" size={24} color="#999" />
           </TouchableOpacity>
+
+          <TouchableOpacity
+            style={styles.menuItem}
+            onPress={() => setExportCSVModalVisible(true)}
+            activeOpacity={0.7}
+          >
+            <Ionicons name="download-outline" size={24} color="#333" />
+            <Text style={styles.menuText}>Export CSV</Text>
+            <Ionicons name="chevron-forward" size={24} color="#999" />
+          </TouchableOpacity>
         </View>
 
         <View style={styles.section}>
@@ -161,6 +173,11 @@ export default function MoreScreen() {
       <InsightsModal
         visible={insightsModalVisible}
         onClose={() => setInsightsModalVisible(false)}
+      />
+
+      <ExportCSVModal
+        visible={exportCSVModalVisible}
+        onClose={() => setExportCSVModalVisible(false)}
       />
 
       <HelpModal
