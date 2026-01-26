@@ -77,25 +77,13 @@ export default function ExportCSVModal({ visible, onClose }: ExportCSVModalProps
         await exportExpensesToCSV(expenses);
         Alert.alert(
           'Success',
-          'Your expenses have been exported successfully!',
-          [
-            {
-              text: 'OK',
-              onPress: () => onClose(),
-            },
-          ]
+          'Your expenses have been exported successfully!'
         );
       } else {
         await exportNetWorthToCSV(netWorthEntries);
         Alert.alert(
           'Success',
-          'Your net worth history has been exported successfully!',
-          [
-            {
-              text: 'OK',
-              onPress: () => onClose(),
-            },
-          ]
+          'Your net worth history has been exported successfully!'
         );
       }
     } catch (error) {
