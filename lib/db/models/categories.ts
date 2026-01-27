@@ -134,7 +134,7 @@ export async function updateCustomCategory(
 
     const now = Date.now();
     const updates: string[] = [];
-    const values: any[] = [];
+    const values: (string | number)[] = [];
 
     if (category.name !== undefined) {
       updates.push('name = ?');
@@ -218,7 +218,7 @@ export async function updateCustomCategoryWithCascade(
     await db.withExclusiveTransactionAsync(async () => {
       // Build dynamic SQL for custom_categories table update
       const categoryUpdates: string[] = [];
-      const categoryValues: any[] = [];
+      const categoryValues: (string | number)[] = [];
 
       if (category.name !== undefined) {
         categoryUpdates.push('name = ?');
@@ -245,7 +245,7 @@ export async function updateCustomCategoryWithCascade(
 
       // Build dynamic SQL for expenses table cascade update
       const expenseUpdates: string[] = [];
-      const expenseValues: any[] = [];
+      const expenseValues: (string | number)[] = [];
 
       if (category.name !== undefined) {
         expenseUpdates.push('category_name = ?');

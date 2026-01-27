@@ -2,7 +2,7 @@ import React from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView, Modal } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { NetWorthItem } from '@/lib/db/models/net-worth';
-import { ActiveField } from './types';
+import { ActiveField, ActiveFieldType } from './types';
 import AssetCategorySection from './AssetCategorySection';
 import ItemInputRow from './ItemInputRow';
 import CalculatorKeypad from '@/components/shared/CalculatorKeypad';
@@ -42,7 +42,7 @@ interface NetWorthEntryFormProps {
   // Calculator
   activeField: ActiveField | null;
   calculatorAmount: string;
-  onAmountFieldPress: (id: string, type: any, currentAmount: string) => void;
+  onAmountFieldPress: (id: string, type: ActiveFieldType, currentAmount: string) => void;
   onCalculatorNumberPress: (num: string) => void;
   onCalculatorDecimalPress: () => void;
   onCalculatorBackspace: () => void;

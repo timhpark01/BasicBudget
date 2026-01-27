@@ -2,6 +2,7 @@ import { Tabs } from 'expo-router';
 import React from 'react';
 import { View, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { IoniconsName } from '@/types/database';
 import { useSettings } from '@/contexts/SettingsContext';
 
 const styles = StyleSheet.create({
@@ -25,7 +26,7 @@ const styles = StyleSheet.create({
   },
 });
 
-const TabBarIcon = ({ name, color, focused }: { name: any; color: string; focused: boolean }) => {
+const TabBarIcon = ({ name, color, focused }: { name: IoniconsName; color: string; focused: boolean }) => {
   return (
     <View style={[styles.iconContainer, focused && styles.iconContainerFocused]}>
       <Ionicons name={name} size={30} color={color} />

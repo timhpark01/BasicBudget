@@ -1,8 +1,10 @@
 import { useState, useMemo } from 'react';
 import {
   StyleSheet,
+  StyleProp,
   Text,
   View,
+  ViewStyle,
   TouchableOpacity,
   Modal,
   ScrollView,
@@ -15,7 +17,7 @@ interface MonthYearDropdownPickerProps {
   selectedMonth: string; // YYYY-MM format
   monthLabel: string; // Formatted display string (e.g., "December 2025")
   onMonthChange: (month: string) => void; // Callback with YYYY-MM format
-  style?: any;
+  style?: StyleProp<ViewStyle>;
 }
 
 const MONTHS = [
