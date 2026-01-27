@@ -207,34 +207,6 @@ export function useCategories(
     },
     [db, allCategories]
   );
-
-  // Reassign expenses and delete category
-  const reassignAndDelete = useCallback(
-    async (fromCategoryId: string): Promise<void> => {
-      if (!db) throw new Error('Database not initialized');
-
-      try {
-        // Find "Unlabeled" category as the default reassignment target
-        const unlabeledCategory = allCategories.find((c) => c.name === 'Unlabeled');
-        if (!unlabeledCategory) {
-          throw new Error('Unlabeled category not found');
-        }
-
-        // Reassign all expenses to "Unlabeled"
-        await reassignExpensesToCategory(db, fromCategoryId, unlabeledCategory);
-
-        // Now delete the category
-        await deleteCustomCategory(db, fromCategoryId);
-        setCustomCategories((prev) => prev.filter((c) => c.id !== fromCategoryId));
-        setError(null);
-      } catch (err) {
-        await loadCustomCategories(db);
-        throw err;
-      }
-    },
-    [db, allCategories]
-  );
-
   // Refresh categories from database
   const refreshCategories = useCallback(async (): Promise<void> => {
     if (!db) return;
