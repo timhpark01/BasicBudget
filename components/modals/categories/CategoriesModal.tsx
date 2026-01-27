@@ -18,6 +18,7 @@ import * as Haptics from 'expo-haptics';
 import { useCategories } from '@/hooks/useCategories';
 import ColorPicker from '@/components/shared/ColorPicker';
 import CategoryIconPicker from '@/components/shared/CategoryIconPicker';
+import { isError } from '@/types/errors';
 import DraggableFlatList, {
   RenderItemParams,
   ScaleDecorator,
@@ -127,8 +128,9 @@ export default function CategoriesModal({ visible, onClose }: CategoriesModalPro
         });
       }
       setMode('list');
-    } catch (err: any) {
-      Alert.alert('Error', err.message || 'Failed to save category.');
+    } catch (err: unknown) {
+      const message = isError(err) ? err.message : 'Failed to save category.';
+      Alert.alert('Error', message);
     } finally {
       setSaving(false);
     }
@@ -171,8 +173,9 @@ export default function CategoriesModal({ visible, onClose }: CategoriesModalPro
                             visibilityTime: 3000,
                             autoHide: true,
                           });
-                        } catch (err: any) {
-                          Alert.alert('Error', err.message || 'Failed to delete category.');
+                        } catch (err: unknown) {
+                          const message = isError(err) ? err.message : 'Failed to delete category.';
+                          Alert.alert('Error', message);
                         }
                       },
                     },
@@ -188,8 +191,8 @@ export default function CategoriesModal({ visible, onClose }: CategoriesModalPro
                   autoHide: true,
                 });
               }
-            } catch (err: any) {
-              const isRecurring = err.message?.includes('recurring expense');
+            } catch (err: unknown) {
+              const isRecurring = isError(err) && err.message?.includes('recurring expense');
               Alert.alert(
                 isRecurring ? 'Cannot Delete Category' : 'Error',
                 err.message || 'Failed to delete category.'
@@ -211,8 +214,9 @@ export default function CategoriesModal({ visible, onClose }: CategoriesModalPro
       const categoryIds = data.map((c) => c.id);
       await reorderCategories(categoryIds);
       await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-    } catch (err: any) {
-      Alert.alert('Error', err.message || 'Failed to reorder categories.');
+    } catch (err: unknown) {
+      const message = isError(err) ? err.message : 'Failed to reorder categories.';
+      Alert.alert('Error', message);
     }
   };
 

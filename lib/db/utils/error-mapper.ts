@@ -7,6 +7,8 @@
  * @module lib/db/utils/error-mapper
  */
 
+import { isSQLiteError, isError } from '@/types/errors';
+
 /**
  * Maps a SQLite error to a user-friendly, actionable message.
  *
@@ -28,8 +30,18 @@
  *
  * @see https://www.sqlite.org/rescode.html - SQLite result codes documentation
  */
-export function mapSQLiteErrorToUserMessage(error: any): string {
-  const code = error?.code;
+export function mapSQLiteErrorToUserMessage(error: unknown): string {
+  // Type guard for safety
+  if (!isSQLiteError(error)) {
+    if (isError(error)) {
+      console.error('Non-SQLite error:', error.message);
+      return 'An unexpected error occurred. Please try again.';
+    }
+    console.error('Unknown error type:', error);
+    return 'An unexpected error occurred. Please try again.';
+  }
+
+  const code = error.code;
 
   // Map SQLite error codes to actionable user messages
   // Using both primary codes and extended codes for comprehensive coverage

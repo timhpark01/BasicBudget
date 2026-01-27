@@ -56,7 +56,7 @@ export interface UseNetWorthReturn {
   entries: NetWorthEntryCompat[];
   loading: boolean;
   error: Error | null;
-  saveEntry: (entry: any) => Promise<void>;
+  saveEntry: (entry: NetWorthEntryInput) => Promise<void>;
   deleteEntry: (date: string) => Promise<void>;
   getEntryByDate: (date: string) => Promise<NetWorthEntryCompat | null>;
   refreshEntries: () => Promise<void>;
@@ -98,7 +98,7 @@ export function useNetWorth(): UseNetWorthReturn {
 
   // Save a net worth entry
   const saveEntry = useCallback(
-    async (entry: any): Promise<void> => {
+    async (entry: NetWorthEntryInput): Promise<void> => {
       if (!db) throw new Error('Database not initialized');
 
       try {

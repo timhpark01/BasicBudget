@@ -10,7 +10,7 @@ export interface ParsedTransaction {
 
 export interface InvalidRow {
   row: number;
-  data: any;
+  data: CSVRow;
   errors: string[];
 }
 
@@ -20,7 +20,7 @@ export interface ParseResult {
   unmappedCategories: string[]; // Unique category names not found in DB
 }
 
-interface CSVRow {
+export interface CSVRow {
   date?: string;
   category?: string;
   description?: string;
