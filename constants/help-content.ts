@@ -40,7 +40,7 @@ export const QUICK_START_STEPS: QuickStartStep[] = [
 export const FAQ_ITEMS: FAQItem[] = [
   {
     question: 'How do I edit an expense?',
-    answer: 'Tap on any expense in your list to open the detail view, then tap the "Edit" button. You can also long-press an expense to see quick options.',
+    answer: 'Figure it out yourself bozo',
   },
   {
     question: 'How do I delete an expense?',

@@ -1,19 +1,29 @@
 import { useEffect } from 'react';
 import { Stack } from "expo-router";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
-import { useURL } from 'expo-linking';
+import * as Linking from 'expo-linking';
 import { SettingsProvider } from "@/contexts/SettingsContext";
 import Toast from 'react-native-toast-message';
 import { addExpenseFromURL } from '@/lib/utils/url-handler';
 
 export default function RootLayout() {
-  const url = useURL();
-
   useEffect(() => {
-    if (url) {
-      handleDeepLink(url);
-    }
-  }, [url]);
+    // Handle initial URL when app is opened from a closed state
+    Linking.getInitialURL().then((url) => {
+      if (url) {
+        handleDeepLink(url);
+      }
+    });
+
+    // Handle URLs when app is already open or in background
+    const subscription = Linking.addEventListener('url', (event) => {
+      handleDeepLink(event.url);
+    });
+
+    return () => {
+      subscription.remove();
+    };
+  }, []);
 
   async function handleDeepLink(url: string) {
     try {
@@ -46,8 +56,12 @@ export default function RootLayout() {
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <SettingsProvider>
-        <Stack>
-          <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+        <Stack
+          screenOptions={{
+            headerShown: false,
+          }}
+        >
+          <Stack.Screen name="(tabs)" />
         </Stack>
       </SettingsProvider>
       <Toast />

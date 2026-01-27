@@ -11,7 +11,6 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { moderateScale, scaleFontSize } from '@/lib/utils/responsive';
-import ProfileModal from '@/components/modals/settings/ProfileModal';
 import NotificationsModal from '@/components/modals/settings/NotificationsModal';
 import CategoriesModal from '@/components/modals/categories/CategoriesModal';
 import AdvancedSettingsModal from '@/components/modals/settings/AdvancedSettingsModal';
@@ -21,13 +20,13 @@ import ExportCSVModal from '@/components/modals/analytics/ExportCSVModal';
 import ImportCSVModal from '@/components/modals/analytics/ImportCSVModal';
 import HelpModal from '@/components/modals/HelpModal';
 import AboutModal from '@/components/modals/settings/AboutModal';
+import ShortcutModal from '@/components/modals/ShortcutModal';
 
 export default function MoreScreen() {
   // Responsive sizing
   const insets = useSafeAreaInsets();
   const { width } = useWindowDimensions();
 
-  const [profileModalVisible, setProfileModalVisible] = useState(false);
   const [notificationsModalVisible, setNotificationsModalVisible] = useState(false);
   const [categoriesModalVisible, setCategoriesModalVisible] = useState(false);
   const [advancedSettingsModalVisible, setAdvancedSettingsModalVisible] = useState(false);
@@ -35,6 +34,7 @@ export default function MoreScreen() {
   const [insightsModalVisible, setInsightsModalVisible] = useState(false);
   const [exportCSVModalVisible, setExportCSVModalVisible] = useState(false);
   const [importCSVModalVisible, setImportCSVModalVisible] = useState(false);
+  const [shortcutModalVisible, setShortcutModalVisible] = useState(false);
   const [helpModalVisible, setHelpModalVisible] = useState(false);
   const [aboutModalVisible, setAboutModalVisible] = useState(false);
 
@@ -46,16 +46,6 @@ export default function MoreScreen() {
       >
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Settings</Text>
-
-          <TouchableOpacity
-            style={styles.menuItem}
-            onPress={() => setProfileModalVisible(true)}
-            activeOpacity={0.7}
-          >
-            <Ionicons name="person-outline" size={24} color="#333" />
-            <Text style={styles.menuText}>Profile</Text>
-            <Ionicons name="chevron-forward" size={24} color="#999" />
-          </TouchableOpacity>
 
           <TouchableOpacity
             style={styles.menuItem}
@@ -130,6 +120,16 @@ export default function MoreScreen() {
             <Text style={styles.menuText}>Import CSV</Text>
             <Ionicons name="chevron-forward" size={24} color="#999" />
           </TouchableOpacity>
+
+          <TouchableOpacity
+            style={styles.menuItem}
+            onPress={() => setShortcutModalVisible(true)}
+            activeOpacity={0.7}
+          >
+            <Ionicons name="flash-outline" size={24} color="#333" />
+            <Text style={styles.menuText}>iOS Shortcuts</Text>
+            <Ionicons name="chevron-forward" size={24} color="#999" />
+          </TouchableOpacity>
         </View>
 
         <View style={styles.section}>
@@ -156,11 +156,6 @@ export default function MoreScreen() {
           </TouchableOpacity>
         </View>
       </ScrollView>
-
-      <ProfileModal
-        visible={profileModalVisible}
-        onClose={() => setProfileModalVisible(false)}
-      />
 
       <NotificationsModal
         visible={notificationsModalVisible}
@@ -195,6 +190,11 @@ export default function MoreScreen() {
       <ImportCSVModal
         visible={importCSVModalVisible}
         onClose={() => setImportCSVModalVisible(false)}
+      />
+
+      <ShortcutModal
+        visible={shortcutModalVisible}
+        onClose={() => setShortcutModalVisible(false)}
       />
 
       <HelpModal

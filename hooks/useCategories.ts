@@ -12,6 +12,7 @@ import {
   getActiveRecurringExpenseCountByCategory,
   reassignExpensesToCategory,
   reorderCategories as reorderCategoriesDb,
+  validateAndRepairPositions,
 } from '@/lib/db/models/categories';
 
 export interface UseCategoriesReturn {
@@ -186,7 +187,17 @@ export function useCategories(
 
         // Delete (with automatic reassignment if needed)
         await deleteCustomCategory(db, id);
-        setCustomCategories((prev) => prev.filter((c) => c.id !== id));
+
+        // Normalize positions in memory to prevent gaps
+        setCustomCategories((prev) =>
+          prev
+            .filter((c) => c.id !== id)
+            .map((c, index) => ({ ...c, position: index }))
+        );
+
+        // Normalize positions in the database to stay consistent
+        await validateAndRepairPositions(db);
+
         setError(null);
         return true;
       } catch (err) {
@@ -259,9 +270,12 @@ export function useCategories(
           ? [...idsWithoutUnlabeled, unlabeledCategory.id]
           : idsWithoutUnlabeled;
 
-        // Optimistically update UI
+        // Optimistically update UI with corrected positions
         const reordered = finalIds
-          .map((id) => customCategories.find((c) => c.id === id))
+          .map((id, index) => {
+            const cat = customCategories.find((c) => c.id === id);
+            return cat ? { ...cat, position: index } : undefined;
+          })
           .filter((c): c is CustomCategory => c !== undefined);
 
         setCustomCategories(reordered);

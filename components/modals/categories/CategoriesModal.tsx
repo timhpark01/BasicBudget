@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
   Modal,
   View,
@@ -57,6 +57,13 @@ export default function CategoriesModal({ visible, onClose }: CategoriesModalPro
   const [selectedIcon, setSelectedIcon] = useState('wallet');
   const [selectedColor, setSelectedColor] = useState('#355e3b');
   const [saving, setSaving] = useState(false);
+
+  // Key that changes when categories are added/deleted (but not reordered)
+  // Forces DraggableFlatList to remount and recalculate layout
+  const listKey = useMemo(
+    () => [...allCategories].map((c) => c.id).sort().join(','),
+    [allCategories]
+  );
 
   const handleAddNew = () => {
     setMode('add');
@@ -307,6 +314,7 @@ export default function CategoriesModal({ visible, onClose }: CategoriesModalPro
           <GestureHandlerRootView style={styles.flex}>
             {allCategories.length > 0 ? (
               <DraggableFlatList
+                key={listKey}
                 data={allCategories}
                 onDragEnd={({ data }) => handleReorder(data)}
                 keyExtractor={(item) => item.id}
