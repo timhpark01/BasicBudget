@@ -49,16 +49,6 @@ export default function MoreScreen() {
 
           <TouchableOpacity
             style={styles.menuItem}
-            onPress={() => setNotificationsModalVisible(true)}
-            activeOpacity={0.7}
-          >
-            <Ionicons name="notifications-outline" size={24} color="#333" />
-            <Text style={styles.menuText}>Notifications</Text>
-            <Ionicons name="chevron-forward" size={24} color="#999" />
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={styles.menuItem}
             onPress={() => setCategoriesModalVisible(true)}
             activeOpacity={0.7}
           >
