@@ -416,7 +416,7 @@ export default function ImportCSVModal({ visible, onClose }: ImportCSVModalProps
             </View>
             {invalidRows.length > 0 && (
               <View style={styles.statItem}>
-                <Text style={[styles.statValue, styles.warningText]}>{invalidRows.length}</Text>
+                <Text style={[styles.statValue, styles.errorValueText]}>{invalidRows.length}</Text>
                 <Text style={styles.statLabel}>Invalid</Text>
               </View>
             )}
@@ -866,7 +866,7 @@ const styles = StyleSheet.create({
     opacity: 0.8,
     marginTop: 4,
   },
-  warningText: {
+  errorValueText: {
     color: '#FFA500',
   },
   grayText: {
