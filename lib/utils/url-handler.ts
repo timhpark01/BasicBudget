@@ -15,21 +15,33 @@ interface ParsedExpenseData {
  */
 export function parseAddExpenseURL(urlString: string): ParsedExpenseData | null {
   try {
-    const url = new URL(urlString);
+    // Manual URL parsing for custom scheme
+    // Expected format: basicbudget://add-expense?amount=X&note=Y
 
     // Validate scheme
-    if (url.protocol !== 'basicbudget:') {
+    if (!urlString.startsWith('basicbudget://')) {
       return null;
     }
+
+    // Extract path and query string
+    const urlWithoutScheme = urlString.replace('basicbudget://', '');
+    const [path, queryString] = urlWithoutScheme.split('?');
 
     // Validate path (handle both /add-expense and add-expense)
-    const path = url.pathname.replace(/^\//, '');
-    if (path !== 'add-expense') {
+    const cleanPath = path.replace(/^\//, '');
+    if (cleanPath !== 'add-expense') {
       return null;
     }
 
+    // Parse query parameters manually
+    if (!queryString) {
+      return null;
+    }
+
+    const params = new URLSearchParams(queryString);
+
     // Extract amount (required)
-    const amount = url.searchParams.get('amount');
+    const amount = params.get('amount');
     if (!amount) {
       return null;
     }
@@ -40,12 +52,12 @@ export function parseAddExpenseURL(urlString: string): ParsedExpenseData | null 
       return null;
     }
 
-    // Extract note (optional)
-    const note = url.searchParams.get('note') || '';
+    // Extract note (optional) - already decoded by URLSearchParams
+    const note = params.get('note') || '';
 
     return {
       amount: amount,
-      note: decodeURIComponent(note)
+      note: note
     };
   } catch (error) {
     // Invalid URL format
