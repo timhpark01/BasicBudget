@@ -1,8 +1,14 @@
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import Toast from 'react-native-toast-message';
-import { addExpenseFromURL } from '@/lib/utils/url-handler';
+import { getDatabase } from '@/lib/db/core/database';
+import { createExpense } from '@/lib/db/models/expenses';
+import { CATEGORIES } from '@/constants/categories';
 import { View, ActivityIndicator, StyleSheet } from 'react-native';
+
+// Global flag to prevent duplicate execution across component remounts
+let globalProcessingFlag = false;
+let globalLastProcessedParams = '';
 
 /**
  * This route handles deep links from iOS Shortcuts
@@ -11,22 +17,65 @@ import { View, ActivityIndicator, StyleSheet } from 'react-native';
 export default function AddExpenseDeepLink() {
   const params = useLocalSearchParams();
   const router = useRouter();
+  const hasProcessed = useRef(false);
 
   useEffect(() => {
+    // Create unique key for these params
+    const paramsKey = JSON.stringify(params);
+
+    // Prevent duplicate execution using both ref and global flag
+    if (hasProcessed.current || globalProcessingFlag || globalLastProcessedParams === paramsKey) {
+      console.log('[add-expense] Already processed, skipping', {
+        hasProcessed: hasProcessed.current,
+        globalProcessingFlag,
+        sameParams: globalLastProcessedParams === paramsKey
+      });
+      return;
+    }
+
     async function handleShortcut() {
       try {
-        const amount = params.amount as string;
-        const note = (params.note as string) || '';
+        // Set all flags immediately
+        hasProcessed.current = true;
+        globalProcessingFlag = true;
+        globalLastProcessedParams = paramsKey;
 
+        console.log('[add-expense] Processing expense with params:', params);
+
+        const amount = params.amount as string;
+        const rawNote = (params.note as string) || '';
+
+        // Replace underscores with spaces in note
+        const note = rawNote.replace(/_/g, ' ');
+
+        // Validate amount
         if (!amount) {
           throw new Error('Amount is required');
         }
 
-        // Build the URL for the handler
-        const url = `basicbudget://add-expense?amount=${amount}${note ? `&note=${encodeURIComponent(note)}` : ''}`;
+        const amountNum = parseFloat(amount);
+        if (isNaN(amountNum) || amountNum <= 0) {
+          throw new Error('Amount must be a positive number');
+        }
 
-        // Process the expense
-        await addExpenseFromURL(url);
+        // Get database
+        const db = await getDatabase();
+
+        // Find Unlabeled category (ID: '6')
+        const unlabeledCategory = CATEGORIES.find(c => c.id === '6');
+        if (!unlabeledCategory) {
+          throw new Error('Unlabeled category not found');
+        }
+
+        // Create expense directly
+        console.log('[add-expense] Creating expense:', { amount, note, category: unlabeledCategory.name });
+        await createExpense(db, {
+          amount: amount,
+          category: unlabeledCategory,
+          date: new Date(),
+          note: note
+        });
+        console.log('[add-expense] Expense created successfully');
 
         // Success feedback
         Toast.show({
@@ -39,7 +88,13 @@ export default function AddExpenseDeepLink() {
 
         // Navigate back to home screen
         router.replace('/(tabs)');
+
+        // Reset global flag after successful navigation
+        setTimeout(() => {
+          globalProcessingFlag = false;
+        }, 1000);
       } catch (error) {
+        console.error('[add-expense] Error:', error);
         // Error feedback
         const message = error instanceof Error ? error.message : 'Unknown error';
         Toast.show({
@@ -52,11 +107,16 @@ export default function AddExpenseDeepLink() {
 
         // Navigate back to home screen even on error
         router.replace('/(tabs)');
+
+        // Reset global flag after navigation
+        setTimeout(() => {
+          globalProcessingFlag = false;
+        }, 1000);
       }
     }
 
     handleShortcut();
-  }, [params, router]);
+  }, []);
 
   // Show loading indicator briefly while processing
   return (

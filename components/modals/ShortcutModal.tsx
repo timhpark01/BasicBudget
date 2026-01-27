@@ -247,7 +247,8 @@ export default function ShortcutModal({ visible, onClose }: ShortcutModalProps) 
                 • Question: "Add a note? (optional)"{'\n'}
                 • Input Type: Text{'\n\n'}
                 Then in step 4, modify the URL to:{'\n'}
-                basicbudget://add-expense?amount=[Amount]&note=[Note]
+                basicbudget://add-expense?amount=[Amount]&note=[Note]{'\n\n'}
+                <Text style={styles.bold}>Tip:</Text> Use underscores for spaces (e.g., "Coffee_and_pastry" becomes "Coffee and pastry")
               </Text>
             </View>
           </View>
