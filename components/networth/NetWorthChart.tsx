@@ -1,12 +1,13 @@
 import React from 'react';
 import { View, Text, StyleSheet, Dimensions } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import Svg, { Path, Line as SvgLine, Text as SvgText } from 'react-native-svg';
+import Svg, { Path, Line as SvgLine, Text as SvgText, Circle } from 'react-native-svg';
 import { NetWorthEntryCompat } from '@/hooks/useNetWorth';
 import {
   calculateIlliquidAssets,
   calculateLiquidAssets,
   calculateRetirementAssets,
+  calculateNetWorth,
   parseDate,
 } from '@/lib/db/models/net-worth';
 import { formatNumberWithCommas } from '@/lib/utils/number-formatter';
@@ -36,21 +37,22 @@ export default function NetWorthChart({ entries }: NetWorthChartProps) {
 
   const sortedEntries = [...entries]
     .sort((a, b) => a.date.localeCompare(b.date))
-    .slice(-6);
+    .slice(-12);
 
   // Calculate GROSS assets per category (not net)
   const illiquidData = sortedEntries.map(e => calculateIlliquidAssets(e));
   const liquidData = sortedEntries.map(e => calculateLiquidAssets(e));
   const retirementData = sortedEntries.map(e => calculateRetirementAssets(e));
+  const netWorthData = sortedEntries.map(e => calculateNetWorth(e));
 
   // Cumulative stacking for gross assets
   const cumIlliquid = illiquidData;
   const cumLiquid = illiquidData.map((v, i) => v + liquidData[i]);
   const cumRetirement = cumLiquid.map((v, i) => v + retirementData[i]);
 
-  // Find max value for scaling
-  const maxValue = Math.max(...cumRetirement);
-  const minValue = 0;
+  // Find max/min values for scaling (account for negative net worth)
+  const maxValue = Math.max(...cumRetirement, ...netWorthData);
+  const minValue = Math.min(0, ...netWorthData);
 
   // Scale functions
   const xScale = (index: number) => (index / Math.max(sortedEntries.length - 1, 1)) * chartWidth;
@@ -80,9 +82,24 @@ export default function NetWorthChart({ entries }: NetWorthChartProps) {
   const liquidPath = createAreaPath(cumLiquid, cumIlliquid);
   const retirementPath = createAreaPath(cumRetirement, cumLiquid);
 
+  // Net worth line path (not filled area)
+  const createLinePath = (data: number[]) => {
+    if (data.length === 0) return '';
+    let path = `M ${xScale(0)} ${yScale(data[0])}`;
+    for (let i = 1; i < data.length; i++) {
+      path += ` L ${xScale(i)} ${yScale(data[i])}`;
+    }
+    return path;
+  };
+
+  const netWorthLinePath = createLinePath(netWorthData);
+
+  // Determine if labels should thin out for readability
+  const showEveryOtherLabel = sortedEntries.length > 6;
+
   return (
     <View style={styles.chartContainer}>
-      <Text style={styles.chartTitle}>Assets & Liabilities Over Time</Text>
+      <Text style={styles.chartTitle}>Net Worth Over Time</Text>
 
       <Svg width={width} height={height}>
         {/* Y-axis label */}
@@ -114,6 +131,18 @@ export default function NetWorthChart({ entries }: NetWorthChartProps) {
           );
         })}
 
+        {/* Zero reference line (when net worth can be negative) */}
+        {minValue < 0 && (
+          <SvgLine
+            x1={padding.left + 5}
+            y1={yScale(0) + padding.top}
+            x2={width - padding.right}
+            y2={yScale(0) + padding.top}
+            stroke="#999"
+            strokeWidth="1"
+          />
+        )}
+
         {/* Filled areas - GROSS assets */}
         <Path
           d={illiquidPath}
@@ -137,6 +166,28 @@ export default function NetWorthChart({ entries }: NetWorthChartProps) {
           translateY={padding.top}
         />
 
+        {/* Net worth trend line */}
+        <Path
+          d={netWorthLinePath}
+          fill="none"
+          stroke="#355e3b"
+          strokeWidth="2.5"
+          translateX={padding.left}
+          translateY={padding.top}
+        />
+        {/* Data point dots on net worth line */}
+        {netWorthData.map((value, i) => (
+          <Circle
+            key={`nw-dot-${i}`}
+            cx={xScale(i) + padding.left}
+            cy={yScale(value) + padding.top}
+            r={3.5}
+            fill="#355e3b"
+            stroke="#fff"
+            strokeWidth="1.5"
+          />
+        ))}
+
         {/* Y-axis labels */}
         {[0, 0.25, 0.5, 0.75, 1].map((percent, i) => {
           const value = minValue + (maxValue - minValue) * percent;
@@ -158,6 +209,8 @@ export default function NetWorthChart({ entries }: NetWorthChartProps) {
 
         {/* X-axis labels */}
         {sortedEntries.map((entry, i) => {
+          // Skip every other label when many data points to avoid crowding
+          if (showEveryOtherLabel && i % 2 !== 0 && i !== sortedEntries.length - 1) return null;
           const date = parseDate(entry.date);
           const label = `${String(date.getMonth() + 1).padStart(2, '0')}/${String(date.getDate()).padStart(2, '0')}`;
           return (
@@ -177,6 +230,10 @@ export default function NetWorthChart({ entries }: NetWorthChartProps) {
       </Svg>
 
       <View style={styles.chartLegend}>
+        <View style={styles.legendItem}>
+          <View style={styles.legendLine} />
+          <Text style={styles.legendText}>Net Worth</Text>
+        </View>
         <View style={styles.legendItem}>
           <View style={[styles.legendColor, { backgroundColor: '#3B82F6' }]} />
           <Text style={styles.legendText}>Retirement</Text>
@@ -223,6 +280,12 @@ const styles = StyleSheet.create({
     width: 12,
     height: 12,
     borderRadius: 2,
+  },
+  legendLine: {
+    width: 16,
+    height: 3,
+    backgroundColor: '#355e3b',
+    borderRadius: 1.5,
   },
   legendText: {
     fontSize: 12,

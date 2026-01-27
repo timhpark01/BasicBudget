@@ -1,5 +1,6 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { NetWorthEntryCompat } from '@/hooks/useNetWorth';
 import {
   calculateNetWorth,
@@ -14,9 +15,17 @@ import { formatCurrency } from '@/lib/utils/number-formatter';
 
 interface NetWorthSummaryCardProps {
   entry: NetWorthEntryCompat;
+  previousEntry?: NetWorthEntryCompat;
 }
 
-export default function NetWorthSummaryCard({ entry }: NetWorthSummaryCardProps) {
+export default function NetWorthSummaryCard({ entry, previousEntry }: NetWorthSummaryCardProps) {
+  const currentNetWorth = calculateNetWorth(entry);
+  const previousNetWorth = previousEntry ? calculateNetWorth(previousEntry) : null;
+  const change = previousNetWorth !== null ? currentNetWorth - previousNetWorth : null;
+  const changePercent = previousNetWorth !== null && previousNetWorth !== 0
+    ? (change! / Math.abs(previousNetWorth)) * 100
+    : null;
+
   return (
     <View style={styles.summaryCard}>
       <Text style={styles.summaryLabel}>
@@ -30,8 +39,27 @@ export default function NetWorthSummaryCard({ entry }: NetWorthSummaryCardProps)
         }
       </Text>
       <Text style={styles.summaryAmount}>
-        {formatCurrency(calculateNetWorth(entry))}
+        {formatCurrency(currentNetWorth)}
       </Text>
+      {change !== null && (
+        <View style={styles.changeRow}>
+          <Ionicons
+            name={change >= 0 ? 'arrow-up' : 'arrow-down'}
+            size={14}
+            color={change >= 0 ? '#4CAF50' : '#DC3545'}
+          />
+          <Text style={[styles.changeAmount, change >= 0 ? styles.changePositive : styles.changeNegative]}>
+            {change >= 0 ? '+' : ''}{formatCurrency(change)}
+            {changePercent !== null && ` (${change >= 0 ? '+' : ''}${changePercent.toFixed(1)}%)`}
+          </Text>
+          <Text style={styles.changeSince}>
+            since {parseDate(previousEntry!.date).toLocaleDateString('en-US', {
+              month: 'short',
+              day: 'numeric',
+            })}
+          </Text>
+        </View>
+      )}
       <View style={styles.summaryBreakdown}>
         <View style={styles.summaryCategory}>
           <View style={[styles.categoryIndicator, { backgroundColor: '#22C55E' }]} />
@@ -95,7 +123,28 @@ const styles = StyleSheet.create({
     fontSize: 36,
     fontWeight: 'bold',
     color: '#fff',
-    marginBottom: 16,
+    marginBottom: 4,
+  },
+  changeRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    marginBottom: 12,
+  },
+  changeAmount: {
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  changePositive: {
+    color: '#4CAF50',
+  },
+  changeNegative: {
+    color: '#DC3545',
+  },
+  changeSince: {
+    fontSize: 12,
+    color: '#fff',
+    opacity: 0.6,
   },
   summaryBreakdown: {
     flexDirection: 'row',

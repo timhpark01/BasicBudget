@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Animated } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import Swipeable from 'react-native-gesture-handler/Swipeable';
@@ -18,15 +18,27 @@ interface NetWorthHistoryListProps {
   onSwipeDelete: (entry: NetWorthEntryCompat) => void;
 }
 
+const PAGE_SIZE = 6;
+
 export default function NetWorthHistoryList({
   entries,
   onEntryTap,
   onEntryLongPress,
   onSwipeDelete,
 }: NetWorthHistoryListProps) {
+  const [displayCount, setDisplayCount] = useState(PAGE_SIZE);
+
+  // Reset pagination when entries change
+  useEffect(() => {
+    setDisplayCount(PAGE_SIZE);
+  }, [entries]);
+
   if (entries.length === 0) {
     return null;
   }
+
+  const visibleEntries = entries.slice(0, displayCount);
+  const remaining = entries.length - displayCount;
 
   const renderRightActions = (
     progress: Animated.AnimatedInterpolation<number>,
@@ -70,7 +82,7 @@ export default function NetWorthHistoryList({
   return (
     <View style={styles.historySection}>
       <Text style={styles.historyTitle}>History</Text>
-      {entries.slice(0, 6).map((entry) => (
+      {visibleEntries.map((entry) => (
         <Swipeable
           key={entry.id}
           renderRightActions={(progress, dragX) =>
@@ -107,6 +119,17 @@ export default function NetWorthHistoryList({
           </TouchableOpacity>
         </Swipeable>
       ))}
+      {remaining > 0 && (
+        <TouchableOpacity
+          style={styles.loadMoreButton}
+          onPress={() => setDisplayCount(prev => prev + PAGE_SIZE)}
+          activeOpacity={0.7}
+        >
+          <Text style={styles.loadMoreText}>
+            Load More ({remaining} remaining)
+          </Text>
+        </TouchableOpacity>
+      )}
     </View>
   );
 }
@@ -167,5 +190,14 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '600',
     marginTop: 4,
+  },
+  loadMoreButton: {
+    paddingVertical: 14,
+    alignItems: 'center',
+  },
+  loadMoreText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#355e3b',
   },
 });

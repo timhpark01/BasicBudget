@@ -203,7 +203,12 @@ export default function NetWorthScreen() {
           contentContainerStyle={{ paddingBottom: moderateScale(100) }}
         >
           {/* Net Worth Summary */}
-          {latestEntry && <NetWorthSummaryCard entry={latestEntry} />}
+          {latestEntry && (
+            <NetWorthSummaryCard
+              entry={latestEntry}
+              previousEntry={entries.length > 1 ? entries[1] : undefined}
+            />
+          )}
 
           {/* Chart */}
           <NetWorthChart entries={entries} />
