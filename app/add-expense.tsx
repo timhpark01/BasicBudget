@@ -6,10 +6,6 @@ import { createExpense } from '@/lib/db/models/expenses';
 import { CATEGORIES } from '@/constants/categories';
 import { View, ActivityIndicator, StyleSheet } from 'react-native';
 
-// Global flag to prevent duplicate execution across component remounts
-let globalProcessingFlag = false;
-let globalLastProcessedParams = '';
-
 /**
  * This route handles deep links from iOS Shortcuts
  * URL format: basicbudget://add-expense?amount=X&note=Y
@@ -18,29 +14,23 @@ export default function AddExpenseDeepLink() {
   const params = useLocalSearchParams();
   const router = useRouter();
   const hasProcessed = useRef(false);
+  const lastProcessedParams = useRef<string>('');
 
   useEffect(() => {
     // Create unique key for these params
     const paramsKey = JSON.stringify(params);
 
-    // Prevent duplicate execution using both ref and global flag
-    if (hasProcessed.current || globalProcessingFlag || globalLastProcessedParams === paramsKey) {
-      console.log('[add-expense] Already processed, skipping', {
-        hasProcessed: hasProcessed.current,
-        globalProcessingFlag,
-        sameParams: globalLastProcessedParams === paramsKey
-      });
+    // Prevent duplicate execution using refs only
+    if (hasProcessed.current || lastProcessedParams.current === paramsKey) {
       return;
     }
 
+    // Set processing flags immediately
+    hasProcessed.current = true;
+    lastProcessedParams.current = paramsKey;
+
     async function handleShortcut() {
       try {
-        // Set all flags immediately
-        hasProcessed.current = true;
-        globalProcessingFlag = true;
-        globalLastProcessedParams = paramsKey;
-
-        console.log('[add-expense] Processing expense with params:', params);
 
         const amount = params.amount as string;
         const rawNote = (params.note as string) || '';
@@ -68,14 +58,12 @@ export default function AddExpenseDeepLink() {
         }
 
         // Create expense directly
-        console.log('[add-expense] Creating expense:', { amount, note, category: unlabeledCategory.name });
         await createExpense(db, {
           amount: amount,
           category: unlabeledCategory,
           date: new Date(),
           note: note
         });
-        console.log('[add-expense] Expense created successfully');
 
         // Success feedback
         Toast.show({
@@ -88,11 +76,6 @@ export default function AddExpenseDeepLink() {
 
         // Navigate back to home screen
         router.replace('/(tabs)');
-
-        // Reset global flag after successful navigation
-        setTimeout(() => {
-          globalProcessingFlag = false;
-        }, 1000);
       } catch (error) {
         console.error('[add-expense] Error:', error);
         // Error feedback
@@ -107,16 +90,19 @@ export default function AddExpenseDeepLink() {
 
         // Navigate back to home screen even on error
         router.replace('/(tabs)');
-
-        // Reset global flag after navigation
-        setTimeout(() => {
-          globalProcessingFlag = false;
-        }, 1000);
       }
     }
 
     handleShortcut();
-  }, []);
+
+    // Cleanup function to reset flags after navigation
+    return () => {
+      setTimeout(() => {
+        hasProcessed.current = false;
+        lastProcessedParams.current = '';
+      }, 1000);
+    };
+  }, [params, router]);
 
   // Show loading indicator briefly while processing
   return (
