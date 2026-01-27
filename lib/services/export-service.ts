@@ -1,4 +1,4 @@
-import * as FileSystem from 'expo-file-system/legacy';
+import * as FileSystem from 'expo-file-system';
 import * as Sharing from 'expo-sharing';
 import { Expense } from '@/types/database';
 import { NetWorthEntry } from '@/lib/db/models/net-worth';
