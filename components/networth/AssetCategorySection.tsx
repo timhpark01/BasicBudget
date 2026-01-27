@@ -10,7 +10,6 @@ interface AssetCategorySectionProps {
   title: string;
   items: NetWorthItem[];
   type: ActiveFieldType;
-  color: string;
   onAdd: () => void;
   onUpdate: (id: string, field: 'name' | 'amount', value: string) => void;
   onDelete: (id: string) => void;
@@ -22,7 +21,6 @@ export default function AssetCategorySection({
   title,
   items,
   type,
-  color,
   onAdd,
   onUpdate,
   onDelete,
@@ -34,10 +32,9 @@ export default function AssetCategorySection({
   return (
     <View style={[styles.subcategory, items.length === 0 && styles.emptySubcategory]}>
       <View style={styles.subcategoryHeader}>
-        <View style={[styles.categoryIndicator, { backgroundColor: color }]} />
         <Text style={styles.subcategoryTitle}>{title}</Text>
         <TouchableOpacity onPress={onAdd} style={styles.addButton}>
-          <Ionicons name="add-circle" size={24} color={color} />
+          <Ionicons name="add-circle" size={24} color="#355e3b" />
         </TouchableOpacity>
       </View>
 
@@ -86,11 +83,6 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
     color: '#666',
-  },
-  categoryIndicator: {
-    width: 10,
-    height: 10,
-    borderRadius: 5,
   },
   addButton: {
     padding: 4,

@@ -9,7 +9,7 @@ import {
   calculateTotalLiabilities,
   parseDate,
 } from '@/lib/db/models/net-worth';
-import { formatCurrency } from '@/lib/utils/number-formatter';
+import { formatCurrency, formatCompactCurrency } from '@/lib/utils/number-formatter';
 
 interface NetWorthHistoryListProps {
   entries: NetWorthEntryCompat[];
@@ -106,10 +106,10 @@ export default function NetWorthHistoryList({
               </Text>
               <View style={styles.historyBreakdown}>
                 <Text style={styles.historyDetail}>
-                  Assets: {formatCurrency(calculateTotalAssets(entry))}
+                  Ast: {formatCompactCurrency(calculateTotalAssets(entry))}
                 </Text>
                 <Text style={styles.historyDetail}>
-                  Liabilities: {formatCurrency(calculateTotalLiabilities(entry))}
+                  L: {formatCompactCurrency(calculateTotalLiabilities(entry))}
                 </Text>
               </View>
             </View>

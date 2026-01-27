@@ -17,7 +17,6 @@ import { useNetWorth, NetWorthEntryCompat } from '@/hooks/useNetWorth';
 import { formatDate, parseDate } from '@/lib/db/models/net-worth';
 import UndoToast from '@/components/shared/UndoToast';
 import CalendarPicker from '@/components/shared/CalendarPicker';
-import NetWorthSummaryCard from '@/components/networth/NetWorthSummaryCard';
 import NetWorthChart from '@/components/networth/NetWorthChart';
 import NetWorthHistoryList from '@/components/networth/NetWorthHistoryList';
 import NetWorthEntryForm from '@/components/networth/NetWorthEntryForm';
@@ -31,6 +30,7 @@ export default function NetWorthScreen() {
 
   const { entries, loading, saveEntry, deleteEntry } = useNetWorth();
   const [showEntryModal, setShowEntryModal] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [deletedEntry, setDeletedEntry] = useState<NetWorthEntryCompat | null>(null);
@@ -50,14 +50,13 @@ export default function NetWorthScreen() {
 
   // Determine if prepopulation note should show
   const shouldShowPrepopulationNote = useMemo(() => {
-    if (!mostRecentEntry || selectedEntry) return false;
-    const selectedDateStr = formatDate(selectedDate);
-    return selectedDateStr !== mostRecentEntry.date;
-  }, [mostRecentEntry, selectedEntry, selectedDate]);
+    return !isEditing && mostRecentEntry !== null;
+  }, [isEditing, mostRecentEntry]);
 
   // Use the calculator hook for all form state
+  // When creating (!isEditing), don't pass selectedEntry so the hook prepopulates from mostRecentEntry
   const calculator = useNetWorthCalculator({
-    selectedEntry,
+    selectedEntry: isEditing ? selectedEntry : undefined,
     mostRecentEntry,
   });
 
@@ -88,6 +87,7 @@ export default function NetWorthScreen() {
   const handleEntryTap = (entry: NetWorthEntryCompat) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     setSelectedDate(parseDate(entry.date));
+    setIsEditing(true);
     setShowEntryModal(true);
   };
 
@@ -174,16 +174,12 @@ export default function NetWorthScreen() {
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{ paddingBottom: moderateScale(100) }}
       >
-        {/* Net Worth Summary */}
-        {latestEntry && (
-          <NetWorthSummaryCard
-            entry={latestEntry}
-            previousEntry={entries.length > 1 ? entries[1] : undefined}
-          />
-        )}
-
-        {/* Chart */}
-        <NetWorthChart entries={entries} />
+        {/* Chart with inline summary */}
+        <NetWorthChart
+          entries={entries}
+          latestEntry={latestEntry}
+          previousEntry={entries.length > 1 ? entries[1] : null}
+        />
 
         {/* History */}
         <NetWorthHistoryList
@@ -207,6 +203,7 @@ export default function NetWorthScreen() {
         }]}
         onPress={() => {
           setSelectedDate(new Date());
+          setIsEditing(false);
           setShowEntryModal(true);
         }}
         activeOpacity={0.8}
@@ -218,16 +215,16 @@ export default function NetWorthScreen() {
       <Modal
         visible={showEntryModal}
         animationType="slide"
-        presentationStyle="pageSheet"
+        transparent={false}
         onRequestClose={() => setShowEntryModal(false)}
       >
-        <SafeAreaView style={styles.modalContainer}>
+        <View style={[styles.modalContainer, { paddingTop: insets.top }]}>
           <View style={styles.modalHeader}>
             <TouchableOpacity onPress={() => setShowEntryModal(false)}>
               <Ionicons name="close" size={28} color="#333" />
             </TouchableOpacity>
             <Text style={styles.modalTitle}>
-              {selectedEntry ? 'Edit Entry' : 'New Entry'}
+              {isEditing ? 'Edit Entry' : 'Create Entry'}
             </Text>
             <View style={{ width: 28 }} />
           </View>
@@ -278,24 +275,23 @@ export default function NetWorthScreen() {
             formNetWorth={calculator.formNetWorth}
             onSave={handleSave}
           />
-        </SafeAreaView>
-      </Modal>
-
-      {/* Calendar Picker Modal */}
-      <Modal
-        visible={showDatePicker}
-        animationType="fade"
-        transparent={true}
-        onRequestClose={() => setShowDatePicker(false)}
-      >
-        <CalendarPicker
-          currentDate={selectedDate}
-          onConfirm={(date) => {
-            setSelectedDate(date);
-            setShowDatePicker(false);
-          }}
-          onCancel={() => setShowDatePicker(false)}
-        />
+          {/* Calendar Picker Modal (inside entry modal so it layers on top) */}
+          <Modal
+            visible={showDatePicker}
+            animationType="fade"
+            transparent={true}
+            onRequestClose={() => setShowDatePicker(false)}
+          >
+            <CalendarPicker
+              currentDate={selectedDate}
+              onConfirm={(date) => {
+                setSelectedDate(date);
+                setShowDatePicker(false);
+              }}
+              onCancel={() => setShowDatePicker(false)}
+            />
+          </Modal>
+        </View>
       </Modal>
 
       <UndoToast
@@ -326,21 +322,21 @@ const styles = StyleSheet.create({
   },
   modalContainer: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: '#fff',
   },
   modalHeader: {
     flexDirection: 'row',
-    alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
+    alignItems: 'center',
+    paddingHorizontal: moderateScale(20),
+    paddingVertical: moderateScale(16),
     backgroundColor: '#fff',
     borderBottomWidth: 1,
     borderBottomColor: '#e0e0e0',
   },
   modalTitle: {
     fontSize: 18,
-    fontWeight: '700',
+    fontWeight: '600',
     color: '#333',
   },
   scrollView: {

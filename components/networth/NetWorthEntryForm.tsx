@@ -1,5 +1,5 @@
-import React from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView, Modal } from 'react-native';
+import React, { useRef } from 'react';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView, Modal, KeyboardAvoidingView, Platform } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { NetWorthItem } from '@/lib/db/models/net-worth';
 import { ActiveField, ActiveFieldType } from './types';
@@ -100,9 +100,26 @@ export default function NetWorthEntryForm({
   formNetWorth,
   onSave,
 }: NetWorthEntryFormProps) {
+  const scrollViewRef = useRef<ScrollView>(null);
+  const notesRef = useRef<View>(null);
+
+  const scrollToNotes = () => {
+    notesRef.current?.measureLayout(
+      scrollViewRef.current?.getInnerViewRef() as any,
+      (_x, y) => {
+        scrollViewRef.current?.scrollTo({ y, animated: true });
+      },
+      () => {},
+    );
+  };
+
   return (
     <>
-      <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
+      <KeyboardAvoidingView
+        style={{ flex: 1 }}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      >
+        <ScrollView ref={scrollViewRef} style={styles.scrollView} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
         <View style={styles.entryContainer}>
           {/* Date Selector */}
           <View style={styles.dateSelector}>
@@ -140,7 +157,6 @@ export default function NetWorthEntryForm({
               title="Liquid"
               items={liquidAssets}
               type="liquid"
-              color="#22C55E"
               onAdd={onAddLiquidAsset}
               onUpdate={onUpdateLiquidAsset}
               onDelete={onRemoveLiquidAsset}
@@ -152,7 +168,6 @@ export default function NetWorthEntryForm({
               title="Illiquid"
               items={illiquidAssets}
               type="illiquid"
-              color="#EAB308"
               onAdd={onAddIlliquidAsset}
               onUpdate={onUpdateIlliquidAsset}
               onDelete={onRemoveIlliquidAsset}
@@ -164,7 +179,6 @@ export default function NetWorthEntryForm({
               title="Retirement"
               items={retirementAssets}
               type="retirement"
-              color="#3B82F6"
               onAdd={onAddRetirementAsset}
               onUpdate={onUpdateRetirementAsset}
               onDelete={onRemoveRetirementAsset}
@@ -219,7 +233,7 @@ export default function NetWorthEntryForm({
           </View>
 
           {/* Notes */}
-          <View style={styles.section}>
+          <View ref={notesRef} style={styles.section}>
             <Text style={styles.sectionTitle}>Notes (Optional)</Text>
             <TextInput
               style={styles.notesInput}
@@ -229,6 +243,7 @@ export default function NetWorthEntryForm({
               placeholderTextColor="#999"
               multiline
               numberOfLines={4}
+              onFocus={scrollToNotes}
             />
           </View>
 
@@ -240,6 +255,7 @@ export default function NetWorthEntryForm({
           </View>
         </View>
       </ScrollView>
+      </KeyboardAvoidingView>
 
       {/* Calculator Keypad Modal */}
       <Modal
@@ -279,6 +295,7 @@ export default function NetWorthEntryForm({
 const styles = StyleSheet.create({
   scrollView: {
     flex: 1,
+    backgroundColor: '#f5f5f5',
   },
   entryContainer: {
     padding: 16,

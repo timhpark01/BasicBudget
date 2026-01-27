@@ -7,16 +7,20 @@ import {
   calculateIlliquidAssets,
   calculateLiquidAssets,
   calculateRetirementAssets,
+  calculateTotalLiabilities,
   calculateNetWorth,
+  formatDate,
   parseDate,
 } from '@/lib/db/models/net-worth';
-import { formatNumberWithCommas } from '@/lib/utils/number-formatter';
+import { formatNumberWithCommas, formatCurrency, formatCompactCurrency } from '@/lib/utils/number-formatter';
 
 interface NetWorthChartProps {
   entries: NetWorthEntryCompat[];
+  latestEntry?: NetWorthEntryCompat | null;
+  previousEntry?: NetWorthEntryCompat | null;
 }
 
-export default function NetWorthChart({ entries }: NetWorthChartProps) {
+export default function NetWorthChart({ entries, latestEntry, previousEntry }: NetWorthChartProps) {
   if (entries.length === 0) {
     return (
       <View style={styles.emptyState}>
@@ -28,6 +32,33 @@ export default function NetWorthChart({ entries }: NetWorthChartProps) {
       </View>
     );
   }
+
+  // Summary calculations
+  const currentNetWorth = latestEntry ? calculateNetWorth(latestEntry) : null;
+  const previousNetWorth = previousEntry ? calculateNetWorth(previousEntry) : null;
+  const change = currentNetWorth !== null && previousNetWorth !== null
+    ? currentNetWorth - previousNetWorth
+    : null;
+  const changePercent = change !== null && previousNetWorth !== null && previousNetWorth !== 0
+    ? (change / Math.abs(previousNetWorth)) * 100
+    : null;
+
+  // Date label for header
+  const dateLabel = latestEntry
+    ? latestEntry.date === formatDate(new Date())
+      ? 'Today'
+      : parseDate(latestEntry.date).toLocaleDateString('en-US', {
+          month: 'short',
+          day: 'numeric',
+          year: 'numeric',
+        })
+    : '';
+
+  // Category values from latest entry
+  const liquidValue = latestEntry ? calculateLiquidAssets(latestEntry) : 0;
+  const illiquidValue = latestEntry ? calculateIlliquidAssets(latestEntry) : 0;
+  const retirementValue = latestEntry ? calculateRetirementAssets(latestEntry) : 0;
+  const debtsValue = latestEntry ? calculateTotalLiabilities(latestEntry) : 0;
 
   const width = Dimensions.get('window').width - 64;
   const height = 220;
@@ -99,7 +130,37 @@ export default function NetWorthChart({ entries }: NetWorthChartProps) {
 
   return (
     <View style={styles.chartContainer}>
-      <Text style={styles.chartTitle}>Net Worth Over Time</Text>
+      {/* Summary Header */}
+      {latestEntry && currentNetWorth !== null && (
+        <View style={styles.summaryHeader}>
+          <View style={styles.summaryHeaderRow}>
+            <Text style={styles.summaryLabel}>Net Worth</Text>
+            <Text style={styles.summaryDate}>{dateLabel}</Text>
+          </View>
+          <Text style={styles.summaryAmount}>
+            {formatCurrency(currentNetWorth)}
+          </Text>
+          {change !== null && (
+            <View style={styles.changeRow}>
+              <Ionicons
+                name={change >= 0 ? 'arrow-up' : 'arrow-down'}
+                size={14}
+                color={change >= 0 ? '#22C55E' : '#DC3545'}
+              />
+              <Text style={[styles.changeText, change >= 0 ? styles.changePositive : styles.changeNegative]}>
+                {change >= 0 ? '+' : ''}{formatCurrency(change)}
+                {changePercent !== null && ` (${change >= 0 ? '+' : ''}${changePercent.toFixed(1)}%)`}
+              </Text>
+              <Text style={styles.changeSince}>
+                since {parseDate(previousEntry!.date).toLocaleDateString('en-US', {
+                  month: 'short',
+                  day: 'numeric',
+                })}
+              </Text>
+            </View>
+          )}
+        </View>
+      )}
 
       <Svg width={width} height={height}>
         {/* Y-axis label */}
@@ -229,24 +290,46 @@ export default function NetWorthChart({ entries }: NetWorthChartProps) {
         })}
       </Svg>
 
-      <View style={styles.chartLegend}>
-        <View style={styles.legendItem}>
-          <View style={styles.legendLine} />
-          <Text style={styles.legendText}>Net Worth</Text>
+      {/* Legend with category values */}
+      {latestEntry ? (
+        <View style={styles.legendGrid}>
+          <View style={styles.legendGridItem}>
+            <View style={[styles.legendDot, { backgroundColor: '#22C55E' }]} />
+            <Text style={styles.legendLabel}>Liquid</Text>
+            <Text style={styles.legendValue}>{formatCompactCurrency(liquidValue)}</Text>
+          </View>
+          <View style={styles.legendGridItem}>
+            <View style={[styles.legendDot, { backgroundColor: '#EAB308' }]} />
+            <Text style={styles.legendLabel}>Illiquid</Text>
+            <Text style={styles.legendValue}>{formatCompactCurrency(illiquidValue)}</Text>
+          </View>
+          <View style={styles.legendGridItem}>
+            <View style={[styles.legendDot, { backgroundColor: '#3B82F6' }]} />
+            <Text style={styles.legendLabel}>Retirement</Text>
+            <Text style={styles.legendValue}>{formatCompactCurrency(retirementValue)}</Text>
+          </View>
+          <View style={styles.legendGridItem}>
+            <View style={[styles.legendDot, { backgroundColor: '#DC3545' }]} />
+            <Text style={styles.legendLabel}>Debts</Text>
+            <Text style={styles.legendValue}>{formatCompactCurrency(debtsValue)}</Text>
+          </View>
         </View>
-        <View style={styles.legendItem}>
-          <View style={[styles.legendColor, { backgroundColor: '#3B82F6' }]} />
-          <Text style={styles.legendText}>Retirement</Text>
+      ) : (
+        <View style={styles.legendRow}>
+          <View style={styles.legendRowItem}>
+            <View style={[styles.legendDot, { backgroundColor: '#22C55E' }]} />
+            <Text style={styles.legendLabel}>Liquid</Text>
+          </View>
+          <View style={styles.legendRowItem}>
+            <View style={[styles.legendDot, { backgroundColor: '#EAB308' }]} />
+            <Text style={styles.legendLabel}>Illiquid</Text>
+          </View>
+          <View style={styles.legendRowItem}>
+            <View style={[styles.legendDot, { backgroundColor: '#3B82F6' }]} />
+            <Text style={styles.legendLabel}>Retirement</Text>
+          </View>
         </View>
-        <View style={styles.legendItem}>
-          <View style={[styles.legendColor, { backgroundColor: '#22C55E' }]} />
-          <Text style={styles.legendText}>Liquid</Text>
-        </View>
-        <View style={styles.legendItem}>
-          <View style={[styles.legendColor, { backgroundColor: '#EAB308' }]} />
-          <Text style={styles.legendText}>Illiquid</Text>
-        </View>
-      </View>
+      )}
     </View>
   );
 }
@@ -254,43 +337,95 @@ export default function NetWorthChart({ entries }: NetWorthChartProps) {
 const styles = StyleSheet.create({
   chartContainer: {
     backgroundColor: '#fff',
-    marginHorizontal: 16,
-    marginBottom: 16,
+    margin: 16,
     padding: 16,
     borderRadius: 16,
   },
-  chartTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#333',
+  // Summary header
+  summaryHeader: {
     marginBottom: 16,
   },
-  chartLegend: {
+  summaryHeaderRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 4,
+  },
+  summaryLabel: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: '#999',
+  },
+  summaryDate: {
+    fontSize: 12,
+    color: '#999',
+  },
+  summaryAmount: {
+    fontSize: 32,
+    fontWeight: '700',
+    color: '#1a1a1a',
+    marginBottom: 2,
+  },
+  changeRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    marginBottom: 4,
+  },
+  changeText: {
+    fontSize: 13,
+    fontWeight: '600',
+  },
+  changePositive: {
+    color: '#22C55E',
+  },
+  changeNegative: {
+    color: '#DC3545',
+  },
+  changeSince: {
+    fontSize: 12,
+    color: '#999',
+  },
+  // Legend grid (with values)
+  legendGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    marginTop: 12,
+  },
+  legendGridItem: {
+    width: '50%',
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 6,
+    gap: 6,
+  },
+  legendDot: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+  },
+  legendLabel: {
+    fontSize: 13,
+    color: '#666',
+  },
+  legendValue: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#333',
+  },
+  // Simple legend row (fallback without values)
+  legendRow: {
     flexDirection: 'row',
     justifyContent: 'center',
     gap: 16,
     marginTop: 8,
   },
-  legendItem: {
+  legendRowItem: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
   },
-  legendColor: {
-    width: 12,
-    height: 12,
-    borderRadius: 2,
-  },
-  legendLine: {
-    width: 16,
-    height: 3,
-    backgroundColor: '#355e3b',
-    borderRadius: 1.5,
-  },
-  legendText: {
-    fontSize: 12,
-    color: '#666',
-  },
+  // Empty state
   emptyState: {
     alignItems: 'center',
     justifyContent: 'center',
