@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, TextInput } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { CATEGORY_ICONS } from '@/constants/colors';
+import { IoniconsName } from '@/types/database';
 
 interface CategoryIconPickerProps {
   selectedIcon: string;
@@ -55,7 +56,7 @@ export default function CategoryIconPicker({
             accessibilityHint="Double tap to select this icon for your category"
           >
             <Ionicons
-              name={iconName as any}
+              name={iconName as IoniconsName}
               size={28}
               color={selectedIcon === iconName ? color : '#666'}
             />

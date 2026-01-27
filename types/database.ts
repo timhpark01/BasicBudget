@@ -1,5 +1,8 @@
 import { Ionicons } from '@expo/vector-icons';
 
+// Ionicons icon name type (for type-safe icon references)
+export type IoniconsName = keyof typeof Ionicons.glyphMap;
+
 // Recurrence frequency type
 export type RecurrenceFrequency = 'daily' | 'weekly' | 'monthly' | 'yearly';
 

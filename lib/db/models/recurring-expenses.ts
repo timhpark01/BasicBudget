@@ -4,6 +4,7 @@ import {
   RecurringExpenseInput,
   RecurringExpenseRow,
   RecurrenceFrequency,
+  IoniconsName,
 } from '@/types/database';
 import { generateId } from '../../utils/id-generator';
 import { DatabaseError } from '@/lib/db/core/errors';
@@ -19,7 +20,7 @@ function rowToRecurringExpense(row: RecurringExpenseRow): RecurringExpense {
     category: {
       id: row.category_id,
       name: row.category_name,
-      icon: row.category_icon as any,
+      icon: row.category_icon as IoniconsName,
       color: row.category_color,
     },
     note: row.note || '',

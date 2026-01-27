@@ -9,7 +9,7 @@ import {
   Alert,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { Expense } from '@/types/database';
+import { Expense, IoniconsName } from '@/types/database';
 import { getAllExpenses } from '@/lib/db/models/expenses';
 import { getDatabase } from '@/lib/db/core/database';
 import CalendarPicker from '@/components/shared/CalendarPicker';
@@ -526,7 +526,7 @@ export default function InsightsModal({ visible, onClose }: InsightsModalProps) 
               {insights.map((insight, index) => (
                 <View key={index} style={styles.insightCard}>
                   <View style={[styles.insightIcon, { backgroundColor: insight.color + '20' }]}>
-                    <Ionicons name={insight.icon as any} size={24} color={insight.color} />
+                    <Ionicons name={insight.icon as IoniconsName} size={24} color={insight.color} />
                   </View>
                   <View style={styles.insightContent}>
                     <Text style={styles.insightTitle}>{insight.title}</Text>
@@ -546,7 +546,7 @@ export default function InsightsModal({ visible, onClose }: InsightsModalProps) 
                   <View style={styles.categoryHeader}>
                     <View style={styles.categoryInfo}>
                       <View style={[styles.categoryIconContainer, { backgroundColor: cat.categoryColor + '20' }]}>
-                        <Ionicons name={cat.categoryIcon as any} size={20} color={cat.categoryColor} />
+                        <Ionicons name={cat.categoryIcon as IoniconsName} size={20} color={cat.categoryColor} />
                       </View>
                       <View>
                         <Text style={styles.categoryName}>{cat.categoryName}</Text>
@@ -586,7 +586,7 @@ export default function InsightsModal({ visible, onClose }: InsightsModalProps) 
                 <View key={cat.categoryId} style={styles.budgetSuggestionCard}>
                   <View style={styles.budgetHeader}>
                     <View style={[styles.categoryIconContainer, { backgroundColor: cat.categoryColor + '20' }]}>
-                      <Ionicons name={cat.categoryIcon as any} size={20} color={cat.categoryColor} />
+                      <Ionicons name={cat.categoryIcon as IoniconsName} size={20} color={cat.categoryColor} />
                     </View>
                     <Text style={styles.budgetCategoryName}>{cat.categoryName}</Text>
                   </View>

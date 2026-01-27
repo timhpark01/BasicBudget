@@ -1,5 +1,5 @@
 import * as SQLite from 'expo-sqlite';
-import { Expense, ExpenseInput, ExpenseRow } from '@/types/database';
+import { Expense, ExpenseInput, ExpenseRow, IoniconsName } from '@/types/database';
 import { generateId } from '../../utils/id-generator';
 import { DatabaseError } from '@/lib/db/core/errors';
 import { mapSQLiteErrorToUserMessage } from '@/lib/db/utils/error-mapper';
@@ -14,7 +14,7 @@ function rowToExpense(row: ExpenseRow): Expense {
     category: {
       id: row.category_id,
       name: row.category_name,
-      icon: row.category_icon as any,
+      icon: row.category_icon as IoniconsName,
       color: row.category_color,
     },
     date: new Date(row.date),

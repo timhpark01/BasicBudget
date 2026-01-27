@@ -9,6 +9,7 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { QUICK_START_STEPS, FAQ_ITEMS } from '@/constants/help-content';
+import { IoniconsName } from '@/types/database';
 
 interface HelpModalProps {
   visible: boolean;
@@ -87,7 +88,7 @@ export default function HelpModal({ visible, onClose }: HelpModalProps) {
                   <View style={styles.stepHeader}>
                     <View style={styles.stepIconContainer}>
                       <Ionicons
-                        name={step.icon as any}
+                        name={step.icon as IoniconsName}
                         size={28}
                         color="#355e3b"
                       />

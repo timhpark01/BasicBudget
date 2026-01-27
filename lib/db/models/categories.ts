@@ -3,6 +3,7 @@ import {
   CustomCategory,
   CustomCategoryRow,
   CustomCategoryInput,
+  IoniconsName,
 } from '@/types/database';
 import { generateId } from '../../utils/id-generator';
 import { DatabaseError, DatabaseConstraintError } from '@/lib/db/core/errors';
@@ -15,7 +16,7 @@ function rowToCustomCategory(row: CustomCategoryRow): CustomCategory {
   return {
     id: row.id,
     name: row.name,
-    icon: row.icon as any,
+    icon: row.icon as IoniconsName,
     color: row.color,
     position: row.position,
     isActive: row.is_active === 1,
@@ -83,7 +84,7 @@ export async function createCustomCategory(
     return {
       id,
       name: category.name,
-      icon: category.icon as any,
+      icon: category.icon as IoniconsName,
       color: category.color,
       position,
       isActive: true,

@@ -13,6 +13,7 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { formatNumberWithCommas, sanitizeDecimalInput } from '@/lib/utils/number-formatter';
+import { IoniconsName } from '@/types/database';
 
 interface CategoryBudgetModalProps {
   visible: boolean;
@@ -171,7 +172,7 @@ export default function CategoryBudgetModal({
                     ]}
                   >
                     <Ionicons
-                      name={categoryIcon as any}
+                      name={categoryIcon as IoniconsName}
                       size={32}
                       color={categoryColor}
                     />

@@ -1,7 +1,7 @@
 import { useState, useMemo } from 'react';
 import { StyleSheet, Text, View, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { Expense, CategoryBudget } from '@/types/database';
+import { Expense, CategoryBudget, IoniconsName } from '@/types/database';
 import CategoryBudgetModal from '@/components/modals/budget/CategoryBudgetModal';
 import CategoryAnalyticsModal from '@/components/modals/analytics/CategoryAnalyticsModal';
 import { formatCurrency } from '@/lib/utils/number-formatter';
@@ -301,7 +301,7 @@ export default function BudgetProgressBar({
                           ]}
                         >
                           <Ionicons
-                            name={category.icon as any}
+                            name={category.icon as IoniconsName}
                             size={16}
                             color={category.color}
                           />

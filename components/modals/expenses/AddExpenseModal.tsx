@@ -1,6 +1,6 @@
 import { useCategories } from '@/hooks/useCategories';
 import { useRecurringExpenses } from '@/hooks/useRecurringExpenses';
-import { Category, Expense, RecurrenceFrequency } from '@/types/database';
+import { Category, Expense, RecurrenceFrequency, IoniconsName } from '@/types/database';
 import { Ionicons } from '@expo/vector-icons';
 import { useEffect, useState } from 'react';
 import {
@@ -479,7 +479,7 @@ export default function AddExpenseModal({
                   ]}
                 >
                   <Ionicons
-                    name={category.icon as any}
+                    name={category.icon as IoniconsName}
                     size={28}
                     color={
                       selectedCategory?.id === category.id ? '#fff' : category.color

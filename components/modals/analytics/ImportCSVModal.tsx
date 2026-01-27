@@ -12,7 +12,7 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import * as DocumentPicker from 'expo-document-picker';
-import { Category } from '@/types/database';
+import { Category, IoniconsName } from '@/types/database';
 import { ParsedTransaction, InvalidRow, ParseResult } from '@/lib/utils/csv-parser';
 import {
   readAndParseCSV,
@@ -535,7 +535,7 @@ export default function ImportCSVModal({ visible, onClose }: ImportCSVModalProps
                           ]}
                         >
                           <Ionicons
-                            name={mapping.newCategory.icon as any}
+                            name={mapping.newCategory.icon as IoniconsName}
                             size={24}
                             color={mapping.newCategory.color}
                           />
@@ -558,7 +558,7 @@ export default function ImportCSVModal({ visible, onClose }: ImportCSVModalProps
               const mapping = categoryMappings.get(transaction.categoryName);
               const category = mapping?.targetCategory || {
                 name: transaction.categoryName,
-                icon: 'help-circle-outline' as any,
+                icon: 'help-circle-outline' as IoniconsName,
                 color: '#999',
               };
 
@@ -629,7 +629,7 @@ export default function ImportCSVModal({ visible, onClose }: ImportCSVModalProps
               const mapping = categoryMappings.get(transaction.categoryName);
               const category = mapping?.targetCategory || {
                 name: transaction.categoryName,
-                icon: 'help-circle-outline' as any,
+                icon: 'help-circle-outline' as IoniconsName,
                 color: '#999',
               };
 

@@ -10,7 +10,7 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Expense } from '@/types/database';
+import { Expense, IoniconsName } from '@/types/database';
 import { getDatabase } from '@/lib/db/core/database';
 import { getExpensesByCategory } from '@/lib/db/models/expenses';
 import CategoryBudgetModal from '@/components/modals/budget/CategoryBudgetModal';
@@ -230,7 +230,7 @@ export default function CategoryAnalyticsModal({
       <View style={styles.statHeader}>
         {icon && (
           <Ionicons
-            name={icon as any}
+            name={icon as IoniconsName}
             size={16}
             color="#666"
             style={styles.statIcon}
@@ -261,7 +261,7 @@ export default function CategoryAnalyticsModal({
                 ]}
               >
                 <Ionicons
-                  name={categoryIcon as any}
+                  name={categoryIcon as IoniconsName}
                   size={28}
                   color={categoryColor}
                 />
