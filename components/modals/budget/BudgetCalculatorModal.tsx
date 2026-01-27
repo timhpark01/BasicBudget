@@ -8,8 +8,10 @@ import {
   StyleSheet,
   ScrollView,
   Alert,
+  Animated,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import Swipeable from 'react-native-gesture-handler/Swipeable';
 import CalculatorKeypad from '@/components/shared/CalculatorKeypad';
 import { formatCurrency, formatNumberWithCommas, canAddDecimalDigit } from '@/lib/utils/number-formatter';
 
@@ -270,6 +272,30 @@ export default function BudgetCalculatorModal({ visible, onClose }: BudgetCalcul
     );
   };
 
+  const renderSwipeDelete = (
+    progress: Animated.AnimatedInterpolation<number>,
+    onDelete: () => void,
+  ) => {
+    const scale = progress.interpolate({
+      inputRange: [0, 1],
+      outputRange: [0.7, 1],
+      extrapolate: 'clamp',
+    });
+    const opacity = progress.interpolate({
+      inputRange: [0, 0.5, 1],
+      outputRange: [0, 0.8, 1],
+      extrapolate: 'clamp',
+    });
+
+    return (
+      <Animated.View style={[styles.swipeDeleteAction, { opacity, transform: [{ scale }] }]}>
+        <TouchableOpacity style={styles.swipeDeleteButton} onPress={onDelete} activeOpacity={0.7}>
+          <Ionicons name="trash" size={20} color="#fff" />
+        </TouchableOpacity>
+      </Animated.View>
+    );
+  };
+
   const totalIncome = calculateTotalIncome();
   const totalExpenses = calculateTotalExpenses();
   const disposableIncome = calculateDisposableIncome();
@@ -315,38 +341,39 @@ export default function BudgetCalculatorModal({ visible, onClose }: BudgetCalcul
             </View>
 
             {incomes.map((income) => (
-              <View key={income.id} style={styles.inputRow}>
-                <TextInput
-                  style={styles.nameInput}
-                  value={income.name}
-                  onChangeText={(value) => updateIncome(income.id, 'name', value)}
-                  placeholder="Income source"
-                  placeholderTextColor="#999"
-                />
-                <TouchableOpacity
-                  style={[
-                    styles.amountInputContainer,
-                    focusedField?.type === 'income' && focusedField?.id === income.id && styles.amountInputFocused
-                  ]}
-                  onPress={() => setFocusedField({ type: 'income', id: income.id })}
-                >
-                  <Text style={styles.dollarSign}>$</Text>
-                  <Text style={[
-                    styles.amountInput,
-                    !income.amount && styles.amountPlaceholder
-                  ]}>
-                    {income.amount ? formatNumberWithCommas(income.amount) : '0.00'}
-                  </Text>
-                </TouchableOpacity>
-                {incomes.length > 1 && (
+              <Swipeable
+                key={income.id}
+                renderRightActions={(progress) => incomes.length > 1
+                  ? renderSwipeDelete(progress, () => removeIncome(income.id))
+                  : undefined
+                }
+                overshootRight={false}
+              >
+                <View style={styles.inputRow}>
+                  <TextInput
+                    style={styles.nameInput}
+                    value={income.name}
+                    onChangeText={(value) => updateIncome(income.id, 'name', value)}
+                    placeholder="Income source"
+                    placeholderTextColor="#999"
+                  />
                   <TouchableOpacity
-                    onPress={() => removeIncome(income.id)}
-                    style={styles.removeButton}
+                    style={[
+                      styles.amountInputContainer,
+                      focusedField?.type === 'income' && focusedField?.id === income.id && styles.amountInputFocused
+                    ]}
+                    onPress={() => setFocusedField({ type: 'income', id: income.id })}
                   >
-                    <Ionicons name="remove-circle" size={24} color="#DC3545" />
+                    <Text style={styles.dollarSign}>$</Text>
+                    <Text style={[
+                      styles.amountInput,
+                      !income.amount && styles.amountPlaceholder
+                    ]}>
+                      {income.amount ? formatNumberWithCommas(income.amount) : '0.00'}
+                    </Text>
                   </TouchableOpacity>
-                )}
-              </View>
+                </View>
+              </Swipeable>
             ))}
 
             <TouchableOpacity style={styles.addButton} onPress={addIncome}>
@@ -368,38 +395,39 @@ export default function BudgetCalculatorModal({ visible, onClose }: BudgetCalcul
             </View>
 
             {expenses.map((expense) => (
-              <View key={expense.id} style={styles.inputRow}>
-                <TextInput
-                  style={styles.nameInput}
-                  value={expense.name}
-                  onChangeText={(value) => updateExpense(expense.id, 'name', value)}
-                  placeholder="Expense name"
-                  placeholderTextColor="#999"
-                />
-                <TouchableOpacity
-                  style={[
-                    styles.amountInputContainer,
-                    focusedField?.type === 'expense' && focusedField?.id === expense.id && styles.amountInputFocused
-                  ]}
-                  onPress={() => setFocusedField({ type: 'expense', id: expense.id })}
-                >
-                  <Text style={styles.dollarSign}>$</Text>
-                  <Text style={[
-                    styles.amountInput,
-                    !expense.amount && styles.amountPlaceholder
-                  ]}>
-                    {expense.amount ? formatNumberWithCommas(expense.amount) : '0.00'}
-                  </Text>
-                </TouchableOpacity>
-                {expenses.length > 1 && (
+              <Swipeable
+                key={expense.id}
+                renderRightActions={(progress) => expenses.length > 1
+                  ? renderSwipeDelete(progress, () => removeExpense(expense.id))
+                  : undefined
+                }
+                overshootRight={false}
+              >
+                <View style={styles.inputRow}>
+                  <TextInput
+                    style={styles.nameInput}
+                    value={expense.name}
+                    onChangeText={(value) => updateExpense(expense.id, 'name', value)}
+                    placeholder="Expense name"
+                    placeholderTextColor="#999"
+                  />
                   <TouchableOpacity
-                    onPress={() => removeExpense(expense.id)}
-                    style={styles.removeButton}
+                    style={[
+                      styles.amountInputContainer,
+                      focusedField?.type === 'expense' && focusedField?.id === expense.id && styles.amountInputFocused
+                    ]}
+                    onPress={() => setFocusedField({ type: 'expense', id: expense.id })}
                   >
-                    <Ionicons name="remove-circle" size={24} color="#DC3545" />
+                    <Text style={styles.dollarSign}>$</Text>
+                    <Text style={[
+                      styles.amountInput,
+                      !expense.amount && styles.amountPlaceholder
+                    ]}>
+                      {expense.amount ? formatNumberWithCommas(expense.amount) : '0.00'}
+                    </Text>
                   </TouchableOpacity>
-                )}
-              </View>
+                </View>
+              </Swipeable>
             ))}
 
             <TouchableOpacity style={styles.addButton} onPress={addExpense}>
@@ -447,50 +475,50 @@ export default function BudgetCalculatorModal({ visible, onClose }: BudgetCalcul
               const pctOfDisposable = disposableIncome > 0 ? (amt / disposableIncome) * 100 : 0;
 
               return (
-                <View
+                <Swipeable
                   key={allocation.id}
-                  style={styles.allocationItem}
-                  onLayout={(e) => {
-                    allocationRowPositions.current[allocation.id] = e.nativeEvent.layout.y;
-                  }}
+                  renderRightActions={(progress) =>
+                    renderSwipeDelete(progress, () => removeAllocation(allocation.id))
+                  }
+                  overshootRight={false}
                 >
-                  <View style={styles.inputRow}>
-                    <View style={[styles.allocationDot, { backgroundColor: allocation.color }]} />
-                    <TextInput
-                      style={styles.nameInput}
-                      value={allocation.name}
-                      onChangeText={(value) => updateAllocation(allocation.id, 'name', value)}
-                      placeholder="Goal name"
-                      placeholderTextColor="#999"
-                    />
-                    <TouchableOpacity
-                      style={[
-                        styles.amountInputContainer,
-                        focusedField?.type === 'allocation' && focusedField?.id === allocation.id && styles.amountInputFocused,
-                      ]}
-                      onPress={() => setFocusedField({ type: 'allocation', id: allocation.id })}
-                    >
-                      <Text style={styles.dollarSign}>$</Text>
-                      <Text style={[
-                        styles.amountInput,
-                        !allocation.amount && styles.amountPlaceholder,
-                      ]}>
-                        {allocation.amount ? formatNumberWithCommas(allocation.amount) : '0.00'}
+                  <View
+                    style={styles.allocationItem}
+                    onLayout={(e) => {
+                      allocationRowPositions.current[allocation.id] = e.nativeEvent.layout.y;
+                    }}
+                  >
+                    <View style={styles.inputRow}>
+                      <TextInput
+                        style={styles.nameInput}
+                        value={allocation.name}
+                        onChangeText={(value) => updateAllocation(allocation.id, 'name', value)}
+                        placeholder="Goal name"
+                        placeholderTextColor="#999"
+                      />
+                      <TouchableOpacity
+                        style={[
+                          styles.amountInputContainer,
+                          focusedField?.type === 'allocation' && focusedField?.id === allocation.id && styles.amountInputFocused,
+                        ]}
+                        onPress={() => setFocusedField({ type: 'allocation', id: allocation.id })}
+                      >
+                        <Text style={styles.dollarSign}>$</Text>
+                        <Text style={[
+                          styles.amountInput,
+                          !allocation.amount && styles.amountPlaceholder,
+                        ]}>
+                          {allocation.amount ? formatNumberWithCommas(allocation.amount) : '0.00'}
+                        </Text>
+                      </TouchableOpacity>
+                    </View>
+                    {amt > 0 && (
+                      <Text style={styles.allocationPercentages}>
+                        {pctOfIncome.toFixed(1)}% of income{disposableIncome > 0 ? ` · ${pctOfDisposable.toFixed(1)}% of disposable` : ''}
                       </Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity
-                      onPress={() => removeAllocation(allocation.id)}
-                      style={styles.removeButton}
-                    >
-                      <Ionicons name="remove-circle" size={24} color="#DC3545" />
-                    </TouchableOpacity>
+                    )}
                   </View>
-                  {amt > 0 && (
-                    <Text style={styles.allocationPercentages}>
-                      {pctOfIncome.toFixed(1)}% of income{disposableIncome > 0 ? ` · ${pctOfDisposable.toFixed(1)}% of disposable` : ''}
-                    </Text>
-                  )}
-                </View>
+                </Swipeable>
               );
             })}
 
@@ -653,8 +681,19 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#333',
   },
-  removeButton: {
-    padding: 4,
+  swipeDeleteAction: {
+    backgroundColor: '#DC3545',
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderRadius: 8,
+    marginLeft: 8,
+    marginBottom: 12,
+  },
+  swipeDeleteButton: {
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   addButton: {
     flexDirection: 'row',
