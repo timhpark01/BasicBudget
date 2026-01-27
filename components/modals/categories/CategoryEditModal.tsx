@@ -81,8 +81,8 @@ export default function CategoryEditModal({
       });
       Alert.alert('Success', 'Category updated successfully!');
       onClose();
-    } catch (err: any) {
-      Alert.alert('Error', err.message || 'Failed to save category.');
+    } catch (err: unknown) {
+      Alert.alert('Error', err instanceof Error ? err.message : 'Failed to save category.');
     } finally {
       setSaving(false);
     }
