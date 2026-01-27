@@ -14,7 +14,7 @@ import {
   ScrollView,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { Category } from '@/types/database';
+import { Category, IoniconsName } from '@/types/database';
 import ColorPicker from '@/components/shared/ColorPicker';
 
 interface CategoryEditModalProps {
@@ -127,7 +127,7 @@ export default function CategoryEditModal({
                     ]}
                   >
                     <Ionicons
-                      name={category.icon as any}
+                      name={category.icon as IoniconsName}
                       size={32}
                       color={selectedColor}
                     />

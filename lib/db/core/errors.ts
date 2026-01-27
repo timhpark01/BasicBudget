@@ -15,14 +15,16 @@
  *
  * @example
  * ```typescript
+ * import { isSQLiteError } from '@/types/errors';
+ *
  * try {
  *   await db.runAsync('INSERT INTO ...');
- * } catch (error) {
+ * } catch (error: unknown) {
  *   throw new DatabaseError(
  *     'Failed to create expense',
- *     (error as any).code,
+ *     isSQLiteError(error) ? error.code : undefined,
  *     'create_expense',
- *     error as Error
+ *     error instanceof Error ? error : undefined
  *   );
  * }
  * ```

@@ -56,7 +56,16 @@ async function addPositionColumn(db: SQLite.SQLiteDatabase): Promise<void> {
     console.log('Adding position column to existing custom_categories table...');
 
     // Get existing data
-    const existingCategories = await db.getAllAsync(
+    interface LegacyCategoryRow {
+      id: string;
+      name: string;
+      icon: string;
+      color: string;
+      is_active: number;
+      created_at: number;
+      updated_at: number;
+    }
+    const existingCategories = await db.getAllAsync<LegacyCategoryRow>(
       'SELECT * FROM custom_categories ORDER BY created_at DESC'
     );
 
@@ -80,20 +89,19 @@ async function addPositionColumn(db: SQLite.SQLiteDatabase): Promise<void> {
     // (positions 0-11 reserved for default categories)
     let position = 12;
     for (const category of existingCategories) {
-      const cat = category as any; // Type assertion for database row
       await db.runAsync(
         `INSERT INTO custom_categories_temp
          (id, name, icon, color, position, is_active, created_at, updated_at)
          VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
         [
-          cat.id,
-          cat.name,
-          cat.icon,
-          cat.color,
+          category.id,
+          category.name,
+          category.icon,
+          category.color,
           position++,
-          cat.is_active,
-          cat.created_at,
-          cat.updated_at
+          category.is_active,
+          category.created_at,
+          category.updated_at
         ]
       );
     }
@@ -206,7 +214,26 @@ async function convertNetWorthToDynamicItems(db: SQLite.SQLiteDatabase): Promise
     console.log('Converting net_worth_entries to dynamic items...');
 
     // Get existing data
-    const existingEntries = await db.getAllAsync<any>(
+    interface LegacyNetWorthRow {
+      id: string;
+      month: string;
+      savings: string;
+      checking: string;
+      investments: string;
+      retirement: string;
+      real_estate: string;
+      vehicles: string;
+      other_assets: string;
+      credit_card_debt: string;
+      student_loans: string;
+      car_loans: string;
+      mortgage: string;
+      other_debt: string;
+      notes: string | null;
+      created_at: number;
+      updated_at: number;
+    }
+    const existingEntries = await db.getAllAsync<LegacyNetWorthRow>(
       'SELECT * FROM net_worth_entries'
     );
 
@@ -394,7 +421,16 @@ async function migrateNetWorthToFullDates(db: SQLite.SQLiteDatabase): Promise<vo
     console.log('Converting net_worth_entries to full dates (YYYY-MM-DD)...');
 
     // Get existing entries
-    const existingEntries = await db.getAllAsync<any>(
+    interface MonthBasedNetWorthRow {
+      id: string;
+      month: string;
+      assets: string;
+      liabilities: string;
+      notes: string | null;
+      created_at: number;
+      updated_at: number;
+    }
+    const existingEntries = await db.getAllAsync<MonthBasedNetWorthRow>(
       'SELECT * FROM net_worth_entries'
     );
 
@@ -591,7 +627,19 @@ async function addRecurringExpenseIdColumn(db: SQLite.SQLiteDatabase): Promise<v
     console.log('Adding recurring_expense_id column to existing expenses table...');
 
     // Get existing data
-    const existingExpenses = await db.getAllAsync(
+    interface LegacyExpenseRow {
+      id: string;
+      amount: string;
+      category_id: string;
+      category_name: string;
+      category_icon: string;
+      category_color: string;
+      date: number;
+      note: string | null;
+      created_at: number;
+      updated_at: number;
+    }
+    const existingExpenses = await db.getAllAsync<LegacyExpenseRow>(
       'SELECT * FROM expenses ORDER BY created_at DESC'
     );
 
@@ -616,22 +664,21 @@ async function addRecurringExpenseIdColumn(db: SQLite.SQLiteDatabase): Promise<v
 
     // Copy existing data (recurring_expense_id will be NULL for existing expenses)
     for (const expense of existingExpenses) {
-      const exp = expense as any; // Type assertion for database row
       await db.runAsync(
         `INSERT INTO expenses_temp
          (id, amount, category_id, category_name, category_icon, category_color, date, note, recurring_expense_id, created_at, updated_at)
          VALUES (?, ?, ?, ?, ?, ?, ?, ?, NULL, ?, ?)`,
         [
-          exp.id,
-          exp.amount,
-          exp.category_id,
-          exp.category_name,
-          exp.category_icon,
-          exp.category_color,
-          exp.date,
-          exp.note,
-          exp.created_at,
-          exp.updated_at
+          expense.id,
+          expense.amount,
+          expense.category_id,
+          expense.category_name,
+          expense.category_icon,
+          expense.category_color,
+          expense.date,
+          expense.note,
+          expense.created_at,
+          expense.updated_at
         ]
       );
     }

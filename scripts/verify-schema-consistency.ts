@@ -38,7 +38,12 @@ async function getTableSchema(db: SQLite.SQLiteDatabase, tableName: string) {
   return { columns, indexes };
 }
 
-function compareSchemas(fresh: any, migrated: any, tableName: string): string[] {
+interface TableSchema {
+  columns: ColumnInfo[];
+  indexes: IndexInfo[];
+}
+
+function compareSchemas(fresh: TableSchema, migrated: TableSchema, tableName: string): string[] {
   const differences: string[] = [];
 
   // Compare columns
