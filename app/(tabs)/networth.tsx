@@ -36,10 +36,6 @@ export default function NetWorthScreen() {
   const [deletedEntry, setDeletedEntry] = useState<NetWorthEntryCompat | null>(null);
   const [undoVisible, setUndoVisible] = useState(false);
 
-  // Current date in YYYY-MM-DD format
-  const currentDate = useMemo(() => new Date(), []);
-  const currentDateStr = useMemo(() => formatDate(currentDate), []);
-
   // Find entry for selected date
   const selectedEntry = useMemo(() => {
     const dateStr = formatDate(selectedDate);
@@ -168,8 +164,8 @@ export default function NetWorthScreen() {
     setDeletedEntry(null);
   };
 
-  // Find current entry for summary card
-  const currentEntry = entries.find(e => e.date === currentDateStr);
+  // Most recent entry for summary card (entries sorted newest-first from hook)
+  const latestEntry = entries.length > 0 ? entries[0] : null;
 
   return (
     <SafeAreaView style={styles.container} edges={[]}>
@@ -207,7 +203,7 @@ export default function NetWorthScreen() {
           contentContainerStyle={{ paddingBottom: moderateScale(100) }}
         >
           {/* Net Worth Summary */}
-          {currentEntry && <NetWorthSummaryCard entry={currentEntry} />}
+          {latestEntry && <NetWorthSummaryCard entry={latestEntry} />}
 
           {/* Chart */}
           <NetWorthChart entries={entries} />

@@ -369,16 +369,6 @@ export default function CategoriesModal({ visible, onClose }: CategoriesModalPro
               color={selectedColor}
             />
 
-            {mode === 'add' && (
-              <View style={styles.infoBox}>
-                <Ionicons name="information-circle-outline" size={20} color="#666" />
-                <Text style={styles.infoText}>
-                  Custom categories will appear alongside default categories when
-                  adding expenses.
-                </Text>
-              </View>
-            )}
-
             {saving && (
               <View style={styles.loadingContainer}>
                 <ActivityIndicator size="small" color="#355e3b" />

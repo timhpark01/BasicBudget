@@ -7,6 +7,8 @@ import {
   calculateIlliquidNetWorth,
   calculateRetirementNetWorth,
   calculateTotalLiabilities,
+  formatDate,
+  parseDate,
 } from '@/lib/db/models/net-worth';
 import { formatCurrency } from '@/lib/utils/number-formatter';
 
@@ -17,7 +19,16 @@ interface NetWorthSummaryCardProps {
 export default function NetWorthSummaryCard({ entry }: NetWorthSummaryCardProps) {
   return (
     <View style={styles.summaryCard}>
-      <Text style={styles.summaryLabel}>Current Net Worth</Text>
+      <Text style={styles.summaryLabel}>
+        {entry.date === formatDate(new Date())
+          ? 'Current Net Worth'
+          : `Net Worth as of ${parseDate(entry.date).toLocaleDateString('en-US', {
+              month: 'short',
+              day: 'numeric',
+              year: 'numeric',
+            })}`
+        }
+      </Text>
       <Text style={styles.summaryAmount}>
         {formatCurrency(calculateNetWorth(entry))}
       </Text>

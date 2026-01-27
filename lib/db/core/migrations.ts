@@ -23,7 +23,7 @@ import { getTableSchema, getTableIndexes } from './schema';
  * - Examples: net worth tracking enhancements
  */
 const CRITICAL_MIGRATIONS = ['v1', 'v2', 'v3', 'v6', 'v7', 'v8', 'v9'] as const;
-const OPTIONAL_MIGRATIONS = ['v4', 'v5'] as const;
+const OPTIONAL_MIGRATIONS = ['v4', 'v5', 'v10'] as const;
 
 /**
  * Add position column to custom_categories table
@@ -734,17 +734,108 @@ export async function initializeNewDatabase(db: SQLite.SQLiteDatabase): Promise<
 }
 
 /**
+ * V10 Migration: Add category field to net worth items stored in JSON.
+ * Reads all net_worth_entries, parses JSON assets/liabilities,
+ * adds category field based on name matching, writes back.
+ */
+async function addNetWorthItemCategories(db: SQLite.SQLiteDatabase): Promise<void> {
+  // Check if table exists
+  const tableInfo = await db.getAllAsync<{ name: string }>(
+    'PRAGMA table_info(net_worth_entries)'
+  );
+
+  if (tableInfo.length === 0) {
+    console.log('net_worth_entries table does not exist yet, skipping v10');
+    return;
+  }
+
+  interface NetWorthRowData {
+    id: string;
+    date: string;
+    assets: string;
+    liabilities: string;
+  }
+
+  const entries = await db.getAllAsync<NetWorthRowData>(
+    'SELECT id, date, assets, liabilities FROM net_worth_entries'
+  );
+
+  if (entries.length === 0) {
+    console.log('No net worth entries to migrate');
+    return;
+  }
+
+  console.log(`📝 Migrating ${entries.length} net worth entries to add category field...`);
+
+  const assetCategoryMap: Record<string, string> = {
+    'Savings': 'liquid',
+    'Checking': 'liquid',
+    'Investments': 'liquid',
+    'Real Estate': 'illiquid',
+    'Vehicles': 'illiquid',
+    'Other Assets': 'illiquid',
+    'Retirement': 'retirement',
+    '401k': 'retirement',
+    'IRA': 'retirement',
+  };
+
+  const liabilityCategoryMap: Record<string, string> = {
+    'Credit Card Debt': 'liquid',
+    'Other Debt': 'liquid',
+    'Mortgage': 'illiquid',
+    'Car Loans': 'illiquid',
+    'Student Loans': 'retirement',
+  };
+
+  const timestamp = Date.now();
+
+  for (const entry of entries) {
+    try {
+      const assets = JSON.parse(entry.assets || '[]');
+      const liabilities = JSON.parse(entry.liabilities || '[]');
+
+      let changed = false;
+
+      for (const asset of assets) {
+        if (asset.category === undefined) {
+          asset.category = assetCategoryMap[asset.name] || 'liquid';
+          changed = true;
+        }
+      }
+
+      for (const liability of liabilities) {
+        if (liability.category === undefined) {
+          liability.category = liabilityCategoryMap[liability.name] || 'liquid';
+          changed = true;
+        }
+      }
+
+      if (changed) {
+        await db.runAsync(
+          'UPDATE net_worth_entries SET assets = ?, liabilities = ?, updated_at = ? WHERE id = ?',
+          [JSON.stringify(assets), JSON.stringify(liabilities), timestamp, entry.id]
+        );
+      }
+    } catch (parseError) {
+      console.error(`⚠️ Failed to migrate net worth entry ${entry.id} (${entry.date}):`, parseError);
+    }
+  }
+
+  console.log(`✅ Migrated ${entries.length} net worth entries with category field`);
+}
+
+/**
  * Main migration runner - executes all pending migrations
  * This function is ONLY for existing databases that need to be upgraded
  *
  * Uses database schema_version as single source of truth (no AsyncStorage)
  *
  * @param db - SQLite database instance
- * @param fromVersion - Current schema version (0-9), determines which migrations to run
+ * @param fromVersion - Current schema version (0-10), determines which migrations to run
  */
 export async function runMigrations(db: SQLite.SQLiteDatabase, fromVersion: number): Promise<void> {
   console.log(`🔄 Starting migration runner from version ${fromVersion}...`);
-  console.log(`📋 Migrations to run: v${fromVersion + 1} through v9`);
+  console.log(`📋 Migrations to run: v${fromVersion + 1} through v10`);
 
   try {
     // V1 Migration: Categories with position (CRITICAL)
@@ -903,6 +994,22 @@ export async function runMigrations(db: SQLite.SQLiteDatabase, fromVersion: numb
       }
     } else {
       console.log('✅ v9 migrations already completed (version >= 9)');
+    }
+
+    // V10 Migration: Net worth item categories (OPTIONAL)
+    if (fromVersion < 10) {
+      console.log('🔄 Running v10 database migrations (net worth item categories)...');
+      try {
+        await addNetWorthItemCategories(db);
+        console.log('✅ v10 migrations completed successfully');
+      } catch (error) {
+        // v10 is OPTIONAL - net worth category enhancement
+        // App can function without it (name-based fallback exists)
+        console.error('⚠️ v10 migration failed (OPTIONAL):', error);
+        console.warn('Net worth category breakdowns may not include custom-named items');
+      }
+    } else {
+      console.log('✅ v10 migrations already completed (version >= 10)');
     }
 
     console.log('✅ All migrations completed successfully');

@@ -7,10 +7,51 @@ import { mapSQLiteErrorToUserMessage } from '@/lib/db/utils/error-mapper';
 // Re-export date utilities for backward compatibility
 export { formatDate, parseDate };
 
+export type NetWorthItemCategory = 'liquid' | 'illiquid' | 'retirement';
+
 export interface NetWorthItem {
   id: string;
   name: string;
   amount: string;
+  category?: NetWorthItemCategory;
+}
+
+// Hardcoded name lists for backward compatibility with pre-v10 data
+const LIQUID_ASSET_NAMES = ['Savings', 'Checking', 'Investments'];
+const ILLIQUID_ASSET_NAMES = ['Real Estate', 'Vehicles', 'Other Assets'];
+const RETIREMENT_ASSET_NAMES = ['Retirement', '401k', 'IRA'];
+const LIQUID_LIABILITY_NAMES = ['Credit Card Debt', 'Other Debt'];
+const ILLIQUID_LIABILITY_NAMES = ['Mortgage', 'Car Loans'];
+const RETIREMENT_LIABILITY_NAMES = ['Student Loans'];
+
+/**
+ * Check if an asset item belongs to a category, using explicit category
+ * field with name-based fallback for unmigrated data
+ */
+function isAssetCategory(item: NetWorthItem, category: NetWorthItemCategory): boolean {
+  if (item.category !== undefined) {
+    return item.category === category;
+  }
+  switch (category) {
+    case 'liquid': return LIQUID_ASSET_NAMES.includes(item.name);
+    case 'illiquid': return ILLIQUID_ASSET_NAMES.includes(item.name);
+    case 'retirement': return RETIREMENT_ASSET_NAMES.includes(item.name);
+  }
+}
+
+/**
+ * Check if a liability item belongs to a category, using explicit category
+ * field with name-based fallback for unmigrated data
+ */
+function isLiabilityCategory(item: NetWorthItem, category: NetWorthItemCategory): boolean {
+  if (item.category !== undefined) {
+    return item.category === category;
+  }
+  switch (category) {
+    case 'liquid': return LIQUID_LIABILITY_NAMES.includes(item.name);
+    case 'illiquid': return ILLIQUID_LIABILITY_NAMES.includes(item.name);
+    case 'retirement': return RETIREMENT_LIABILITY_NAMES.includes(item.name);
+  }
 }
 
 export interface NetWorthEntry {
@@ -339,7 +380,7 @@ export function calculateNetWorth(entry: NetWorthEntry): number {
  */
 export function calculateRetirementAssets(entry: NetWorthEntry): number {
   return entry.assets
-    .filter(item => item.name === 'Retirement')
+    .filter(item => isAssetCategory(item, 'retirement'))
     .reduce((sum, item) => sum + (parseFloat(item.amount) || 0), 0);
 }
 
@@ -348,12 +389,12 @@ export function calculateRetirementAssets(entry: NetWorthEntry): number {
  */
 export function calculateRetirementLiabilities(entry: NetWorthEntry): number {
   return entry.liabilities
-    .filter(item => item.name === 'Student Loans')
+    .filter(item => isLiabilityCategory(item, 'retirement'))
     .reduce((sum, item) => sum + (parseFloat(item.amount) || 0), 0);
 }
 
 /**
- * Calculate Retirement net worth (Retirement assets - Student Loans)
+ * Calculate Retirement net worth
  */
 export function calculateRetirementNetWorth(entry: NetWorthEntry): number {
   return calculateRetirementAssets(entry) - calculateRetirementLiabilities(entry);
@@ -363,9 +404,8 @@ export function calculateRetirementNetWorth(entry: NetWorthEntry): number {
  * Calculate Liquid assets
  */
 export function calculateLiquidAssets(entry: NetWorthEntry): number {
-  const liquidAssetNames = ['Savings', 'Checking', 'Investments'];
   return entry.assets
-    .filter(item => liquidAssetNames.includes(item.name))
+    .filter(item => isAssetCategory(item, 'liquid'))
     .reduce((sum, item) => sum + (parseFloat(item.amount) || 0), 0);
 }
 
@@ -373,14 +413,13 @@ export function calculateLiquidAssets(entry: NetWorthEntry): number {
  * Calculate Liquid liabilities
  */
 export function calculateLiquidLiabilities(entry: NetWorthEntry): number {
-  const liquidLiabilityNames = ['Credit Card Debt', 'Other Debt'];
   return entry.liabilities
-    .filter(item => liquidLiabilityNames.includes(item.name))
+    .filter(item => isLiabilityCategory(item, 'liquid'))
     .reduce((sum, item) => sum + (parseFloat(item.amount) || 0), 0);
 }
 
 /**
- * Calculate Liquid net worth (Savings + Checking + Investments - Credit Card - Other Debt)
+ * Calculate Liquid net worth
  */
 export function calculateLiquidNetWorth(entry: NetWorthEntry): number {
   return calculateLiquidAssets(entry) - calculateLiquidLiabilities(entry);
@@ -390,9 +429,8 @@ export function calculateLiquidNetWorth(entry: NetWorthEntry): number {
  * Calculate Illiquid assets
  */
 export function calculateIlliquidAssets(entry: NetWorthEntry): number {
-  const illiquidAssetNames = ['Real Estate', 'Vehicles', 'Other Assets'];
   return entry.assets
-    .filter(item => illiquidAssetNames.includes(item.name))
+    .filter(item => isAssetCategory(item, 'illiquid'))
     .reduce((sum, item) => sum + (parseFloat(item.amount) || 0), 0);
 }
 
@@ -400,14 +438,13 @@ export function calculateIlliquidAssets(entry: NetWorthEntry): number {
  * Calculate Illiquid liabilities
  */
 export function calculateIlliquidLiabilities(entry: NetWorthEntry): number {
-  const illiquidLiabilityNames = ['Mortgage', 'Car Loans'];
   return entry.liabilities
-    .filter(item => illiquidLiabilityNames.includes(item.name))
+    .filter(item => isLiabilityCategory(item, 'illiquid'))
     .reduce((sum, item) => sum + (parseFloat(item.amount) || 0), 0);
 }
 
 /**
- * Calculate Illiquid net worth (Real Estate + Vehicles + Other Assets - Mortgage - Car Loans)
+ * Calculate Illiquid net worth
  */
 export function calculateIlliquidNetWorth(entry: NetWorthEntry): number {
   return calculateIlliquidAssets(entry) - calculateIlliquidLiabilities(entry);

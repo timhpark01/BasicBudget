@@ -28,16 +28,16 @@ export function useNetWorthCalculator({
 
   // Form state for entry view - organized by category
   const [liquidAssets, setLiquidAssets] = useState<NetWorthItem[]>([
-    { id: '1', name: 'Savings', amount: '0' },
+    { id: '1', name: 'Savings', amount: '0', category: 'liquid' },
   ]);
   const [illiquidAssets, setIlliquidAssets] = useState<NetWorthItem[]>([
-    { id: '1', name: 'Real Estate', amount: '0' },
+    { id: '1', name: 'Real Estate', amount: '0', category: 'illiquid' },
   ]);
   const [retirementAssets, setRetirementAssets] = useState<NetWorthItem[]>([
-    { id: '1', name: 'Retirement', amount: '0' },
+    { id: '1', name: 'Retirement', amount: '0', category: 'retirement' },
   ]);
   const [liabilities, setLiabilities] = useState<NetWorthItem[]>([
-    { id: '1', name: 'Credit Card Debt', amount: '0' },
+    { id: '1', name: 'Credit Card Debt', amount: '0', category: 'liquid' },
   ]);
   const [notes, setNotes] = useState('');
   const [activeField, setActiveField] = useState<ActiveField | null>(null);
@@ -45,15 +45,20 @@ export function useNetWorthCalculator({
 
   // Update form data when selected entry changes
   useEffect(() => {
-    if (selectedEntry) {
-      // Categorize assets from the entry
-      const liquidAssetNames = ['Savings', 'Checking', 'Investments'];
-      const illiquidAssetNames = ['Real Estate', 'Vehicles', 'Other Assets'];
-      const retirementAssetNames = ['Retirement', '401k', 'IRA'];
+    // Categorize asset by category field, falling back to name matching for unmigrated data
+    const getAssetCategory = (item: NetWorthItem): 'liquid' | 'illiquid' | 'retirement' => {
+      if (item.category) return item.category;
+      const illiquidNames = ['Real Estate', 'Vehicles', 'Other Assets'];
+      const retirementNames = ['Retirement', '401k', 'IRA'];
+      if (illiquidNames.includes(item.name)) return 'illiquid';
+      if (retirementNames.includes(item.name)) return 'retirement';
+      return 'liquid';
+    };
 
-      const liquid = selectedEntry.assets.filter(a => liquidAssetNames.includes(a.name));
-      const illiquid = selectedEntry.assets.filter(a => illiquidAssetNames.includes(a.name));
-      const retirement = selectedEntry.assets.filter(a => retirementAssetNames.includes(a.name));
+    if (selectedEntry) {
+      const liquid = selectedEntry.assets.filter(a => getAssetCategory(a) === 'liquid');
+      const illiquid = selectedEntry.assets.filter(a => getAssetCategory(a) === 'illiquid');
+      const retirement = selectedEntry.assets.filter(a => getAssetCategory(a) === 'retirement');
 
       setLiquidAssets(liquid);
       setIlliquidAssets(illiquid);
@@ -62,13 +67,9 @@ export function useNetWorthCalculator({
       setNotes(selectedEntry.notes);
     } else if (mostRecentEntry) {
       // Prepopulate from most recent entry
-      const liquidAssetNames = ['Savings', 'Checking', 'Investments'];
-      const illiquidAssetNames = ['Real Estate', 'Vehicles', 'Other Assets'];
-      const retirementAssetNames = ['Retirement', '401k', 'IRA'];
-
-      const liquid = mostRecentEntry.assets.filter(a => liquidAssetNames.includes(a.name));
-      const illiquid = mostRecentEntry.assets.filter(a => illiquidAssetNames.includes(a.name));
-      const retirement = mostRecentEntry.assets.filter(a => retirementAssetNames.includes(a.name));
+      const liquid = mostRecentEntry.assets.filter(a => getAssetCategory(a) === 'liquid');
+      const illiquid = mostRecentEntry.assets.filter(a => getAssetCategory(a) === 'illiquid');
+      const retirement = mostRecentEntry.assets.filter(a => getAssetCategory(a) === 'retirement');
 
       // Generate new IDs to prevent conflicts
       setLiquidAssets(liquid.map(item => ({ ...item, id: generateId() })));
@@ -78,10 +79,10 @@ export function useNetWorthCalculator({
       setNotes(''); // Clear notes (date-specific)
     } else {
       // Reset form for new entry - start with one item in each category
-      setLiquidAssets([{ id: generateId(), name: 'Savings', amount: '0' }]);
-      setIlliquidAssets([{ id: generateId(), name: 'Real Estate', amount: '0' }]);
-      setRetirementAssets([{ id: generateId(), name: 'Retirement', amount: '0' }]);
-      setLiabilities([{ id: generateId(), name: 'Credit Card Debt', amount: '0' }]);
+      setLiquidAssets([{ id: generateId(), name: 'Savings', amount: '0', category: 'liquid' }]);
+      setIlliquidAssets([{ id: generateId(), name: 'Real Estate', amount: '0', category: 'illiquid' }]);
+      setRetirementAssets([{ id: generateId(), name: 'Retirement', amount: '0', category: 'retirement' }]);
+      setLiabilities([{ id: generateId(), name: 'Credit Card Debt', amount: '0', category: 'liquid' }]);
       setNotes('');
     }
   }, [selectedEntry, mostRecentEntry]);
@@ -92,6 +93,7 @@ export function useNetWorthCalculator({
       id: generateId(),
       name: '',
       amount: '0',
+      category: 'liquid',
     };
     setLiquidAssets([...liquidAssets, newAsset]);
   };
@@ -110,6 +112,7 @@ export function useNetWorthCalculator({
       id: generateId(),
       name: '',
       amount: '0',
+      category: 'illiquid',
     };
     setIlliquidAssets([...illiquidAssets, newAsset]);
   };
@@ -128,6 +131,7 @@ export function useNetWorthCalculator({
       id: generateId(),
       name: '',
       amount: '0',
+      category: 'retirement',
     };
     setRetirementAssets([...retirementAssets, newAsset]);
   };
@@ -146,6 +150,7 @@ export function useNetWorthCalculator({
       id: generateId(),
       name: '',
       amount: '0',
+      category: 'liquid',
     };
     setLiabilities([...liabilities, newLiability]);
   };
