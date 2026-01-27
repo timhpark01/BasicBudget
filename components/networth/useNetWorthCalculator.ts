@@ -37,7 +37,7 @@ export function useNetWorthCalculator({
     { id: '1', name: 'Retirement', amount: '0', category: 'retirement' },
   ]);
   const [liabilities, setLiabilities] = useState<NetWorthItem[]>([
-    { id: '1', name: 'Credit Card Debt', amount: '0', category: 'liquid' },
+    { id: '1', name: 'Credit Card Debt', amount: '0' },
   ]);
   const [notes, setNotes] = useState('');
   const [activeField, setActiveField] = useState<ActiveField | null>(null);
@@ -82,7 +82,7 @@ export function useNetWorthCalculator({
       setLiquidAssets([{ id: generateId(), name: 'Savings', amount: '0', category: 'liquid' }]);
       setIlliquidAssets([{ id: generateId(), name: 'Real Estate', amount: '0', category: 'illiquid' }]);
       setRetirementAssets([{ id: generateId(), name: 'Retirement', amount: '0', category: 'retirement' }]);
-      setLiabilities([{ id: generateId(), name: 'Credit Card Debt', amount: '0', category: 'liquid' }]);
+      setLiabilities([{ id: generateId(), name: 'Credit Card Debt', amount: '0' }]);
       setNotes('');
     }
   }, [selectedEntry, mostRecentEntry]);
@@ -150,7 +150,6 @@ export function useNetWorthCalculator({
       id: generateId(),
       name: '',
       amount: '0',
-      category: 'liquid',
     };
     setLiabilities([...liabilities, newLiability]);
   };

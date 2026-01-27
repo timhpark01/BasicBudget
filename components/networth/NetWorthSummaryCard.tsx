@@ -4,14 +4,14 @@ import { Ionicons } from '@expo/vector-icons';
 import { NetWorthEntryCompat } from '@/hooks/useNetWorth';
 import {
   calculateNetWorth,
-  calculateLiquidNetWorth,
-  calculateIlliquidNetWorth,
-  calculateRetirementNetWorth,
+  calculateLiquidAssets,
+  calculateIlliquidAssets,
+  calculateRetirementAssets,
   calculateTotalLiabilities,
   formatDate,
   parseDate,
 } from '@/lib/db/models/net-worth';
-import { formatCurrency } from '@/lib/utils/number-formatter';
+import { formatCurrency, formatCompactCurrency } from '@/lib/utils/number-formatter';
 
 interface NetWorthSummaryCardProps {
   entry: NetWorthEntryCompat;
@@ -62,43 +62,30 @@ export default function NetWorthSummaryCard({ entry, previousEntry }: NetWorthSu
       )}
       <View style={styles.summaryBreakdown}>
         <View style={styles.summaryCategory}>
-          <View style={[styles.categoryIndicator, { backgroundColor: '#22C55E' }]} />
           <Text style={styles.summaryCategoryTitle}>Liquid</Text>
-          <Text style={[
-            styles.summaryCompactValue,
-            calculateLiquidNetWorth(entry) >= 0 ? styles.positiveValue : styles.negativeValue
-          ]}>
-            {formatCurrency(Math.abs(calculateLiquidNetWorth(entry)))}
+          <Text style={styles.summaryCompactValue}>
+            {formatCompactCurrency(calculateLiquidAssets(entry))}
           </Text>
         </View>
 
         <View style={styles.summaryCategory}>
-          <View style={[styles.categoryIndicator, { backgroundColor: '#EAB308' }]} />
           <Text style={styles.summaryCategoryTitle}>Illiquid</Text>
-          <Text style={[
-            styles.summaryCompactValue,
-            calculateIlliquidNetWorth(entry) >= 0 ? styles.positiveValue : styles.negativeValue
-          ]}>
-            {formatCurrency(Math.abs(calculateIlliquidNetWorth(entry)))}
+          <Text style={styles.summaryCompactValue}>
+            {formatCompactCurrency(calculateIlliquidAssets(entry))}
           </Text>
         </View>
 
         <View style={styles.summaryCategory}>
-          <View style={[styles.categoryIndicator, { backgroundColor: '#3B82F6' }]} />
-          <Text style={styles.summaryCategoryTitle}>Retirement</Text>
-          <Text style={[
-            styles.summaryCompactValue,
-            calculateRetirementNetWorth(entry) >= 0 ? styles.positiveValue : styles.negativeValue
-          ]}>
-            {formatCurrency(Math.abs(calculateRetirementNetWorth(entry)))}
+          <Text style={styles.summaryCategoryTitle}>Retire</Text>
+          <Text style={styles.summaryCompactValue}>
+            {formatCompactCurrency(calculateRetirementAssets(entry))}
           </Text>
         </View>
 
         <View style={styles.summaryCategory}>
-          <View style={[styles.categoryIndicator, { backgroundColor: '#DC3545' }]} />
-          <Text style={styles.summaryCategoryTitle}>Liabilities</Text>
-          <Text style={[styles.summaryCompactValue, styles.negativeValue]}>
-            {formatCurrency(calculateTotalLiabilities(entry))}
+          <Text style={styles.summaryCategoryTitle}>Debts</Text>
+          <Text style={styles.summaryCompactValue}>
+            {formatCompactCurrency(calculateTotalLiabilities(entry))}
           </Text>
         </View>
       </View>
@@ -148,38 +135,30 @@ const styles = StyleSheet.create({
   },
   summaryBreakdown: {
     flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 8,
+    justifyContent: 'space-between',
     marginTop: 8,
   },
   summaryCategory: {
-    width: '48%',
+    flex: 1,
+    marginHorizontal: 2,
     backgroundColor: 'rgba(255, 255, 255, 0.1)',
     borderRadius: 8,
-    padding: 12,
+    paddingVertical: 8,
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 6,
+    gap: 3,
   },
   summaryCategoryTitle: {
-    fontSize: 12,
+    fontSize: 10,
     fontWeight: '600',
     color: '#fff',
     textAlign: 'center',
   },
   summaryCompactValue: {
-    fontSize: 16,
+    fontSize: 13,
     fontWeight: '700',
     color: '#fff',
     textAlign: 'center',
-  },
-  categoryIndicator: {
-    width: 10,
-    height: 10,
-    borderRadius: 5,
-  },
-  positiveValue: {
-    color: '#4CAF50',
   },
   negativeValue: {
     color: '#DC3545',

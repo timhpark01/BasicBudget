@@ -22,7 +22,7 @@ import NetWorthChart from '@/components/networth/NetWorthChart';
 import NetWorthHistoryList from '@/components/networth/NetWorthHistoryList';
 import NetWorthEntryForm from '@/components/networth/NetWorthEntryForm';
 import { useNetWorthCalculator } from '@/components/networth/useNetWorthCalculator';
-import { moderateScale, scaleFontSize } from '@/lib/utils/responsive';
+import { moderateScale, scaleWidth } from '@/lib/utils/responsive';
 
 export default function NetWorthScreen() {
   // Responsive sizing
@@ -30,7 +30,7 @@ export default function NetWorthScreen() {
   const { width } = useWindowDimensions();
 
   const { entries, loading, saveEntry, deleteEntry } = useNetWorth();
-  const [viewMode, setViewMode] = useState<'chart' | 'entry'>('chart');
+  const [showEntryModal, setShowEntryModal] = useState(false);
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [deletedEntry, setDeletedEntry] = useState<NetWorthEntryCompat | null>(null);
@@ -78,7 +78,7 @@ export default function NetWorthScreen() {
         notes: calculator.notes,
       });
       Alert.alert('Success', 'Net worth entry saved successfully!');
-      setViewMode('chart');
+      setShowEntryModal(false);
     } catch (error) {
       Alert.alert('Error', 'Failed to save entry. Please try again.');
     }
@@ -88,7 +88,7 @@ export default function NetWorthScreen() {
   const handleEntryTap = (entry: NetWorthEntryCompat) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     setSelectedDate(parseDate(entry.date));
-    setViewMode('entry');
+    setShowEntryModal(true);
   };
 
   // Handle long press for edit/delete options
@@ -169,109 +169,117 @@ export default function NetWorthScreen() {
 
   return (
     <SafeAreaView style={styles.container} edges={[]}>
-      {/* Header with view toggle */}
-      <View style={styles.header}>
-        <Text style={styles.headerTitle}>Net Worth</Text>
-        <View style={styles.viewToggle}>
-          <TouchableOpacity
-            style={[styles.toggleButton, viewMode === 'chart' && styles.toggleButtonActive]}
-            onPress={() => setViewMode('chart')}
-          >
-            <Ionicons
-              name="bar-chart"
-              size={20}
-              color={viewMode === 'chart' ? '#fff' : '#666'}
-            />
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={[styles.toggleButton, viewMode === 'entry' && styles.toggleButtonActive]}
-            onPress={() => setViewMode('entry')}
-          >
-            <Ionicons
-              name="create"
-              size={20}
-              color={viewMode === 'entry' ? '#fff' : '#666'}
-            />
-          </TouchableOpacity>
-        </View>
-      </View>
-
-      {viewMode === 'chart' ? (
-        <ScrollView
-          style={styles.scrollView}
-          showsVerticalScrollIndicator={false}
-          contentContainerStyle={{ paddingBottom: moderateScale(100) }}
-        >
-          {/* Net Worth Summary */}
-          {latestEntry && (
-            <NetWorthSummaryCard
-              entry={latestEntry}
-              previousEntry={entries.length > 1 ? entries[1] : undefined}
-            />
-          )}
-
-          {/* Chart */}
-          <NetWorthChart entries={entries} />
-
-          {/* History */}
-          <NetWorthHistoryList
-            entries={entries}
-            onEntryTap={handleEntryTap}
-            onEntryLongPress={handleEntryLongPress}
-            onSwipeDelete={handleSwipeDelete}
+      <ScrollView
+        style={styles.scrollView}
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={{ paddingBottom: moderateScale(100) }}
+      >
+        {/* Net Worth Summary */}
+        {latestEntry && (
+          <NetWorthSummaryCard
+            entry={latestEntry}
+            previousEntry={entries.length > 1 ? entries[1] : undefined}
           />
+        )}
 
-          <View style={styles.bottomSpacer} />
-        </ScrollView>
-      ) : (
-        <NetWorthEntryForm
-          selectedDate={selectedDate}
-          onDatePress={() => setShowDatePicker(true)}
-          showPrepopulationNote={shouldShowPrepopulationNote}
-          prepopulationDate={
-            mostRecentEntry
-              ? parseDate(mostRecentEntry.date).toLocaleDateString('en-US', {
-                  month: 'short',
-                  day: 'numeric',
-                  year: 'numeric',
-                })
-              : undefined
-          }
-          liquidAssets={calculator.liquidAssets}
-          illiquidAssets={calculator.illiquidAssets}
-          retirementAssets={calculator.retirementAssets}
-          onAddLiquidAsset={calculator.addLiquidAsset}
-          onUpdateLiquidAsset={calculator.updateLiquidAsset}
-          onRemoveLiquidAsset={calculator.removeLiquidAsset}
-          onAddIlliquidAsset={calculator.addIlliquidAsset}
-          onUpdateIlliquidAsset={calculator.updateIlliquidAsset}
-          onRemoveIlliquidAsset={calculator.removeIlliquidAsset}
-          onAddRetirementAsset={calculator.addRetirementAsset}
-          onUpdateRetirementAsset={calculator.updateRetirementAsset}
-          onRemoveRetirementAsset={calculator.removeRetirementAsset}
-          liabilities={calculator.liabilities}
-          onAddLiability={calculator.addLiability}
-          onUpdateLiability={calculator.updateLiability}
-          onRemoveLiability={calculator.removeLiability}
-          notes={calculator.notes}
-          onNotesChange={calculator.setNotes}
-          activeField={calculator.activeField}
-          calculatorAmount={calculator.calculatorAmount}
-          onAmountFieldPress={calculator.handleAmountFieldPress}
-          onCalculatorNumberPress={calculator.handleCalculatorNumberPress}
-          onCalculatorDecimalPress={calculator.handleCalculatorDecimalPress}
-          onCalculatorBackspace={calculator.handleCalculatorBackspace}
-          onCalculatorClear={calculator.handleCalculatorClear}
-          onCalculatorDone={calculator.handleCalculatorDone}
-          formLiquidAssets={calculator.formLiquidAssets}
-          formIlliquidAssets={calculator.formIlliquidAssets}
-          formRetirementAssets={calculator.formRetirementAssets}
-          formTotalAssets={calculator.formTotalAssets}
-          formLiabilities={calculator.formLiabilities}
-          formNetWorth={calculator.formNetWorth}
-          onSave={handleSave}
+        {/* Chart */}
+        <NetWorthChart entries={entries} />
+
+        {/* History */}
+        <NetWorthHistoryList
+          entries={entries}
+          onEntryTap={handleEntryTap}
+          onEntryLongPress={handleEntryLongPress}
+          onSwipeDelete={handleSwipeDelete}
         />
-      )}
+
+        <View style={styles.bottomSpacer} />
+      </ScrollView>
+
+      {/* Floating Add Button */}
+      <TouchableOpacity
+        style={[styles.fab, {
+          bottom: moderateScale(100),
+          right: moderateScale(20),
+          width: scaleWidth(56),
+          height: scaleWidth(56),
+          borderRadius: scaleWidth(56) / 2,
+        }]}
+        onPress={() => {
+          setSelectedDate(new Date());
+          setShowEntryModal(true);
+        }}
+        activeOpacity={0.8}
+      >
+        <Ionicons name="add" size={scaleWidth(28)} color="#fff" />
+      </TouchableOpacity>
+
+      {/* Entry Form Modal */}
+      <Modal
+        visible={showEntryModal}
+        animationType="slide"
+        presentationStyle="pageSheet"
+        onRequestClose={() => setShowEntryModal(false)}
+      >
+        <SafeAreaView style={styles.modalContainer}>
+          <View style={styles.modalHeader}>
+            <TouchableOpacity onPress={() => setShowEntryModal(false)}>
+              <Ionicons name="close" size={28} color="#333" />
+            </TouchableOpacity>
+            <Text style={styles.modalTitle}>
+              {selectedEntry ? 'Edit Entry' : 'New Entry'}
+            </Text>
+            <View style={{ width: 28 }} />
+          </View>
+          <NetWorthEntryForm
+            selectedDate={selectedDate}
+            onDatePress={() => setShowDatePicker(true)}
+            showPrepopulationNote={shouldShowPrepopulationNote}
+            prepopulationDate={
+              mostRecentEntry
+                ? parseDate(mostRecentEntry.date).toLocaleDateString('en-US', {
+                    month: 'short',
+                    day: 'numeric',
+                    year: 'numeric',
+                  })
+                : undefined
+            }
+            liquidAssets={calculator.liquidAssets}
+            illiquidAssets={calculator.illiquidAssets}
+            retirementAssets={calculator.retirementAssets}
+            onAddLiquidAsset={calculator.addLiquidAsset}
+            onUpdateLiquidAsset={calculator.updateLiquidAsset}
+            onRemoveLiquidAsset={calculator.removeLiquidAsset}
+            onAddIlliquidAsset={calculator.addIlliquidAsset}
+            onUpdateIlliquidAsset={calculator.updateIlliquidAsset}
+            onRemoveIlliquidAsset={calculator.removeIlliquidAsset}
+            onAddRetirementAsset={calculator.addRetirementAsset}
+            onUpdateRetirementAsset={calculator.updateRetirementAsset}
+            onRemoveRetirementAsset={calculator.removeRetirementAsset}
+            liabilities={calculator.liabilities}
+            onAddLiability={calculator.addLiability}
+            onUpdateLiability={calculator.updateLiability}
+            onRemoveLiability={calculator.removeLiability}
+            notes={calculator.notes}
+            onNotesChange={calculator.setNotes}
+            activeField={calculator.activeField}
+            calculatorAmount={calculator.calculatorAmount}
+            onAmountFieldPress={calculator.handleAmountFieldPress}
+            onCalculatorNumberPress={calculator.handleCalculatorNumberPress}
+            onCalculatorDecimalPress={calculator.handleCalculatorDecimalPress}
+            onCalculatorBackspace={calculator.handleCalculatorBackspace}
+            onCalculatorClear={calculator.handleCalculatorClear}
+            onCalculatorDone={calculator.handleCalculatorDone}
+            formLiquidAssets={calculator.formLiquidAssets}
+            formIlliquidAssets={calculator.formIlliquidAssets}
+            formRetirementAssets={calculator.formRetirementAssets}
+            formTotalAssets={calculator.formTotalAssets}
+            formLiabilities={calculator.formLiabilities}
+            formNetWorth={calculator.formNetWorth}
+            onSave={handleSave}
+          />
+        </SafeAreaView>
+      </Modal>
 
       {/* Calendar Picker Modal */}
       <Modal
@@ -305,35 +313,35 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#f5f5f5',
   },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
+  fab: {
+    position: 'absolute',
+    backgroundColor: '#355e3b',
+    justifyContent: 'center',
     alignItems: 'center',
-    paddingHorizontal: moderateScale(20),
-    paddingTop: moderateScale(16),
-    paddingBottom: moderateScale(16),
+    elevation: 8,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+  },
+  modalContainer: {
+    flex: 1,
+    backgroundColor: '#f5f5f5',
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
     backgroundColor: '#fff',
     borderBottomWidth: 1,
     borderBottomColor: '#e0e0e0',
   },
-  headerTitle: {
-    fontSize: scaleFontSize(24, 20, 28),
+  modalTitle: {
+    fontSize: 18,
     fontWeight: '700',
     color: '#333',
-  },
-  viewToggle: {
-    flexDirection: 'row',
-    backgroundColor: '#f5f5f5',
-    borderRadius: moderateScale(8),
-    padding: moderateScale(2),
-  },
-  toggleButton: {
-    paddingHorizontal: moderateScale(16),
-    paddingVertical: moderateScale(8),
-    borderRadius: moderateScale(6),
-  },
-  toggleButtonActive: {
-    backgroundColor: '#355e3b',
   },
   scrollView: {
     flex: 1,

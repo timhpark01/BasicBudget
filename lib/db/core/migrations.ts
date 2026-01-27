@@ -779,20 +779,11 @@ async function addNetWorthItemCategories(db: SQLite.SQLiteDatabase): Promise<voi
     'IRA': 'retirement',
   };
 
-  const liabilityCategoryMap: Record<string, string> = {
-    'Credit Card Debt': 'liquid',
-    'Other Debt': 'liquid',
-    'Mortgage': 'illiquid',
-    'Car Loans': 'illiquid',
-    'Student Loans': 'retirement',
-  };
-
   const timestamp = Date.now();
 
   for (const entry of entries) {
     try {
       const assets = JSON.parse(entry.assets || '[]');
-      const liabilities = JSON.parse(entry.liabilities || '[]');
 
       let changed = false;
 
@@ -803,17 +794,10 @@ async function addNetWorthItemCategories(db: SQLite.SQLiteDatabase): Promise<voi
         }
       }
 
-      for (const liability of liabilities) {
-        if (liability.category === undefined) {
-          liability.category = liabilityCategoryMap[liability.name] || 'liquid';
-          changed = true;
-        }
-      }
-
       if (changed) {
         await db.runAsync(
-          'UPDATE net_worth_entries SET assets = ?, liabilities = ?, updated_at = ? WHERE id = ?',
-          [JSON.stringify(assets), JSON.stringify(liabilities), timestamp, entry.id]
+          'UPDATE net_worth_entries SET assets = ?, updated_at = ? WHERE id = ?',
+          [JSON.stringify(assets), timestamp, entry.id]
         );
       }
     } catch (parseError) {
