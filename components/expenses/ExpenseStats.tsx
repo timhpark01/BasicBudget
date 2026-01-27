@@ -12,7 +12,7 @@ interface ExpenseStatsProps {
   categoryBudgets: CategoryBudget[];
   onSetCategoryBudget: (categoryId: string, budgetAmount: string) => Promise<void>;
   onDeleteCategoryBudget: (categoryId: string) => Promise<void>;
-  allCategoryBudgets: any[];
+  allCategoryBudgets: CategoryBudget[];
   onSetCategoryBudgetForMonth: (month: string, categoryId: string, budgetAmount: string) => Promise<void>;
   onDeleteCategoryBudgetForMonth: (month: string, categoryId: string) => Promise<void>;
 }

@@ -10,7 +10,7 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Expense, IoniconsName } from '@/types/database';
+import { Expense, IoniconsName, CategoryBudget } from '@/types/database';
 import { getDatabase } from '@/lib/db/core/database';
 import { getExpensesByCategory } from '@/lib/db/models/expenses';
 import CategoryBudgetModal from '@/components/modals/budget/CategoryBudgetModal';
@@ -23,7 +23,7 @@ interface CategoryAnalyticsModalProps {
   categoryName: string;
   categoryIcon: string;
   categoryColor: string;
-  categoryBudgets?: any[];
+  categoryBudgets?: CategoryBudget[];
   onSetCategoryBudget?: (month: string, categoryId: string, budgetAmount: string) => Promise<void>;
   onDeleteCategoryBudget?: (month: string, categoryId: string) => Promise<void>;
 }
@@ -191,7 +191,7 @@ export default function CategoryAnalyticsModal({
   // Get budget for a specific month
   const getBudgetForMonth = (month: string): string | null => {
     const budget = categoryBudgets.find(
-      (b: any) => b.month === month && b.categoryId === categoryId
+      (b) => b.month === month && b.categoryId === categoryId
     );
     return budget ? budget.budgetAmount : null;
   };

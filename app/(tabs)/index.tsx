@@ -20,7 +20,7 @@ import {
 import { getAllBudgets } from '@/lib/db/models/budgets';
 import { getDatabase } from '@/lib/db/core/database';
 import { isFirstLaunch, markFirstLaunchComplete } from '@/lib/storage/first-launch';
-import { Expense } from '@/types/database';
+import { Expense, CategoryBudget } from '@/types/database';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { useEffect, useMemo, useState } from 'react';
@@ -100,7 +100,7 @@ export default function BudgetsScreen() {
   const { generateNow } = useRecurringExpenseGeneration(refreshExpenses);
 
   // State for all category budgets (for analytics)
-  const [allCategoryBudgets, setAllCategoryBudgets] = useState<any[]>([]);
+  const [allCategoryBudgets, setAllCategoryBudgets] = useState<CategoryBudget[]>([]);
 
   // State for previous month's budget (for auto-populating future months)
   const [previousBudget, setPreviousBudget] = useState<string | null>(null);
@@ -117,7 +117,7 @@ export default function BudgetsScreen() {
           months.add(`${year}-${month}`);
         });
 
-        const budgets: any[] = [];
+        const budgets: CategoryBudget[] = [];
         for (const month of months) {
           const monthBudgets = await getCategoryBudgetsForMonth(db, month);
           budgets.push(...monthBudgets);

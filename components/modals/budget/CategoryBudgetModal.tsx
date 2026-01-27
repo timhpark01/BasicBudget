@@ -13,7 +13,7 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { formatNumberWithCommas, sanitizeDecimalInput } from '@/lib/utils/number-formatter';
-import { IoniconsName } from '@/types/database';
+import { IoniconsName, CategoryBudget } from '@/types/database';
 
 interface CategoryBudgetModalProps {
   visible: boolean;
@@ -26,7 +26,7 @@ interface CategoryBudgetModalProps {
   onDelete?: () => Promise<void>;
   categoryId?: string;
   currentMonth?: string;
-  allCategoryBudgets?: any[];
+  allCategoryBudgets?: CategoryBudget[];
 }
 
 export default function CategoryBudgetModal({
@@ -58,8 +58,8 @@ export default function CategoryBudgetModal({
       if (!currentBudget && categoryId && currentMonth && allCategoryBudgets.length > 0) {
         // Filter budgets for this category from months before the current month
         const previousBudgets = allCategoryBudgets
-          .filter((b: any) => b.categoryId === categoryId && b.month < currentMonth)
-          .sort((a: any, b: any) => b.month.localeCompare(a.month));
+          .filter((b) => b.categoryId === categoryId && b.month < currentMonth)
+          .sort((a, b) => b.month.localeCompare(a.month));
 
         // Use the most recent budget if found
         if (previousBudgets.length > 0) {
