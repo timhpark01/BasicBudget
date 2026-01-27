@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import {
   Modal,
   View,
@@ -11,7 +11,7 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import CalculatorKeypad from '@/components/shared/CalculatorKeypad';
-import { formatCurrency, canAddDecimalDigit } from '@/lib/utils/number-formatter';
+import { formatCurrency, formatNumberWithCommas, canAddDecimalDigit } from '@/lib/utils/number-formatter';
 
 // Maximum amount to prevent UI overflow (10 million)
 const MAX_AMOUNT = 9999999999999.99;
@@ -33,10 +33,19 @@ interface ExpenseItem {
   amount: string;
 }
 
+interface AllocationItem {
+  id: string;
+  name: string;
+  amount: string;
+  color: string;
+}
+
 type FocusedField = {
-  type: 'income' | 'expense';
+  type: 'income' | 'expense' | 'allocation';
   id: string;
 } | null;
+
+const ALLOCATION_COLORS = ['#355e3b', '#2196F3', '#FF9800', '#9C27B0', '#00BCD4', '#E91E63'];
 
 export default function BudgetCalculatorModal({ visible, onClose }: BudgetCalculatorModalProps) {
   const [incomes, setIncomes] = useState<IncomeItem[]>([
@@ -48,6 +57,54 @@ export default function BudgetCalculatorModal({ visible, onClose }: BudgetCalcul
     { id: '3', name: 'Internet', amount: '' },
   ]);
   const [focusedField, setFocusedField] = useState<FocusedField>(null);
+  const [allocations, setAllocations] = useState<AllocationItem[]>([
+    { id: '1', name: 'Savings', amount: '', color: ALLOCATION_COLORS[0] },
+    { id: '2', name: 'Investments', amount: '', color: ALLOCATION_COLORS[1] },
+  ]);
+
+  const addAllocation = () => {
+    const colorIndex = allocations.length % ALLOCATION_COLORS.length;
+    setAllocations([
+      ...allocations,
+      {
+        id: Date.now().toString(),
+        name: '',
+        amount: '',
+        color: ALLOCATION_COLORS[colorIndex],
+      },
+    ]);
+  };
+
+  const removeAllocation = (id: string) => {
+    setAllocations(allocations.filter((item) => item.id !== id));
+  };
+
+  const updateAllocation = (id: string, field: 'name' | 'amount', value: string) => {
+    setAllocations(
+      allocations.map((item) =>
+        item.id === id ? { ...item, [field]: value } : item
+      )
+    );
+  };
+
+  const totalAllocated = allocations.reduce((sum, a) => sum + (parseFloat(a.amount) || 0), 0);
+
+  const scrollViewRef = useRef<ScrollView>(null);
+  const allocationSectionY = useRef(0);
+  const allocationRowPositions = useRef<Record<string, number>>({});
+
+  // Scroll to focused allocation row when keypad opens
+  useEffect(() => {
+    if (focusedField?.type === 'allocation') {
+      const rowY = allocationRowPositions.current[focusedField.id];
+      if (rowY !== undefined) {
+        const absoluteY = allocationSectionY.current + rowY;
+        setTimeout(() => {
+          scrollViewRef.current?.scrollTo({ y: absoluteY - 80, animated: true });
+        }, 100);
+      }
+    }
+  }, [focusedField]);
 
   const addIncome = () => {
     setIncomes([
@@ -116,9 +173,12 @@ export default function BudgetCalculatorModal({ visible, onClose }: BudgetCalcul
     if (focusedField.type === 'income') {
       const income = incomes.find(i => i.id === focusedField.id);
       return income?.amount || '0';
-    } else {
+    } else if (focusedField.type === 'expense') {
       const expense = expenses.find(e => e.id === focusedField.id);
       return expense?.amount || '0';
+    } else {
+      const allocation = allocations.find(a => a.id === focusedField.id);
+      return allocation?.amount || '0';
     }
   };
 
@@ -128,8 +188,10 @@ export default function BudgetCalculatorModal({ visible, onClose }: BudgetCalcul
 
     if (focusedField.type === 'income') {
       updateIncome(focusedField.id, 'amount', newAmount);
-    } else {
+    } else if (focusedField.type === 'expense') {
       updateExpense(focusedField.id, 'amount', newAmount);
+    } else {
+      updateAllocation(focusedField.id, 'amount', newAmount);
     }
   };
 
@@ -198,6 +260,10 @@ export default function BudgetCalculatorModal({ visible, onClose }: BudgetCalcul
               { id: '2', name: 'Car Payments', amount: '' },
               { id: '3', name: 'Internet', amount: '' },
             ]);
+            setAllocations([
+              { id: '1', name: 'Savings', amount: '', color: ALLOCATION_COLORS[0] },
+              { id: '2', name: 'Investments', amount: '', color: ALLOCATION_COLORS[1] },
+            ]);
           },
         },
       ]
@@ -227,7 +293,20 @@ export default function BudgetCalculatorModal({ visible, onClose }: BudgetCalcul
           </TouchableOpacity>
         </View>
 
-        <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
+        <ScrollView
+          ref={scrollViewRef}
+          style={styles.scrollView}
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={focusedField ? { paddingBottom: 320 } : undefined}
+        >
+          {/* Info Note */}
+          <View style={styles.infoNote}>
+            <Ionicons name="information-circle-outline" size={20} color="#355e3b" />
+            <Text style={styles.infoNoteText}>
+              This is a planning tool to help you decide on a budget. Nothing entered here is saved to your main budgets.
+            </Text>
+          </View>
+
           {/* Income Section */}
           <View style={styles.section}>
             <View style={styles.sectionHeader}>
@@ -256,7 +335,7 @@ export default function BudgetCalculatorModal({ visible, onClose }: BudgetCalcul
                     styles.amountInput,
                     !income.amount && styles.amountPlaceholder
                   ]}>
-                    {income.amount || '0.00'}
+                    {income.amount ? formatNumberWithCommas(income.amount) : '0.00'}
                   </Text>
                 </TouchableOpacity>
                 {incomes.length > 1 && (
@@ -274,6 +353,11 @@ export default function BudgetCalculatorModal({ visible, onClose }: BudgetCalcul
               <Ionicons name="add-circle" size={20} color="#355e3b" />
               <Text style={styles.addButtonText}>Add Income Source</Text>
             </TouchableOpacity>
+
+            <View style={styles.sectionTotalRow}>
+              <Text style={styles.sectionTotalLabel}>Total Monthly Income</Text>
+              <Text style={styles.sectionTotalIncome}>{formatCurrency(totalIncome)}</Text>
+            </View>
           </View>
 
           {/* Expenses Section */}
@@ -304,7 +388,7 @@ export default function BudgetCalculatorModal({ visible, onClose }: BudgetCalcul
                     styles.amountInput,
                     !expense.amount && styles.amountPlaceholder
                   ]}>
-                    {expense.amount || '0.00'}
+                    {expense.amount ? formatNumberWithCommas(expense.amount) : '0.00'}
                   </Text>
                 </TouchableOpacity>
                 {expenses.length > 1 && (
@@ -322,59 +406,127 @@ export default function BudgetCalculatorModal({ visible, onClose }: BudgetCalcul
               <Ionicons name="add-circle" size={20} color="#355e3b" />
               <Text style={styles.addButtonText}>Add Fixed Expense</Text>
             </TouchableOpacity>
+
+            <View style={styles.sectionTotalRow}>
+              <Text style={styles.sectionTotalLabel}>Total Fixed Expenses</Text>
+              <Text style={styles.sectionTotalExpense}>{formatCurrency(totalExpenses)}</Text>
+            </View>
           </View>
 
-          {/* Summary Section */}
-          <View style={styles.summarySection}>
-            <Text style={styles.summaryTitle}>Summary</Text>
-
-            <View style={styles.summaryRow}>
-              <Text style={styles.summaryLabel}>Total Monthly Income</Text>
-              <Text style={styles.summaryIncome}>
-                {formatCurrency(totalIncome)}
-              </Text>
-            </View>
-
-            <View style={styles.summaryRow}>
-              <Text style={styles.summaryLabel}>Total Fixed Expenses</Text>
-              <Text style={styles.summaryExpense}>
-                -{formatCurrency(totalExpenses)}
-              </Text>
-            </View>
-
-            <View style={styles.summaryDivider} />
-
-            <View style={styles.summaryRow}>
-              <Text style={styles.summaryLabelBold}>Disposable Income</Text>
-              <Text
-                style={[
-                  styles.summaryDisposable,
-                  disposableIncome < 0 && styles.summaryNegative,
-                ]}
-              >
-                {formatCurrency(disposableIncome)}
-              </Text>
-            </View>
-
-            {disposableIncome > 0 && (
-              <View style={styles.tipBox}>
-                <Ionicons name="bulb" size={20} color="#355e3b" />
-                <Text style={styles.tipText}>
-                  This is the amount available for variable expenses, savings, and
-                  discretionary spending.
-                </Text>
-              </View>
-            )}
-
+          {/* Disposable Income */}
+          <View style={styles.disposableCard}>
+            <Text style={styles.disposableLabel}>Disposable Income</Text>
+            <Text
+              style={[
+                styles.disposableAmount,
+                disposableIncome < 0 && styles.summaryNegative,
+              ]}
+            >
+              {formatCurrency(disposableIncome)}
+            </Text>
             {disposableIncome < 0 && (
-              <View style={styles.warningBox}>
-                <Ionicons name="warning" size={20} color="#DC3545" />
-                <Text style={styles.warningText}>
-                  Your expenses exceed your income. Consider reducing fixed expenses
-                  or finding additional income sources.
+              <Text style={styles.disposableWarning}>
+                Expenses exceed income
+              </Text>
+            )}
+          </View>
+
+          {/* Savings Goals Section */}
+          <View
+            style={styles.allocationsSection}
+            onLayout={(e) => { allocationSectionY.current = e.nativeEvent.layout.y; }}
+          >
+            <View style={styles.sectionHeader}>
+              <Ionicons name="pie-chart" size={24} color="#355e3b" />
+              <Text style={styles.sectionTitle}>Savings Goals</Text>
+            </View>
+
+            {allocations.map((allocation) => {
+              const amt = parseFloat(allocation.amount) || 0;
+              const pctOfIncome = totalIncome > 0 ? (amt / totalIncome) * 100 : 0;
+              const pctOfDisposable = disposableIncome > 0 ? (amt / disposableIncome) * 100 : 0;
+
+              return (
+                <View
+                  key={allocation.id}
+                  style={styles.allocationItem}
+                  onLayout={(e) => {
+                    allocationRowPositions.current[allocation.id] = e.nativeEvent.layout.y;
+                  }}
+                >
+                  <View style={styles.inputRow}>
+                    <View style={[styles.allocationDot, { backgroundColor: allocation.color }]} />
+                    <TextInput
+                      style={styles.nameInput}
+                      value={allocation.name}
+                      onChangeText={(value) => updateAllocation(allocation.id, 'name', value)}
+                      placeholder="Goal name"
+                      placeholderTextColor="#999"
+                    />
+                    <TouchableOpacity
+                      style={[
+                        styles.amountInputContainer,
+                        focusedField?.type === 'allocation' && focusedField?.id === allocation.id && styles.amountInputFocused,
+                      ]}
+                      onPress={() => setFocusedField({ type: 'allocation', id: allocation.id })}
+                    >
+                      <Text style={styles.dollarSign}>$</Text>
+                      <Text style={[
+                        styles.amountInput,
+                        !allocation.amount && styles.amountPlaceholder,
+                      ]}>
+                        {allocation.amount ? formatNumberWithCommas(allocation.amount) : '0.00'}
+                      </Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      onPress={() => removeAllocation(allocation.id)}
+                      style={styles.removeButton}
+                    >
+                      <Ionicons name="remove-circle" size={24} color="#DC3545" />
+                    </TouchableOpacity>
+                  </View>
+                  {amt > 0 && (
+                    <Text style={styles.allocationPercentages}>
+                      {pctOfIncome.toFixed(1)}% of income{disposableIncome > 0 ? ` · ${pctOfDisposable.toFixed(1)}% of disposable` : ''}
+                    </Text>
+                  )}
+                </View>
+              );
+            })}
+
+            <TouchableOpacity style={styles.addButton} onPress={addAllocation}>
+              <Ionicons name="add-circle" size={20} color="#355e3b" />
+              <Text style={styles.addButtonText}>Add Goal</Text>
+            </TouchableOpacity>
+
+            {/* Allocation Summary */}
+            <View style={styles.allocationSummary}>
+              <View style={styles.allocationSummaryRow}>
+                <Text style={styles.allocationSummaryLabel}>Total Goals</Text>
+                <Text style={styles.allocationSummaryValue}>
+                  {formatCurrency(totalAllocated)}
                 </Text>
               </View>
-            )}
+              {totalAllocated > disposableIncome && disposableIncome > 0 && (
+                <View style={styles.warningBox}>
+                  <Ionicons name="warning" size={20} color="#DC3545" />
+                  <Text style={styles.warningText}>
+                    Your goals exceed your disposable income.
+                  </Text>
+                </View>
+              )}
+            </View>
+          </View>
+
+          {/* Ideal Monthly Budget */}
+          <View style={styles.idealBudgetCard}>
+            <Text style={styles.idealBudgetLabel}>Ideal Monthly Budget</Text>
+            <Text style={styles.idealBudgetAmount}>
+              {formatCurrency(disposableIncome - totalAllocated)}
+            </Text>
+            <Text style={styles.idealBudgetSubtext}>
+              Disposable income after savings goals
+            </Text>
           </View>
 
           <View style={styles.bottomSpacer} />
@@ -385,7 +537,7 @@ export default function BudgetCalculatorModal({ visible, onClose }: BudgetCalcul
           <View style={styles.calculatorContainer}>
             <View style={styles.calculatorHeader}>
               <Text style={styles.calculatorTitle}>
-                {focusedField.type === 'income' ? 'Enter Income Amount' : 'Enter Expense Amount'}
+                {focusedField.type === 'income' ? 'Enter Income Amount' : focusedField.type === 'expense' ? 'Enter Expense Amount' : 'Enter Goal Amount'}
               </Text>
               <TouchableOpacity onPress={handleDoneCalculator} style={styles.doneButton}>
                 <Text style={styles.doneButtonText}>Done</Text>
@@ -428,6 +580,22 @@ const styles = StyleSheet.create({
   },
   scrollView: {
     flex: 1,
+  },
+  infoNote: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#e8f5e9',
+    marginHorizontal: 20,
+    marginTop: 10,
+    padding: 12,
+    borderRadius: 10,
+    gap: 10,
+  },
+  infoNoteText: {
+    flex: 1,
+    fontSize: 13,
+    color: '#355e3b',
+    lineHeight: 18,
   },
   section: {
     backgroundColor: '#fff',
@@ -501,69 +669,58 @@ const styles = StyleSheet.create({
     color: '#355e3b',
     fontWeight: '600',
   },
-  summarySection: {
-    backgroundColor: '#fff',
-    marginTop: 20,
-    paddingVertical: 20,
-    paddingHorizontal: 20,
-  },
-  summaryTitle: {
-    fontSize: 20,
-    fontWeight: '700',
-    color: '#333',
-    marginBottom: 16,
-  },
-  summaryRow: {
+  sectionTotalRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingVertical: 8,
+    marginTop: 8,
+    paddingTop: 12,
+    borderTopWidth: 1,
+    borderTopColor: '#e0e0e0',
   },
-  summaryLabel: {
-    fontSize: 16,
+  sectionTotalLabel: {
+    fontSize: 15,
+    fontWeight: '600',
     color: '#666',
   },
-  summaryLabelBold: {
-    fontSize: 18,
+  sectionTotalIncome: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#355e3b',
+  },
+  sectionTotalExpense: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#DC3545',
+  },
+  disposableCard: {
+    backgroundColor: '#fff',
+    marginTop: 20,
+    paddingVertical: 16,
+    paddingHorizontal: 20,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    flexWrap: 'wrap',
+  },
+  disposableLabel: {
+    fontSize: 16,
     fontWeight: '700',
     color: '#333',
   },
-  summaryIncome: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#355e3b',
-  },
-  summaryExpense: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#DC3545',
-  },
-  summaryDisposable: {
+  disposableAmount: {
     fontSize: 20,
     fontWeight: '700',
     color: '#355e3b',
   },
+  disposableWarning: {
+    width: '100%',
+    fontSize: 13,
+    color: '#DC3545',
+    marginTop: 8,
+  },
   summaryNegative: {
     color: '#DC3545',
-  },
-  summaryDivider: {
-    height: 1,
-    backgroundColor: '#e0e0e0',
-    marginVertical: 12,
-  },
-  tipBox: {
-    flexDirection: 'row',
-    backgroundColor: '#e3f2fd',
-    borderRadius: 8,
-    padding: 12,
-    marginTop: 16,
-    gap: 12,
-  },
-  tipText: {
-    flex: 1,
-    fontSize: 14,
-    color: '#355e3b',
-    lineHeight: 20,
   },
   warningBox: {
     flexDirection: 'row',
@@ -578,6 +735,71 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#DC3545',
     lineHeight: 20,
+  },
+  allocationsSection: {
+    backgroundColor: '#fff',
+    marginTop: 20,
+    paddingVertical: 16,
+    paddingHorizontal: 20,
+  },
+  allocationItem: {
+    marginBottom: 12,
+  },
+  allocationDot: {
+    width: 12,
+    height: 12,
+    borderRadius: 6,
+  },
+  allocationPercentages: {
+    fontSize: 12,
+    color: '#888',
+    marginTop: 4,
+    marginLeft: 22,
+  },
+  allocationSummary: {
+    marginTop: 4,
+    paddingTop: 16,
+    borderTopWidth: 1,
+    borderTopColor: '#e0e0e0',
+  },
+  allocationSummaryRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 6,
+  },
+  allocationSummaryLabel: {
+    fontSize: 15,
+    color: '#666',
+  },
+  allocationSummaryValue: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: '#333',
+  },
+  idealBudgetCard: {
+    backgroundColor: '#355e3b',
+    marginTop: 20,
+    paddingVertical: 24,
+    paddingHorizontal: 20,
+    alignItems: 'center',
+  },
+  idealBudgetLabel: {
+    fontSize: 14,
+    color: '#fff',
+    opacity: 0.8,
+    marginBottom: 8,
+  },
+  idealBudgetAmount: {
+    fontSize: 36,
+    fontWeight: 'bold',
+    color: '#fff',
+    marginBottom: 4,
+  },
+  idealBudgetSubtext: {
+    fontSize: 13,
+    color: '#fff',
+    opacity: 0.7,
   },
   bottomSpacer: {
     height: 40,

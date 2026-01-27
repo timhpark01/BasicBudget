@@ -263,6 +263,67 @@ export default function InsightsModal({ visible, onClose }: InsightsModalProps) 
     });
   }, [categorySpending, timeframe]);
 
+  // Calculate monthly spending breakdown
+  const monthlySpending = useMemo(() => {
+    if (filteredExpenses.length === 0) return null;
+
+    // Group expenses by month (YYYY-MM)
+    const monthMap = new Map<string, number>();
+    filteredExpenses.forEach((expense) => {
+      const d = expense.date;
+      const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+      monthMap.set(key, (monthMap.get(key) || 0) + parseFloat(expense.amount));
+    });
+
+    const months = Array.from(monthMap.entries())
+      .map(([month, total]) => ({ month, total }))
+      .sort((a, b) => a.month.localeCompare(b.month));
+
+    if (months.length === 0) return null;
+
+    const totals = months.map((m) => m.total);
+    const average = totals.reduce((sum, t) => sum + t, 0) / totals.length;
+
+    // Median calculation
+    const sorted = [...totals].sort((a, b) => a - b);
+    const mid = Math.floor(sorted.length / 2);
+    const median = sorted.length % 2 !== 0 ? sorted[mid] : (sorted[mid - 1] + sorted[mid]) / 2;
+
+    const highest = months.reduce((prev, cur) => (cur.total > prev.total ? cur : prev));
+    const lowest = months.reduce((prev, cur) => (cur.total < prev.total ? cur : prev));
+
+    return {
+      months,
+      monthCount: months.length,
+      average,
+      median,
+      highest,
+      lowest,
+    };
+  }, [filteredExpenses]);
+
+  // Suggested realistic monthly budget
+  const suggestedRealisticBudget = useMemo(() => {
+    if (!monthlySpending) return null;
+
+    // Use the higher of average or median as the baseline for a realistic suggestion
+    const baseline = Math.max(monthlySpending.average, monthlySpending.median);
+    // Add 10% buffer and round up to nearest whole dollar
+    const suggested = Math.ceil(baseline * 1.1);
+
+    return {
+      amount: suggested,
+      basedOn: baseline === monthlySpending.average ? 'average' : 'median',
+    };
+  }, [monthlySpending]);
+
+  // Format month key (YYYY-MM) to display string
+  const formatMonthLabel = (monthKey: string) => {
+    const [year, month] = monthKey.split('-');
+    const date = new Date(parseInt(year), parseInt(month) - 1);
+    return date.toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
+  };
+
   // Handle custom date selection
   const handleCustomDateSelect = () => {
     if (customStartDate > customEndDate) {
@@ -385,6 +446,78 @@ export default function InsightsModal({ visible, onClose }: InsightsModalProps) 
               {filteredExpenses.length} transactions
             </Text>
           </View>
+
+          {/* Monthly Spending Overview */}
+          {monthlySpending && (
+            <View style={styles.section}>
+              <Text style={styles.sectionTitle}>Monthly Spending Overview</Text>
+              <Text style={styles.sectionSubtitle}>
+                Based on {monthlySpending.monthCount} month{monthlySpending.monthCount !== 1 ? 's' : ''} of data
+              </Text>
+
+              {/* Average Monthly Spending */}
+              <View style={styles.monthlyOverviewCard}>
+                <View style={styles.monthlyOverviewIcon}>
+                  <Ionicons name="stats-chart" size={24} color="#355e3b" />
+                </View>
+                <View style={styles.monthlyOverviewContent}>
+                  <Text style={styles.monthlyOverviewLabel}>Average Monthly Spending</Text>
+                  <Text style={styles.monthlyOverviewAmount}>
+                    {formatCurrency(monthlySpending.average)}
+                  </Text>
+                </View>
+              </View>
+
+              {/* High / Low Months */}
+              <View style={styles.monthlyHighLowRow}>
+                <View style={styles.monthlyHighLowItem}>
+                  <View style={[styles.monthlyHighLowDot, { backgroundColor: '#DC3545' }]} />
+                  <View>
+                    <Text style={styles.monthlyHighLowLabel}>Highest Month</Text>
+                    <Text style={styles.monthlyHighLowAmount}>
+                      {formatCurrency(monthlySpending.highest.total)}
+                    </Text>
+                    <Text style={styles.monthlyHighLowMonth}>
+                      {formatMonthLabel(monthlySpending.highest.month)}
+                    </Text>
+                  </View>
+                </View>
+                <View style={styles.monthlyHighLowItem}>
+                  <View style={[styles.monthlyHighLowDot, { backgroundColor: '#355e3b' }]} />
+                  <View>
+                    <Text style={styles.monthlyHighLowLabel}>Lowest Month</Text>
+                    <Text style={styles.monthlyHighLowAmount}>
+                      {formatCurrency(monthlySpending.lowest.total)}
+                    </Text>
+                    <Text style={styles.monthlyHighLowMonth}>
+                      {formatMonthLabel(monthlySpending.lowest.month)}
+                    </Text>
+                  </View>
+                </View>
+              </View>
+
+              {/* Suggested Realistic Budget */}
+              {suggestedRealisticBudget && (
+                <View style={styles.realisticBudgetCard}>
+                  <View style={styles.realisticBudgetHeader}>
+                    <Ionicons name="bulb" size={20} color="#fff" />
+                    <Text style={styles.realisticBudgetTitle}>Suggested Monthly Budget</Text>
+                  </View>
+                  <Text style={styles.realisticBudgetAmount}>
+                    {formatCurrency(suggestedRealisticBudget.amount)}
+                  </Text>
+                  <Text style={styles.realisticBudgetSubtext}>
+                    Based on your {suggestedRealisticBudget.basedOn} monthly spending plus a 10% buffer
+                  </Text>
+                  {monthlySpending.monthCount < 3 && (
+                    <Text style={styles.realisticBudgetWarning}>
+                      Limited data — add more months for a better suggestion
+                    </Text>
+                  )}
+                </View>
+              )}
+            </View>
+          )}
 
           {/* Insights Section */}
           {insights.length > 0 && (
@@ -525,29 +658,15 @@ export default function InsightsModal({ visible, onClose }: InsightsModalProps) 
       {showDatePicker && (
         <Modal
           visible={showDatePicker}
-          animationType="slide"
+          animationType="fade"
           transparent={true}
           onRequestClose={() => setShowDatePicker(false)}
         >
-          <View style={styles.calendarModalOverlay}>
-            <View style={styles.calendarModalContent}>
-              <View style={styles.calendarHeaderCustom}>
-                <Text style={styles.calendarTitleCustom}>
-                  Select {datePickerMode === 'start' ? 'Start' : 'End'} Date
-                </Text>
-                <TouchableOpacity onPress={() => setShowDatePicker(false)}>
-                  <Ionicons name="close" size={28} color="#333" />
-                </TouchableOpacity>
-              </View>
-              <View style={styles.calendarPickerWrapper}>
-                <CalendarPicker
-                  currentDate={datePickerMode === 'start' ? customStartDate : customEndDate}
-                  onConfirm={handleDatePickerConfirm}
-                  onCancel={() => setShowDatePicker(false)}
-                />
-              </View>
-            </View>
-          </View>
+          <CalendarPicker
+            currentDate={datePickerMode === 'start' ? customStartDate : customEndDate}
+            onConfirm={handleDatePickerConfirm}
+            onCancel={() => setShowDatePicker(false)}
+          />
         </Modal>
       )}
     </Modal>
@@ -798,6 +917,107 @@ const styles = StyleSheet.create({
     height: '100%',
     borderRadius: 4,
   },
+  monthlyOverviewCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 16,
+    backgroundColor: '#f0f7f1',
+    borderRadius: 12,
+    marginTop: 12,
+    gap: 12,
+  },
+  monthlyOverviewIcon: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: '#355e3b20',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  monthlyOverviewContent: {
+    flex: 1,
+  },
+  monthlyOverviewLabel: {
+    fontSize: 13,
+    color: '#666',
+    marginBottom: 4,
+  },
+  monthlyOverviewAmount: {
+    fontSize: 24,
+    fontWeight: '700',
+    color: '#333',
+  },
+  monthlyHighLowRow: {
+    flexDirection: 'row',
+    marginTop: 12,
+    gap: 12,
+  },
+  monthlyHighLowItem: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    backgroundColor: '#f9f9f9',
+    borderRadius: 12,
+    padding: 12,
+    gap: 10,
+  },
+  monthlyHighLowDot: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+    marginTop: 4,
+  },
+  monthlyHighLowLabel: {
+    fontSize: 12,
+    color: '#666',
+    marginBottom: 2,
+  },
+  monthlyHighLowAmount: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#333',
+  },
+  monthlyHighLowMonth: {
+    fontSize: 12,
+    color: '#999',
+    marginTop: 2,
+  },
+  realisticBudgetCard: {
+    backgroundColor: '#355e3b',
+    borderRadius: 12,
+    padding: 16,
+    marginTop: 12,
+  },
+  realisticBudgetHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 8,
+  },
+  realisticBudgetTitle: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#fff',
+    opacity: 0.9,
+  },
+  realisticBudgetAmount: {
+    fontSize: 32,
+    fontWeight: 'bold',
+    color: '#fff',
+    marginBottom: 4,
+  },
+  realisticBudgetSubtext: {
+    fontSize: 13,
+    color: '#fff',
+    opacity: 0.8,
+    lineHeight: 18,
+  },
+  realisticBudgetWarning: {
+    fontSize: 12,
+    color: '#FFD700',
+    marginTop: 8,
+    fontStyle: 'italic',
+  },
   emptyState: {
     alignItems: 'center',
     justifyContent: 'center',
@@ -847,37 +1067,5 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '600',
     color: '#333',
-  },
-  calendarModalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 20,
-  },
-  calendarModalContent: {
-    backgroundColor: '#fff',
-    borderRadius: 16,
-    width: '100%',
-    maxWidth: 400,
-    maxHeight: '80%',
-    overflow: 'hidden',
-  },
-  calendarHeaderCustom: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    padding: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: '#e0e0e0',
-    backgroundColor: '#f8f8f8',
-  },
-  calendarTitleCustom: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#333',
-  },
-  calendarPickerWrapper: {
-    height: 480,
   },
 });
