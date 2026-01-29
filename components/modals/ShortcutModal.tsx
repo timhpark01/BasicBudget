@@ -37,7 +37,7 @@ export default function ShortcutModal({ visible, onClose }: ShortcutModalProps) 
   };
 
   const handleOpenShortcutLink = () => {
-    Linking.openURL('https://www.icloud.com/shortcuts/146912d28de94a5bb15fed7d046ba946');
+    Linking.openURL('https://www.icloud.com/shortcuts/37b1c912460a414fb95a069f0c9747e6');
   };
 
   return (

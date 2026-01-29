@@ -60,9 +60,10 @@ export function useNetWorthCalculator({
       const illiquid = selectedEntry.assets.filter(a => getAssetCategory(a) === 'illiquid');
       const retirement = selectedEntry.assets.filter(a => getAssetCategory(a) === 'retirement');
 
-      setLiquidAssets(liquid);
-      setIlliquidAssets(illiquid);
-      setRetirementAssets(retirement);
+      // Explicitly set category on each item to prevent recategorization on next load
+      setLiquidAssets(liquid.map(item => ({ ...item, category: 'liquid' as const })));
+      setIlliquidAssets(illiquid.map(item => ({ ...item, category: 'illiquid' as const })));
+      setRetirementAssets(retirement.map(item => ({ ...item, category: 'retirement' as const })));
       setLiabilities(selectedEntry.liabilities);
       setNotes(selectedEntry.notes);
     } else if (mostRecentEntry) {
@@ -71,10 +72,10 @@ export function useNetWorthCalculator({
       const illiquid = mostRecentEntry.assets.filter(a => getAssetCategory(a) === 'illiquid');
       const retirement = mostRecentEntry.assets.filter(a => getAssetCategory(a) === 'retirement');
 
-      // Generate new IDs to prevent conflicts
-      setLiquidAssets(liquid.map(item => ({ ...item, id: generateId() })));
-      setIlliquidAssets(illiquid.map(item => ({ ...item, id: generateId() })));
-      setRetirementAssets(retirement.map(item => ({ ...item, id: generateId() })));
+      // Generate new IDs and explicitly set category to prevent recategorization
+      setLiquidAssets(liquid.map(item => ({ ...item, id: generateId(), category: 'liquid' as const })));
+      setIlliquidAssets(illiquid.map(item => ({ ...item, id: generateId(), category: 'illiquid' as const })));
+      setRetirementAssets(retirement.map(item => ({ ...item, id: generateId(), category: 'retirement' as const })));
       setLiabilities(mostRecentEntry.liabilities.map(item => ({ ...item, id: generateId() })));
       setNotes(''); // Clear notes (date-specific)
     } else {
