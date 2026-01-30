@@ -1,4 +1,4 @@
-import * as FileSystem from 'expo-file-system';
+import * as FileSystem from 'expo-file-system/legacy';
 import * as SQLite from 'expo-sqlite';
 import { parseCSVContent, ParsedTransaction } from '@/lib/utils/csv-parser';
 import { Category, ExpenseInput } from '@/types/database';
