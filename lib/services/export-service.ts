@@ -1,4 +1,4 @@
-import * as FileSystem from 'expo-file-system';
+import * as FileSystem from 'expo-file-system/legacy';
 import * as Sharing from 'expo-sharing';
 import { Expense } from '@/types/database';
 import { NetWorthEntry } from '@/lib/db/models/net-worth';
@@ -21,7 +21,7 @@ export async function exportExpensesToCSV(expenses: Expense[]): Promise<void> {
   // Write to cache directory (temporary storage) using legacy API
   const fileUri = FileSystem.cacheDirectory + filename;
   await FileSystem.writeAsStringAsync(fileUri, csvContent, {
-    encoding: FileSystem.EncodingType.UTF8,
+    encoding: 'utf8',
   });
 
   // Check if sharing is available
@@ -55,7 +55,7 @@ export async function exportNetWorthToCSV(entries: NetWorthEntry[]): Promise<voi
   // Write to cache directory (temporary storage) using legacy API
   const fileUri = FileSystem.cacheDirectory + filename;
   await FileSystem.writeAsStringAsync(fileUri, csvContent, {
-    encoding: FileSystem.EncodingType.UTF8,
+    encoding: 'utf8',
   });
 
   // Check if sharing is available
